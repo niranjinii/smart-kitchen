@@ -1,0 +1,60 @@
+/* Import a premium modern font */
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;700&display=swap');
+
+body {
+    background-color: #FAFAFA; /* A much cleaner, gallery-style white */
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    color: #111827;
+}
+
+/* The Pinterest / Masonry Grid */
+.masonry-grid {
+    column-count: 3;
+    column-gap: 2rem; /* Wider gaps look more expensive */
+    padding-top: 1rem;
+}
+
+@media (max-width: 992px) { .masonry-grid { column-count: 2; } }
+@media (max-width: 576px) { .masonry-grid { column-count: 1; } }
+
+/* The Recipe Cards - No more cheap shadows! */
+.recipe-card {
+    break-inside: avoid;
+    margin-bottom: 2.5rem;
+    background-color: transparent; /* No white box */
+    border: none;
+    cursor: pointer;
+}
+
+/* Image Wrappers and Placeholders */
+.img-wrapper {
+    border-radius: 16px;
+    overflow: hidden;
+    margin-bottom: 12px;
+}
+
+/* Sophisticated, muted placeholder colors */
+.img-placeholder-1 { height: 260px; background-color: #E5E5E5; transition: transform 0.4s ease; }
+.img-placeholder-2 { height: 340px; background-color: #D4D4D0; transition: transform 0.4s ease; }
+.img-placeholder-3 { height: 220px; background-color: #EAE8E3; transition: transform 0.4s ease; }
+
+/* Only the image slightly zooms on hover, not the whole card */
+.recipe-card:hover .img-placeholder-1,
+.recipe-card:hover .img-placeholder-2,
+.recipe-card:hover .img-placeholder-3 {
+    transform: scale(1.03);
+}
+
+/* Typography tweaks */
+.recipe-title {
+    font-weight: 700;
+    font-size: 1.1rem;
+    letter-spacing: -0.02em;
+    margin-bottom: 0.2rem;
+}
+
+.recipe-meta {
+    color: #6B7280;
+    font-size: 0.9rem;
+    font-weight: 500;
+}

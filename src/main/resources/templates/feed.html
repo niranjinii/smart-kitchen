@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+
+<head th:replace="fragments/layout :: head"></head>
+
+<body>
+    
+    <div th:replace="fragments/layout :: navbar"></div>
+
+    <div class="container mt-4">
+        <h2 class="fw-bold mb-1">Discover Recipes</h2>
+        <p class="text-muted mb-4">See what the community is cooking.</p>
+        
+        <div class="masonry-grid">
+            
+            <div class="recipe-card">
+                <div class="img-wrapper">
+                    <div class="img-placeholder-1"></div>
+                </div>
+                <h5 class="recipe-title">Spicy Garlic Pasta</h5>
+                <div class="recipe-meta">15 mins • Pantry Staples</div>
+            </div>
+
+            <div class="recipe-card">
+                <div class="img-wrapper">
+                    <div class="img-placeholder-2"></div>
+                </div>
+                <h5 class="recipe-title">Overnight Oats</h5>
+                <div class="recipe-meta">5 mins • Meal Prep</div>
+            </div>
+
+            <div class="recipe-card">
+                <div class="img-wrapper">
+                    <div class="img-placeholder-3"></div>
+                </div>
+                <h5 class="recipe-title">Avocado Toast</h5>
+                <div class="recipe-meta">10 mins • Breakfast</div>
+            </div>
+
+            <div class="recipe-card">
+                <div class="img-wrapper">
+                    <div class="img-placeholder-1"></div>
+                </div>
+                <h5 class="recipe-title">Lemon Herb Salmon</h5>
+                <div class="recipe-meta">25 mins • High Protein</div>
+            </div>
+
+            <div class="recipe-card">
+                <div class="img-wrapper">
+                    <div class="img-placeholder-3"></div>
+                </div>
+                <h5 class="recipe-title">Iced Matcha Latte</h5>
+                <div class="recipe-meta">5 mins • Drinks</div>
+            </div>
+
+            <div class="recipe-card">
+                <div class="img-wrapper">
+                    <div class="img-placeholder-2"></div>
+                </div>
+                <h5 class="recipe-title">Roasted Chickpea Bowl</h5>
+                <div class="recipe-meta">30 mins • Vegan</div>
+            </div>
+
+            <div class="recipe-card">
+                <div class="img-wrapper">
+                    <div class="img-placeholder-1"></div>
+                </div>
+                <h5 class="recipe-title">Artisan Sourdough</h5>
+                <div class="recipe-meta">24 hrs • Baking</div>
+            </div>
+
+            <div class="recipe-card">
+                <div class="img-wrapper">
+                    <div class="img-placeholder-3"></div>
+                </div>
+                <h5 class="recipe-title">Mango Smoothie</h5>
+                <div class="recipe-meta">5 mins • Breakfast</div>
+            </div>
+
+        </div>
+    </div>
+
+</body>
+</html>

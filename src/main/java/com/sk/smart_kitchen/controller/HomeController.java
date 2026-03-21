@@ -11,4 +11,10 @@ public class HomeController {
         // This tells Spring Boot to look in the templates folder for "home.html"
         return "home"; 
     }
+
+    @GetMapping("/feed")
+    public String viewFeed() {
+        return "feed"; // Tells Spring to load feed.html
+    }
 }
+
