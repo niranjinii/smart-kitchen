@@ -1,81 +1,42 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
-
-<head th:replace="fragments/layout :: head"></head>
-
+<head>
+    <th:block th:replace="fragments/layout :: head"></th:block>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
 <body>
     
     <div th:replace="fragments/layout :: navbar"></div>
 
-    <div class="container mt-4">
-        <h2 class="fw-bold mb-1">Discover Recipes</h2>
-        <p class="text-muted mb-4">See what the community is cooking.</p>
+    <div class="container mt-4 mb-5">
+        
+        <div class="category-filters mb-5">
+            <a href="#" class="filter-pill active">All</a>
+            
+            <a href="#" class="filter-pill" th:each="category : ${categories}" th:text="${category}">Category</a>
+        </div>
         
         <div class="masonry-grid">
             
-            <div class="recipe-card">
+            <a href="#" class="recipe-card" th:each="recipe, stat : ${recipes}" style="text-decoration: none; color: inherit; display: block;">
+                
                 <div class="img-wrapper">
-                    <div class="img-placeholder-1"></div>
+                    <div class="img-placeholder" 
+                         th:classappend="${stat.index % 3 == 0 ? 'height-tall' : (stat.index % 3 == 1 ? 'height-medium' : 'height-short')}"
+                         th:style="'background-image: url(' + ${recipe.imageUrl} + ');'">
+                    </div>
+                    <div class="floating-time-badge">
+                        <i class="bi bi-clock"></i> <span th:text="${recipe.prepTimeMins + ' mins'}">15 mins</span>
+                    </div>
                 </div>
-                <h5 class="recipe-title">Spicy Garlic Pasta</h5>
-                <div class="recipe-meta">15 mins • Pantry Staples</div>
-            </div>
 
-            <div class="recipe-card">
-                <div class="img-wrapper">
-                    <div class="img-placeholder-2"></div>
+                <div class="recipe-card-header">
+                    <h5 class="recipe-title" th:text="${recipe.title}">Recipe Title</h5>
+                    <i class="bi bi-bookmark bookmark-btn fs-5"></i>
                 </div>
-                <h5 class="recipe-title">Overnight Oats</h5>
-                <div class="recipe-meta">5 mins • Meal Prep</div>
-            </div>
-
-            <div class="recipe-card">
-                <div class="img-wrapper">
-                    <div class="img-placeholder-3"></div>
-                </div>
-                <h5 class="recipe-title">Avocado Toast</h5>
-                <div class="recipe-meta">10 mins • Breakfast</div>
-            </div>
-
-            <div class="recipe-card">
-                <div class="img-wrapper">
-                    <div class="img-placeholder-1"></div>
-                </div>
-                <h5 class="recipe-title">Lemon Herb Salmon</h5>
-                <div class="recipe-meta">25 mins • High Protein</div>
-            </div>
-
-            <div class="recipe-card">
-                <div class="img-wrapper">
-                    <div class="img-placeholder-3"></div>
-                </div>
-                <h5 class="recipe-title">Iced Matcha Latte</h5>
-                <div class="recipe-meta">5 mins • Drinks</div>
-            </div>
-
-            <div class="recipe-card">
-                <div class="img-wrapper">
-                    <div class="img-placeholder-2"></div>
-                </div>
-                <h5 class="recipe-title">Roasted Chickpea Bowl</h5>
-                <div class="recipe-meta">30 mins • Vegan</div>
-            </div>
-
-            <div class="recipe-card">
-                <div class="img-wrapper">
-                    <div class="img-placeholder-1"></div>
-                </div>
-                <h5 class="recipe-title">Artisan Sourdough</h5>
-                <div class="recipe-meta">24 hrs • Baking</div>
-            </div>
-
-            <div class="recipe-card">
-                <div class="img-wrapper">
-                    <div class="img-placeholder-3"></div>
-                </div>
-                <h5 class="recipe-title">Mango Smoothie</h5>
-                <div class="recipe-meta">5 mins • Breakfast</div>
-            </div>
+                
+                <div class="recipe-meta mt-1" th:text="${recipe.mealType}">Category</div>
+            </a>
 
         </div>
     </div>
