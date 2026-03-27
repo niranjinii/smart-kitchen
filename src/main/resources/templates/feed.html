@@ -1,45 +1,72 @@
-<!DOCTYPE html>
+<!doctype html>
 <html xmlns:th="http://www.thymeleaf.org">
-<head>
+  <head>
     <th:block th:replace="fragments/layout :: head"></th:block>
-    <link rel="stylesheet" th:href="@{/css/style.css}">
-</head>
-<body>
-    
+    <link rel="stylesheet" th:href="@{/css/feed.css}" />
+  </head>
+  <body>
     <div th:replace="fragments/layout :: navbar"></div>
 
-    <div class="container mt-4 mb-5">
-        
-        <div class="category-filters mb-5">
-            <a href="#" class="filter-pill active">All</a>
-            
-            <a href="#" class="filter-pill" th:each="category : ${categories}" th:text="${category}">Category</a>
-        </div>
-        
-        <div class="masonry-grid">
-            
-            <a href="#" class="recipe-card" th:each="recipe, stat : ${recipes}" style="text-decoration: none; color: inherit; display: block;">
-                
-                <div class="img-wrapper">
-                    <div class="img-placeholder" 
-                         th:classappend="${stat.index % 3 == 0 ? 'height-tall' : (stat.index % 3 == 1 ? 'height-medium' : 'height-short')}"
-                         th:style="'background-image: url(' + ${recipe.imageUrl} + ');'">
-                    </div>
-                    <div class="floating-time-badge">
-                        <i class="bi bi-clock"></i> <span th:text="${recipe.prepTimeMins + ' mins'}">15 mins</span>
-                    </div>
-                </div>
+    <div class="container-md px-3 mt-5 mb-5">
+      <div class="row mb-4 justify-content-center">
+        <div class="col-md-10 col-lg-8 d-flex gap-2 align-items-center">
+          <div class="input-group shadow-sm search-container">
+            <span class="input-group-text bg-white border-0 ps-4 text-muted">
+              <i class="bi bi-search"></i>
+            </span>
+            <input
+              type="text"
+              class="form-control bg-white border-0 py-2 shadow-none search-input"
+              placeholder="Search recipes, ingredients, or tags..."
+            />
+          </div>
 
-                <div class="recipe-card-header">
-                    <h5 class="recipe-title" th:text="${recipe.title}">Recipe Title</h5>
-                    <i class="bi bi-bookmark bookmark-btn fs-5"></i>
-                </div>
-                
-                <div class="recipe-meta mt-1" th:text="${recipe.mealType}">Category</div>
-            </a>
-
+          <button
+            class="btn shadow-sm px-3 py-2 d-flex align-items-center gap-2 border-0 filter-btn"
+          >
+            <i class="bi bi-funnel"></i> Filter
+          </button>
         </div>
+      </div>
+
+      <div class="category-filters mb-5">
+        <a href="#" class="filter-pill active">All</a>
+        <a
+          href="#"
+          class="filter-pill"
+          th:each="category : ${categories}"
+          th:text="${category}"
+          >Category</a
+        >
+      </div>
+
+      <div class="masonry-grid">
+        <a href="#" class="recipe-card" th:each="recipe, stat : ${recipes}">
+          <div class="img-wrapper">
+            <div
+              class="img-placeholder"
+              th:classappend="${stat.index % 3 == 0 ? 'height-tall' : (stat.index % 3 == 1 ? 'height-medium' : 'height-short')}"
+              th:style="'background-image: url(' + ${recipe.imageUrl} + ');'"
+            ></div>
+            <div class="floating-time-badge">
+              <i class="bi bi-clock"></i>
+              <span th:text="${recipe.prepTimeMins + ' mins'}">15 mins</span>
+            </div>
+          </div>
+
+          <div class="recipe-card-header">
+            <h5 class="recipe-title" th:text="${recipe.title}">Recipe Title</h5>
+            <i class="bi bi-bookmark bookmark-btn fs-5"></i>
+          </div>
+
+          <div class="recipe-meta mt-1" th:text="${recipe.mealType}">
+            Category
+          </div>
+        </a>
+      </div>
     </div>
 
-</body>
+    <div th:replace="fragments/layout :: mobile-bottom-nav"></div>
+    <div th:replace="fragments/layout :: mobile-offcanvas"></div>
+  </body>
 </html>

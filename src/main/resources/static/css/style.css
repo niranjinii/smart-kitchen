@@ -1,165 +1,436 @@
 /* Unified, premium sans-serif font */
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+@import url("https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap");
 
 :root {
-    --brand-green: #2B4C3B;
-    --brand-light: #F4F5F3;
+  --brand-green: #2b4c3b;
+  --brand-light: #f4f5f3;
+  --brand-yellow: #f59e0b;
 }
 
 body {
-    background-color: var(--brand-light);
-    font-family: 'Plus Jakarta Sans', sans-serif;
-    color: #111827;
+  background-color: var(--brand-light);
+  font-family: "Plus Jakarta Sans", sans-serif;
+  color: #111827;
+}
+
+/* --- Navbar & Logo Styling --- */
+.brand-text {
+  letter-spacing: -0.05em;
+  color: var(--brand-green) !important;
+}
+
+.brand-icon {
+  color: var(--brand-yellow);
+}
+
+.nav-icon-link {
+  transition:
+    color 0.2s ease,
+    transform 0.2s ease;
+}
+
+.nav-icon-link:hover {
+  color: var(--brand-yellow) !important;
+  transform: scale(1.1);
+}
+
+/* --- Search & Filter Row --- */
+.search-container {
+  border-radius: 30px;
+  overflow: hidden;
+}
+
+.search-input {
+  font-size: 0.95rem;
+}
+
+.filter-btn {
+  border-radius: 30px;
+  font-weight: 600;
+  font-size: 0.9rem;
+  white-space: nowrap;
+  /* Changed to animate background and text color smoothly over 0.3 seconds */
+  transition: all 0.8s ease;
+}
+
+.filter-btn:hover {
+  background-color: var(--brand-green) !important;
+  color: white !important;
+}
+
+.filter-btn:hover i {
+  color: white !important; /* Makes the little funnel icon turn white too */
 }
 
 /* Make headings bold and tight */
-h1, h2, h3, h4, h5, .hero-title, .recipe-title {
-    font-family: 'Plus Jakarta Sans', sans-serif;
-    font-weight: 700;
-    letter-spacing: -0.03em;
+h1,
+h2,
+h3,
+h4,
+h5,
+.hero-title,
+.recipe-title {
+  font-family: "Plus Jakarta Sans", sans-serif;
+  font-weight: 700;
+  letter-spacing: -0.03em;
 }
 
 /* --- Centered, Dynamic Category Pills --- */
 .category-filters {
-    display: flex;
-    gap: 0.75rem; /* Tighter gap */
-    overflow-x: auto;
-    padding-bottom: 1rem;
-    justify-content: center; /* This perfectly centers your pills! */
-    scrollbar-width: none;
+  display: flex;
+  gap: 0.75rem;
+  overflow-x: auto;
+  padding-bottom: 1rem;
+  justify-content: center;
+  scrollbar-width: none;
 }
-.category-filters::-webkit-scrollbar { display: none; }
+.category-filters::-webkit-scrollbar {
+  display: none;
+}
 
 .filter-pill {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    height: 42px; /* Sleeker height */
-    padding: 0 24px;
-    background: white;
-    border-radius: 30px; /* Fully rounded pill */
-    color: #6B7280;
-    text-decoration: none;
-    font-size: 0.9rem;
-    font-weight: 600;
-    transition: all 0.2s ease;
-    border: 1px solid rgba(0,0,0,0.05);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 42px;
+  padding: 0 24px;
+  background: white;
+  border-radius: 30px;
+  color: #6b7280;
+  text-decoration: none;
+  font-size: 0.9rem;
+  font-weight: 600;
+  transition: all 0.2s ease;
+  border: 1px solid rgba(0, 0, 0, 0.05);
 }
 
-.filter-pill:hover, .filter-pill.active {
-    background: var(--brand-green);
-    color: white;
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(43, 76, 59, 0.2);
+.filter-pill:hover,
+.filter-pill.active {
+  background: var(--brand-green);
+  color: white;
+  /* The transform: translateY(-2px) has been completely removed! */
+  box-shadow: 0 4px 12px rgba(43, 76, 59, 0.15); /* Kept a very soft shadow so it still pops slightly */
 }
-
-/* --- Floating Image Badges (Inspired by Image 1) --- */
+/* --- Floating Image Badges --- */
 .img-wrapper {
-    position: relative; /* Crucial for floating the badge */
+  position: relative;
+  border-radius: 16px;
+  overflow: hidden;
+  margin-bottom: 12px;
 }
 
 .floating-time-badge {
-    position: absolute;
-    bottom: 12px;
-    left: 12px;
-    background: rgba(255, 255, 255, 0.95);
-    backdrop-filter: blur(4px);
-    padding: 6px 12px;
-    border-radius: 20px;
-    font-size: 0.75rem;
-    font-weight: 600;
-    color: #111827;
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+  position: absolute;
+  bottom: 12px;
+  left: 12px;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(4px);
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #111827;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
 }
 
 .recipe-card-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    margin-top: 12px;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-top: 12px;
 }
 
 .bookmark-btn {
-    color: #9CA3AF;
-    transition: color 0.2s ease;
+  color: #9ca3af;
+  transition: color 0.2s ease;
 }
-.recipe-card:hover .bookmark-btn { color: var(--brand-green); }
+.recipe-card:hover .bookmark-btn {
+  color: var(--brand-green);
+}
 
-/* Update the grid gaps to give the layout more breathing room */
+/* --- Masonry Grid --- */
 .masonry-grid {
-    column-count: 4; /* Keeps images smaller and more manageable on desktop */
-    column-gap: 1.5rem;
+  column-count: 4;
+  column-gap: 1.5rem;
 }
 
-@media (max-width: 1200px) { .masonry-grid { column-count: 3; } }
-@media (max-width: 768px) { .masonry-grid { column-count: 2; } }
-@media (max-width: 576px) { .masonry-grid { column-count: 1; } }
+@media (max-width: 1200px) {
+  .masonry-grid {
+    column-count: 3;
+  }
+}
+@media (max-width: 768px) {
+  .masonry-grid {
+    column-count: 2;
+  }
+}
+@media (max-width: 576px) {
+  .masonry-grid {
+    column-count: 1;
+  }
+}
 
-/* The text styling fixes */
 .recipe-card {
-    break-inside: avoid;
-    margin-bottom: 2rem;
-    background-color: transparent;
-    border: none;
-    text-decoration: none;
-    display: block;
-    color: inherit;
-    /* Smooth hover lift */
-    transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  break-inside: avoid;
+  margin-bottom: 2rem;
+  background-color: transparent;
+  border: none;
+  text-decoration: none;
+  display: block;
+  color: inherit;
+  transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .recipe-card:hover {
-    transform: translateY(-4px);
-}
-
-.img-wrapper {
-    border-radius: 16px;
-    overflow: hidden;
-    margin-bottom: 12px; /* Tightened the gap between image and text */
+  transform: translateY(-4px);
 }
 
 .recipe-title {
-    font-family: 'Plus Jakarta Sans', sans-serif; /* Make sure this is imported! */
-    font-weight: 700;
-    font-size: 1.1rem; /* Slightly smaller for elegance */
-    letter-spacing: -0.02em;
-    margin-bottom: 0.15rem;
-    line-height: 1.3;
-    color: #111827;
+  font-family: "Plus Jakarta Sans", sans-serif;
+  font-weight: 700;
+  font-size: 1.1rem;
+  letter-spacing: -0.02em;
+  margin-bottom: 0.15rem;
+  line-height: 1.3;
+  color: #111827;
 }
 
 .recipe-meta {
-    color: #6B7280;
-    font-size: 0.85rem; /* Softer visual weight */
-    font-weight: 500;
-}
-
-/* Give hover states to the new navbar icons */
-.nav-icon-link {
-    transition: color 0.2s ease, transform 0.2s ease;
-}
-.nav-icon-link:hover {
-    color: #EAB308 !important; /* A nice warm accent color on hover */
-    transform: scale(1.1);
+  color: #6b7280;
+  font-size: 0.85rem;
+  font-weight: 500;
 }
 
 /* Image block base styling */
 .img-placeholder {
-    width: 100%;
-    background-size: cover;
-    background-position: center;
-    transition: transform 0.4s ease;
+  width: 100%;
+  background-size: cover;
+  background-position: center;
+  transition: transform 0.4s ease;
 }
 
-/* Optional: Slight zoom effect when you hover over the card */
 .recipe-card:hover .img-placeholder {
-    transform: scale(1.04);
+  transform: scale(1.04);
 }
 
-/* The actual heights that make them visible! */
-.height-tall { height: 380px; }
-.height-medium { height: 280px; }
-.height-short { height: 200px; }
+.height-tall {
+  height: 380px;
+}
+.height-medium {
+  height: 280px;
+}
+.height-short {
+  height: 200px;
+}
+
+/* --- Kitchen Hub Dropdown --- */
+.hub-menu {
+  position: absolute;
+  top: 150%; /* Pushes it slightly down */
+  left: 50%;
+  transform: translateX(-50%) translateY(10px);
+  background: white;
+  border-radius: 16px;
+  padding: 0.5rem;
+  min-width: 200px;
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  z-index: 1000;
+}
+
+/* The invisible bridge so the mouse doesn't lose hover when moving down */
+.kitchen-hub-dropdown::after {
+  content: "";
+  position: absolute;
+  height: 20px;
+  width: 100%;
+  bottom: -20px;
+  left: 0;
+}
+
+.kitchen-hub-dropdown:hover .hub-menu {
+  opacity: 1;
+  visibility: visible;
+  transform: translateX(-50%) translateY(0);
+}
+
+.hub-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 16px;
+  color: #374151;
+  text-decoration: none;
+  font-size: 0.9rem;
+  font-weight: 500;
+  border-radius: 12px;
+  transition:
+    background 0.2s ease,
+    color 0.2s ease;
+}
+
+.hub-menu-item i {
+  font-size: 1.1rem;
+  transition: color 0.2s ease;
+}
+
+.hub-menu-item:hover {
+  background: var(--brand-light);
+  color: var(--brand-green);
+}
+
+.hub-menu-item:hover i {
+  color: var(--brand-green) !important;
+}
+
+/* --- Mobile Responsiveness Updates --- */
+
+/* 1. Ensure the search bar takes up remaining space so it doesn't crush the filter button */
+.search-container {
+  flex-grow: 1;
+}
+
+/* 2. Hide the top navbar on mobile, show on tablet/desktop */
+@media (max-width: 767px) {
+  .desktop-navbar {
+    display: none !important;
+  }
+
+  /* Add extra padding to the bottom of the body so the bottom nav doesn't cover the last recipe */
+  body {
+    padding-bottom: 80px;
+  }
+}
+
+/* 3. The Sticky Bottom Tab Bar (Appears on Mobile Only) */
+.mobile-bottom-nav {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  border-top: 1px solid rgba(0, 0, 0, 0.05);
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  padding: 0.5rem 0;
+  padding-bottom: env(
+    safe-area-inset-bottom,
+    0.5rem
+  ); /* Adapts to iPhones with home bars */
+  z-index: 1050;
+  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.03);
+}
+
+/* Make sure the 5 icons are balanced */
+.mobile-nav-item {
+  color: #9ca3af;
+  font-size: 1.4rem; /* Scaled down just a hair to fit 5 icons */
+  padding: 8px 10px;
+  transition:
+    color 0.2s ease,
+    transform 0.2s ease;
+  text-decoration: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.mobile-nav-item.active {
+  color: var(--brand-green);
+}
+
+.mobile-publish-btn {
+  background: var(--brand-green);
+  color: white !important;
+  border-radius: 50%;
+  width: 55px;
+  height: 55px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 8px 16px rgba(43, 76, 59, 0.25);
+  font-size: 1.6rem;
+}
+
+.mobile-publish-btn:hover {
+  color: var(--brand-green) !important;
+  background: white;
+}
+
+/* =========================================
+   MOBILE RESPONSIVENESS & MEDIA QUERIES
+   ========================================= */
+
+/* 1. TABLETS & PHONES (767px and below) */
+/* Handles the Navigation Swap */
+@media (max-width: 767px) {
+  .desktop-navbar {
+    display: none !important;
+  }
+  body {
+    padding-bottom: 80px;
+  } /* Room for bottom nav */
+}
+
+/* 2. STRICTLY PHONES (576px and below) */
+/* Handles the 2-Column Pinterest Grid */
+/* 2. STRICTLY PHONES (576px and below) */
+@media (max-width: 576px) {
+  /* Fixes the cut-off scrolling tags */
+  .category-filters {
+    justify-content: flex-start !important; /* Forces left-alignment so it scrolls naturally */
+    padding-left: 10px;
+  }
+  .category-filters::after {
+    content: ""; /* Adds an invisible block so the last tag doesn't touch the edge */
+    padding-right: 20px;
+  }
+
+  /* Pinterest Grid for Mobile */
+  .masonry-grid {
+    column-count: 2;
+    column-gap: 1rem;
+  }
+
+  .recipe-title {
+    font-size: 0.95rem;
+  }
+  .recipe-meta {
+    font-size: 0.75rem;
+  }
+
+  .floating-time-badge {
+    padding: 4px 8px;
+    font-size: 0.65rem;
+    bottom: 8px;
+    left: 8px;
+  }
+
+  /* Fixes the weird floating white space */
+  .mobile-bottom-nav {
+    padding-bottom: 0.5rem; /* Replaced the buggy env() variable */
+  }
+}
+
+/* 1. TABLETS & PHONES (767px and below) */
+@media (max-width: 767px) {
+  .desktop-navbar {
+    display: none !important;
+  }
+  body {
+    padding-bottom: 80px;
+  } /* Room for bottom nav */
+
+  /* NEW: Kill the awkward Bootstrap gutters on tablets and large phones */
+  .container {
+    max-width: 100% !important;
+    padding-left: 16px !important;
+    padding-right: 16px !important;
+  }
+}

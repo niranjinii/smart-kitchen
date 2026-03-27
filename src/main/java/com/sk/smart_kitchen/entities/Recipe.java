@@ -28,6 +28,10 @@ public class Recipe {
     
     private String mealType; // "Breakfast", "Lunch", "Dinner", "Snack"
 
+    @ManyToOne
+    @JoinColumn(name = "user_id") // This creates the foreign key column in the DB
+    private User author;
+
     // This creates the hidden "recipe_tags" bridge table
     @ManyToMany
     @JoinTable(
@@ -36,6 +40,7 @@ public class Recipe {
         inverseJoinColumns = @JoinColumn(name = "tag_id")
     )
     private Set<Tag> tags = new HashSet<>();
+
 
     public Long getId() {
         return id;
@@ -100,5 +105,14 @@ public class Recipe {
     public void setTags(Set<Tag> tags) {
         this.tags = tags;
     }
+
+    public User getAuthor() {
+        return author;
+    }
+
+    public void setAuthor(User author) {
+        this.author = author;
+    }
+
 
 }
