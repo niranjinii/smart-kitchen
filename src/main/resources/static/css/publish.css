@@ -1,0 +1,300 @@
+/* =========================================
+   PAGE TYPOGRAPHY & HEADER
+   ========================================= */
+.page-title {
+  font-weight: 700;
+  font-size: 1.75rem;
+  color: #111827;
+}
+
+.section-title {
+  font-size: 1.25rem;
+}
+
+/* =========================================
+   FORM INPUTS
+   ========================================= */
+input.form-control.custom-input,
+textarea.form-control.custom-input,
+select.form-select.custom-input {
+  border-radius: 12px;
+  border: 1px solid #e5e7eb;
+  background-color: #ffffff;
+  padding: 14px 16px;
+  font-size: 1rem;
+  color: #111827;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  resize: none;
+}
+
+input.form-control.custom-input:focus,
+textarea.form-control.custom-input:focus,
+select.form-select.custom-input:focus {
+  border-color: #a7b8af;
+  box-shadow: 0 0 0 4px rgba(43, 76, 59, 0.08);
+  outline: none;
+}
+
+.custom-input::placeholder {
+  color: #9ca3af;
+}
+
+.form-label {
+  color: #111827;
+  font-size: 0.95rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+/* =========================================
+   IMAGE UPLOAD AREA
+   ========================================= */
+.image-dropzone {
+  border: 1.5px dashed #d1d5db;
+  border-radius: 16px;
+  background-color: #ffffff;
+  text-align: center;
+  padding: 3.5rem 2rem;
+  cursor: pointer;
+  transition: all 0.5s ease;
+}
+
+.image-dropzone:hover {
+  border-color: var(--brand-green);
+  background-color: #fcfcfc;
+}
+
+.dropzone-icon {
+  font-size: 2.5rem;
+  color: #6b7280;
+}
+
+.dropzone-title {
+  font-weight: 700;
+  color: #111827;
+}
+
+.dropzone-subtitle {
+  color: #6b7280;
+  font-size: 0.875rem;
+}
+
+/* =========================================
+   ACTION BUTTONS
+   ========================================= */
+.import-btn {
+  background-color: #ffffff;
+  color: #4b5563;
+  border: 1px solid #d1d5db;
+  border-radius: 10px;
+  font-weight: 600;
+  font-size: 0.9rem;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+  transition: all 0.2s ease;
+}
+
+.import-icon {
+  font-size: 1.25rem;
+}
+
+.import-btn:hover {
+  background-color: #f9fafb;
+  border-color: #9ca3af;
+  color: #111827;
+}
+
+.cancel-btn {
+  color: #6b7280;
+  font-weight: 600;
+  transition: color 0.2s ease;
+}
+
+.cancel-btn:hover {
+  color: #111827;
+}
+
+.publish-submit-btn {
+  background-color: var(--brand-green);
+  color: white;
+  border-radius: 12px;
+  font-weight: 700;
+  font-size: 1rem;
+  letter-spacing: 0.02em;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  transition: all 0.5s ease;
+}
+
+.publish-submit-btn:hover {
+  background-color: white;
+  color: var(--brand-green);
+  box-shadow: 0 4px 12px rgba(43, 76, 59, 0.15);
+}
+
+.publish-action-group {
+  gap: 1rem;
+}
+
+/* =========================================
+   TAGS & CHIPS
+   ========================================= */
+.chip-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.chip-input {
+  display: none;
+}
+
+.chip-label {
+  padding: 8px 16px;
+  background-color: #f3f4f6;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  color: #4b5563;
+  font-weight: 500;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.5s ease;
+}
+
+.chip-label:hover {
+  background-color: #e5e7eb;
+}
+
+.chip-input:checked + .chip-label {
+  background-color: var(--brand-green);
+  color: white;
+  box-shadow: 0 2px 8px rgba(43, 76, 59, 0.15);
+}
+
+.secondary-tag-badge {
+  background-color: #ffffff;
+  color: #111827;
+  border: 1px solid #e5e7eb;
+  border-radius: 50rem;
+  font-weight: 500;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+/* =========================================
+   DYNAMIC LISTS (INGREDIENTS & STEPS)
+   ========================================= */
+.step-row {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+}
+
+.step-number {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background-color: #f3f4f6;
+  color: #4b5563;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  font-size: 0.9rem;
+  flex-shrink: 0;
+  margin-top: 8px;
+}
+
+.add-step-btn,
+.add-item-btn {
+  margin-top: 0.5rem;
+  color: #6b7280;
+  font-weight: 600;
+  font-size: 0.95rem;
+  background: transparent;
+  border: none;
+  padding: 8px 0;
+  transition: color 0.5s ease;
+}
+
+.add-step-btn {
+  margin-left: 3rem;
+}
+
+.add-step-btn:hover,
+.add-item-btn:hover {
+  color: var(--brand-green);
+}
+
+.remove-item-btn {
+  transition: color 0.2s ease;
+}
+
+.remove-item-btn:hover {
+  color: #dc3545 !important;
+}
+
+.cursor-pointer {
+  cursor: pointer;
+}
+
+/* =========================================
+   IMPORT MODAL
+   ========================================= */
+.custom-modal {
+  border-radius: 20px;
+  border: none;
+}
+
+.custom-modal .modal-header,
+.custom-modal .modal-footer {
+  border: none;
+}
+
+.custom-modal .modal-title {
+  font-weight: 700;
+  color: #111827;
+}
+
+.modal-desc {
+  color: #6b7280;
+  font-size: 0.875rem;
+}
+
+.custom-modal .btn-close:focus {
+  box-shadow: none;
+}
+
+/* =========================================
+   MOBILE RESPONSIVENESS
+   ========================================= */
+@media (max-width: 767px) {
+  .page-title {
+    font-size: 1.5rem;
+  }
+
+  .image-dropzone {
+    padding: 2rem 1rem;
+    border-radius: 20px;
+  }
+
+  .add-step-btn,
+  .add-item-btn {
+    margin-left: 0;
+    margin-top: 1rem;
+    width: 100%;
+    text-align: center;
+    background-color: #f9fafb;
+    border-radius: 12px;
+    padding: 12px 0;
+  }
+
+  .publish-action-group {
+    flex-direction: column-reverse;
+    gap: 12px;
+  }
+
+  .publish-action-group .btn {
+    width: 100%;
+    padding-top: 14px;
+    padding-bottom: 14px;
+  }
+}

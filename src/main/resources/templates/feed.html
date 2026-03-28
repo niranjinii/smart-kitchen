@@ -10,19 +10,19 @@
     <div class="container-md px-3 mt-5 mb-5">
       <div class="row mb-4 justify-content-center">
         <div class="col-md-10 col-lg-8 d-flex gap-2 align-items-center">
-          <div class="input-group shadow-sm search-container">
-            <span class="input-group-text bg-white border-0 ps-4 text-muted">
+          <div class="input-group search-container">
+            <span class="input-group-text ps-4 search-icon">
               <i class="bi bi-search"></i>
             </span>
             <input
               type="text"
-              class="form-control bg-white border-0 py-2 shadow-none search-input"
+              class="form-control py-2 search-input"
               placeholder="Search recipes, ingredients, or tags..."
             />
           </div>
 
           <button
-            class="btn shadow-sm px-3 py-2 d-flex align-items-center gap-2 border-0 filter-btn"
+            class="btn px-3 py-2 d-flex align-items-center gap-2 filter-btn"
           >
             <i class="bi bi-funnel"></i> Filter
           </button>
@@ -56,7 +56,7 @@
 
           <div class="recipe-card-header">
             <h5 class="recipe-title" th:text="${recipe.title}">Recipe Title</h5>
-            <i class="bi bi-bookmark bookmark-btn fs-5"></i>
+            <i class="bi bi-bookmark bookmark-btn"></i>
           </div>
 
           <div class="recipe-meta mt-1" th:text="${recipe.mealType}">

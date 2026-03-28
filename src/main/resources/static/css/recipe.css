@@ -1,0 +1,311 @@
+/* =========================================
+   HERO & HEADER
+   ========================================= */
+.recipe-hero {
+  height: 380px;
+  background-color: transparent;
+  margin-bottom: 3.5rem;
+}
+
+.hero-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 12px;
+}
+
+.bookmark-fab {
+  position: absolute;
+  bottom: -24px;
+  right: 40px;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background-color: white;
+  color: #111827;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #e5e7eb;
+  transition: all 0.5s ease;
+  z-index: 10;
+}
+
+.bookmark-fab:hover {
+  background: var(--brand-green);
+  color: white;
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1) !important;
+}
+
+.category-badge {
+  background-color: #111827;
+  color: white;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.recipe-title-display {
+  font-weight: 800;
+  font-size: 2.5rem;
+  line-height: 1.1;
+  color: #111827;
+  letter-spacing: -0.02em;
+}
+
+.recipe-author {
+  color: #4b5563;
+  font-weight: 500;
+}
+
+/* --- Author Avatar --- */
+.author-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 1px solid #e5e7eb;
+}
+
+.recipe-author {
+  color: #4b5563;
+  font-size: 0.95rem;
+}
+
+.recipe-description {
+  color: #374151;
+  font-size: 1.05rem;
+  line-height: 1.6;
+  max-width: 800px;
+}
+/* =========================================
+   META DATA BAR
+   ========================================= */
+.recipe-meta-bar {
+  border-color: #e5e7eb !important;
+}
+
+.meta-item {
+  display: flex;
+  flex-direction: column;
+}
+
+.meta-label {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #6b7280;
+  font-weight: 700;
+}
+
+.meta-value {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #111827;
+}
+
+/* =========================================
+   INGREDIENTS SECTION
+   ========================================= */
+.section-title {
+  font-weight: 800;
+  color: #111827;
+  letter-spacing: -0.02em;
+}
+
+.yield-adjuster {
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  color: #111827;
+}
+
+.ingredient-item {
+  padding: 14px 0;
+  border-bottom: 1px solid #e5e7eb;
+  color: #111827;
+  font-size: 1rem;
+  display: flex;
+  align-items: center;
+}
+
+.ingredient-item:last-child {
+  border-bottom: none;
+}
+
+/* The subtle, italic swap hint */
+.swap-hint {
+  font-size: 0.85rem;
+  color: #6b7280;
+  font-style: italic;
+  margin-top: 2px;
+}
+
+.add-to-cart-btn {
+  background-color: transparent;
+  color: #111827;
+  border: 1.5px solid #111827;
+  border-radius: 6px; /* Squarish button */
+  font-weight: 700;
+  transition: all 0.5s ease;
+}
+
+.add-to-cart-btn:hover {
+  background-color: #111827;
+  color: white;
+}
+
+/* =========================================
+   INSTRUCTIONS & INTERACTIVITY
+   ========================================= */
+.cook-mode-btn {
+  background-color: var(--brand-green);
+  color: white;
+  border-radius: 6px;
+  font-weight: 600;
+  transition: all 0.5s ease;
+}
+
+.cook-mode-btn:hover {
+  background-color: #1f382a;
+  color: white;
+}
+
+.step-card {
+  border-bottom: 1px solid #e5e7eb;
+  padding: 20px 0;
+  transition: all 0.5s ease;
+}
+
+.step-card:last-child {
+  border-bottom: none;
+}
+
+.step-checkbox {
+  width: 22px;
+  height: 22px;
+  accent-color: var(--brand-green);
+  cursor: pointer;
+}
+
+.step-number {
+  font-weight: 800;
+  color: #111827;
+  font-size: 1rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.step-text {
+  color: #374151;
+  font-size: 1.05rem;
+  line-height: 1.6;
+  transition: all 0.5s ease;
+}
+
+.step-checkbox:checked + .step-content .step-text {
+  text-decoration: line-through;
+  color: #9ca3af;
+}
+.step-checkbox:checked + .step-content .step-number {
+  color: #9ca3af;
+}
+
+/* =========================================
+   CHEF's NOTES & REVIEWS
+   ========================================= */
+.editorial-heading {
+  font-family: Georgia, serif; /* Gives that NYT Cooking vibe */
+  font-style: italic;
+  color: #111827;
+}
+
+.chefs-notes {
+  background-color: #f9fafb;
+  border-top: 3px solid #e5e7eb;
+  border-bottom: 3px solid #e5e7eb;
+  padding: 24px 0;
+}
+
+.custom-note-input {
+  background-color: white;
+  border: 1px solid #e5e7eb;
+  color: #111827;
+  resize: none;
+  font-size: 0.95rem;
+  border-radius: 4px;
+}
+
+.custom-note-input:focus {
+  border-color: #9ca3af;
+  box-shadow: none;
+}
+
+.review-input-box {
+  background-color: #f9fafb;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+}
+
+.editorial-input {
+  border-radius: 6px;
+  border: 1px solid #d1d5db;
+  resize: none;
+}
+
+.editorial-input:focus {
+  border-color: #111827;
+  box-shadow: none;
+}
+
+.editorial-submit-btn {
+  background-color: #111827;
+  color: white;
+  border-radius: 6px;
+  font-weight: 600;
+}
+
+.review-text {
+  color: #374151;
+  line-height: 1.5;
+}
+
+/* =========================================
+   MODAL STYLES
+   ========================================= */
+.custom-modal {
+  border-radius: 12px;
+  border: none;
+}
+
+.hover-bg:hover {
+  background-color: #f9fafb;
+}
+
+/* =========================================
+   MOBILE RESPONSIVENESS
+   ========================================= */
+@media (max-width: 767px) {
+  .recipe-hero {
+    height: 250px;
+    border-radius: 0;
+    margin-left: -1rem;
+    margin-right: -1rem;
+  }
+
+  .bookmark-fab {
+    bottom: -28px;
+    right: 24px;
+  }
+
+  .recipe-title-display {
+    font-size: 2rem;
+  }
+
+  .cook-mode-btn {
+    width: 100%;
+    justify-content: center;
+  }
+}

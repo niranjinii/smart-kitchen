@@ -3,7 +3,7 @@ package com.sk.smart_kitchen.entities;
 import jakarta.persistence.*;
 
 @Entity
-@Table(name = "users") // 'user' is a reserved keyword in Postgres, so we use 'users'
+@Table(name = "users")
 public class User {
 
     @Id
@@ -18,6 +18,9 @@ public class User {
 
     @Column(nullable = false, unique = true)
     private String email;
+
+    @Column(name = "profile_image_url")
+    private String profileImageUrl;
 
     public Long getId() {
         return id;
@@ -49,6 +52,14 @@ public class User {
 
     public void setEmail(String email) {
         this.email = email;
+    }
+
+    public String getProfileImageUrl() {
+        return profileImageUrl;
+    }
+
+    public void setProfileImageUrl(String profileImageUrl) {
+        this.profileImageUrl = profileImageUrl;
     }
 
 }

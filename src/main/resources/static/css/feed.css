@@ -1,20 +1,40 @@
-/* --- Search Bar --- */
+/* =========================================
+   SEARCH BAR & FILTER BUTTON
+   ========================================= */
 .search-container {
-  border-radius: 30px;
+  border-radius: 15px;
   overflow: hidden;
   flex-grow: 1;
-  background: white;
+  background-color: #ffffff;
+  box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.04);
+}
+
+.search-icon {
+  background-color: #ffffff;
+  border: none;
+  color: #6c757d;
+}
+
+.search-input {
+  background-color: #ffffff;
+  border: none;
+}
+
+.search-input:focus {
+  box-shadow: none;
+  outline: none;
 }
 
 button.filter-btn {
   background-color: #ffffff;
   color: #111827;
-  border-radius: 30px;
+  border-radius: 15px;
   font-weight: 600;
   font-size: 0.9rem;
   white-space: nowrap;
   transition: all 0.5s ease;
   border: 1px solid rgba(0, 0, 0, 0.05);
+  box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.04);
 }
 
 button.filter-btn:hover {
@@ -26,7 +46,9 @@ button.filter-btn:hover i {
   color: #ffffff;
 }
 
-/* --- Category Pills --- */
+/* =========================================
+   CATEGORY PILLS
+   ========================================= */
 .category-filters {
   display: flex;
   gap: 0.75rem;
@@ -35,6 +57,7 @@ button.filter-btn:hover i {
   justify-content: center;
   scrollbar-width: none;
 }
+
 .category-filters::-webkit-scrollbar {
   display: none;
 }
@@ -62,7 +85,9 @@ button.filter-btn:hover i {
   box-shadow: 0 4px 12px rgba(43, 76, 59, 0.15);
 }
 
-/* --- Masonry Grid & Cards --- */
+/* =========================================
+   MASONRY GRID & RECIPE CARDS
+   ========================================= */
 .masonry-grid {
   column-count: 4;
   column-gap: 1.5rem;
@@ -145,7 +170,7 @@ button.filter-btn:hover i {
 
 .bookmark-btn {
   color: #9ca3af;
-  font-size: 1.2rem;
+  font-size: 1.25rem;
   transition: color 0.2s ease;
 }
 
@@ -153,7 +178,9 @@ button.filter-btn:hover i {
   color: var(--brand-green);
 }
 
-/* --- Feed Media Queries --- */
+/* =========================================
+   MOBILE RESPONSIVENESS
+   ========================================= */
 @media (max-width: 1200px) {
   .masonry-grid {
     column-count: 3;

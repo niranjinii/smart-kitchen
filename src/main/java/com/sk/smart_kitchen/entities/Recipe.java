@@ -28,6 +28,9 @@ public class Recipe {
     
     private String mealType; // "Breakfast", "Lunch", "Dinner", "Snack"
 
+    @Column(name = "default_servings")
+    private Integer defaultServings;
+
     @ManyToOne
     @JoinColumn(name = "user_id") // This creates the foreign key column in the DB
     private User author;
@@ -113,6 +116,15 @@ public class Recipe {
     public void setAuthor(User author) {
         this.author = author;
     }
+
+    public Integer getDefaultServings() {
+        return defaultServings;
+    }
+
+    public void setDefaultServings(Integer defaultServings) {
+        this.defaultServings = defaultServings;
+    }
+
 
 
 }

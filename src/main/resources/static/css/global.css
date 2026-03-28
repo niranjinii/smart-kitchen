@@ -12,8 +12,16 @@ body {
   color: #111827;
 }
 
-/* --- Navbar & Logo --- */
+/* --- Top Navbar Structural Paint --- */
+.global-navbar {
+  background-color: #ffffff;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+/* --- Brand Logo --- */
 .brand-text {
+  font-size: 1.5rem;
+  font-weight: 700;
   letter-spacing: -0.05em;
   color: var(--brand-green);
 }
@@ -22,14 +30,19 @@ body {
   color: var(--brand-yellow);
 }
 
-/* Target the link AND the icon inside it */
+/* --- Navbar Links & Icons --- */
 a.nav-icon-link,
 a.nav-icon-link i {
   color: #111827;
+  font-size: 1.25rem; /* Replaces fs-5 */
   transition:
     color 0.2s ease,
     transform 0.2s ease;
   text-decoration: none;
+}
+
+a.profile-icon-link i {
+  font-size: 1.5rem;
 }
 
 a.nav-icon-link:hover,
@@ -52,6 +65,11 @@ a.nav-icon-link:hover i {
   visibility: hidden;
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   z-index: 1000;
+
+  border: 1px solid #e5e7eb;
+  box-shadow:
+    0 4px 6px -1px rgba(0, 0, 0, 0.1),
+    0 2px 4px -1px rgba(0, 0, 0, 0.06);
 }
 
 .kitchen-hub-dropdown:hover .hub-menu {
@@ -124,6 +142,33 @@ a.nav-icon-link:hover i {
   color: var(--brand-green);
 }
 
+/* --- Mobile Offcanvas Menu (My Kitchen) --- */
+.offcanvas-title {
+  font-weight: 700;
+  font-size: 1.5rem;
+  color: #111827;
+}
+
+.offcanvas-link-item {
+  border: none !important;
+}
+
+.offcanvas-icon {
+  font-size: 1.75rem;
+  color: #111827;
+}
+
+.offcanvas-text {
+  font-weight: 600;
+  font-size: 1.25rem;
+  color: #111827;
+}
+
+.btn-close:focus {
+  box-shadow: none;
+}
+
+/* --- Global Media Queries --- */
 @media (max-width: 767px) {
   body {
     padding-bottom: 80px;

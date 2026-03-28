@@ -1,0 +1,311 @@
+<!doctype html>
+<html xmlns:th="http://www.thymeleaf.org">
+  <head>
+    <th:block th:replace="fragments/layout :: head"></th:block>
+    <link rel="stylesheet" th:href="@{/css/recipe.css}" />
+  </head>
+  <body>
+    <div th:replace="fragments/layout :: navbar"></div>
+
+    <div class="container-md px-3 mt-4 mb-5 pb-5">
+      <div class="recipe-hero position-relative">
+        <img
+          src="https://images.unsplash.com/photo-1621996346565-e3dbc646d9a9?auto=format&fit=crop&w=1200&q=80"
+          alt="Spicy Garlic Pasta"
+          class="hero-img shadow-sm"
+        />
+
+        <button class="btn bookmark-fab shadow">
+          <i class="bi bi-bookmark fs-5"></i>
+        </button>
+      </div>
+
+      <div class="row mb-5">
+        <div class="col-12">
+          <div class="mb-4">
+            <span class="badge category-badge mb-3">Dinner</span>
+            <h1 class="recipe-title-display m-0">Spicy Garlic Butter Pasta</h1>
+
+            <div class="d-flex align-items-center mt-3 mb-4">
+              <img
+                src="https://images.unsplash.com/photo-1438761681033-6461ffad8d80?auto=format&fit=crop&w=100&q=80"
+                alt="Author Avatar"
+                class="author-avatar me-2 shadow-sm"
+              />
+              <div class="recipe-author m-0">
+                <span class="fw-bold text-dark">John Doe</span>
+                <span class="text-muted mx-2">•</span>
+                <i class="bi bi-star-fill text-warning me-1"></i> 4.9 (120
+                reviews)
+              </div>
+            </div>
+
+            <p class="recipe-description">
+              This spicy garlic butter pasta is the ultimate comfort food. Ready
+              in just 25 minutes, it combines rich butter, fiery red pepper
+              flakes, and plenty of parmesan for a restaurant-quality meal at
+              home. Perfect for busy weeknights!
+            </p>
+          </div>
+
+          <div
+            class="d-flex gap-5 mt-4 recipe-meta-bar py-3 border-top border-bottom"
+          >
+            <div class="meta-item">
+              <span class="meta-label">Total Time</span>
+              <span class="meta-value">25 mins</span>
+            </div>
+            <div class="meta-item">
+              <span class="meta-label">Yield</span>
+              <span class="meta-value">2 Servings</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="row g-5">
+        <div class="col-lg-4 order-2 order-lg-1">
+          <div class="d-flex justify-content-between align-items-end mb-4">
+            <h3 class="section-title m-0">Ingredients</h3>
+            <div
+              class="yield-adjuster d-flex align-items-center gap-3 px-2 py-1"
+            >
+              <i class="bi bi-dash cursor-pointer"></i>
+              <span class="fw-bold" style="font-size: 0.9rem">2 Servings</span>
+              <i class="bi bi-plus cursor-pointer"></i>
+            </div>
+          </div>
+
+          <ul class="ingredient-list list-unstyled mb-4">
+            <li class="ingredient-item">
+              <span class="fw-bold me-2">250g</span> Fettuccine pasta
+            </li>
+
+            <li class="ingredient-item flex-column align-items-start gap-1">
+              <div><span class="fw-bold me-2">30g</span> Unsalted butter</div>
+              <div class="swap-hint">
+                <i class="bi bi-arrow-return-right me-1"></i> Can be swapped
+                with 2 tbsp Olive Oil
+              </div>
+            </li>
+
+            <li class="ingredient-item">
+              <span class="fw-bold me-2">4 cloves</span> Garlic, minced
+            </li>
+
+            <li class="ingredient-item">
+              <span class="fw-bold me-2">1 tsp</span> Red pepper flakes
+            </li>
+
+            <li class="ingredient-item flex-column align-items-start gap-1">
+              <div><span class="fw-bold me-2">50g</span> Parmesan cheese</div>
+              <div class="swap-hint">
+                <i class="bi bi-arrow-return-right me-1"></i> Can be swapped
+                with Nutritional Yeast (Vegan)
+              </div>
+            </li>
+          </ul>
+
+          <button
+            class="btn w-100 add-to-cart-btn py-2 d-flex justify-content-center align-items-center gap-2"
+            data-bs-toggle="modal"
+            data-bs-target="#shoppingListModal"
+          >
+            <i class="bi bi-cart-plus"></i> Add to Shopping List
+          </button>
+        </div>
+
+        <div class="col-lg-8 order-1 order-lg-2">
+          <div
+            class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3"
+          >
+            <h3 class="section-title m-0">Instructions</h3>
+            <button
+              class="btn cook-mode-btn px-4 py-2 d-flex align-items-center gap-2"
+            >
+              <i class="bi bi-play-fill fs-5"></i> Start Cook Mode
+            </button>
+          </div>
+
+          <div class="instruction-steps">
+            <label class="step-card d-flex gap-3 p-4 cursor-pointer">
+              <input type="checkbox" class="step-checkbox mt-1" />
+              <div class="step-content">
+                <h5 class="step-number mb-2">Step 1</h5>
+                <p class="step-text m-0">
+                  Bring a large pot of heavily salted water to a boil. Add the
+                  fettuccine and cook until al dente, about 8-10 minutes.
+                  Reserve 1/2 cup of pasta water before draining.
+                </p>
+              </div>
+            </label>
+
+            <label class="step-card d-flex gap-3 p-4 cursor-pointer">
+              <input type="checkbox" class="step-checkbox mt-1" />
+              <div class="step-content">
+                <h5 class="step-number mb-2">Step 2</h5>
+                <p class="step-text m-0">
+                  In a large skillet over medium-low heat, melt the butter. Add
+                  the minced garlic and red pepper flakes. Sauté for 1-2 minutes
+                  until fragrant (do not burn the garlic).
+                </p>
+              </div>
+            </label>
+          </div>
+
+          <div class="chefs-notes mt-5 p-4">
+            <div class="d-flex align-items-center gap-2 mb-3">
+              <h5 class="m-0 fw-bold editorial-heading">Chef's Notes</h5>
+            </div>
+            <textarea
+              class="form-control custom-note-input"
+              rows="3"
+              placeholder="Jot down your tweaks here..."
+            ></textarea>
+          </div>
+        </div>
+      </div>
+
+      <div class="row mt-5 pt-5 mb-5 border-top">
+        <div class="col-lg-8">
+          <div class="d-flex justify-content-between align-items-end mb-4">
+            <h3 class="section-title m-0">Reviews</h3>
+            <span class="fw-bold" style="font-size: 1.1rem"
+              ><i class="bi bi-star-fill text-warning me-1"></i> 4.9
+              <span class="text-muted fw-normal">(120)</span></span
+            >
+          </div>
+
+          <div class="review-input-box p-4 mb-5">
+            <h6 class="fw-bold mb-3">Leave a review</h6>
+            <div class="d-flex gap-2 mb-3">
+              <i
+                class="bi bi-star fs-5 cursor-pointer text-muted hover-warning"
+              ></i>
+              <i
+                class="bi bi-star fs-5 cursor-pointer text-muted hover-warning"
+              ></i>
+              <i
+                class="bi bi-star fs-5 cursor-pointer text-muted hover-warning"
+              ></i>
+              <i
+                class="bi bi-star fs-5 cursor-pointer text-muted hover-warning"
+              ></i>
+              <i
+                class="bi bi-star fs-5 cursor-pointer text-muted hover-warning"
+              ></i>
+            </div>
+            <textarea
+              class="form-control editorial-input mb-3"
+              rows="2"
+              placeholder="What did you think of this recipe?"
+            ></textarea>
+            <div class="d-flex justify-content-end">
+              <button class="btn editorial-submit-btn px-4">Post Review</button>
+            </div>
+          </div>
+
+          <div class="review-card mb-4 pb-4 border-bottom">
+            <div class="d-flex justify-content-between align-items-start mb-2">
+              <div class="fw-bold text-dark">Sarah Jenkins</div>
+              <div class="text-warning small">
+                <i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i
+                ><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i
+                ><i class="bi bi-star-fill"></i>
+              </div>
+            </div>
+            <p class="review-text m-0">
+              Absolutely delicious and so easy to make on a weeknight. I swapped
+              the butter for olive oil and added a little bit of lemon zest at
+              the end. Highly recommend!
+            </p>
+            <div class="text-muted small mt-2">Posted 2 days ago</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal fade" id="shoppingListModal" tabindex="-1">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content custom-modal">
+          <div class="modal-header border-bottom pb-3">
+            <h5 class="modal-title section-title">Add to List</h5>
+            <button
+              type="button"
+              class="btn-close"
+              data-bs-dismiss="modal"
+            ></button>
+          </div>
+          <div class="modal-body py-4">
+            <p class="text-muted small mb-4">
+              Select the ingredients you need. We'll add them to your Smart
+              Kitchen shopping list.
+            </p>
+
+            <div class="shopping-modal-list">
+              <label
+                class="d-flex align-items-start gap-3 mb-3 cursor-pointer p-2 rounded hover-bg"
+              >
+                <input
+                  type="checkbox"
+                  class="ingredient-checkbox mt-1"
+                  checked
+                />
+                <div><span class="fw-bold">250g</span> Fettuccine pasta</div>
+              </label>
+
+              <div
+                class="swap-group mb-3 p-3 rounded"
+                style="background-color: #f9fafb; border: 1px solid #e5e7eb"
+              >
+                <div class="fw-bold mb-2 text-dark" style="font-size: 0.9rem">
+                  Fat Source (Choose one):
+                </div>
+                <label
+                  class="d-flex align-items-start gap-3 mb-2 cursor-pointer"
+                >
+                  <input
+                    type="radio"
+                    name="fatSource"
+                    class="ingredient-checkbox mt-1"
+                    checked
+                  />
+                  <div><span class="fw-bold">30g</span> Unsalted butter</div>
+                </label>
+                <label class="d-flex align-items-start gap-3 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="fatSource"
+                    class="ingredient-checkbox mt-1"
+                  />
+                  <div>
+                    <span class="fw-bold">2 tbsp</span> Olive Oil (Swap)
+                  </div>
+                </label>
+              </div>
+
+              <label
+                class="d-flex align-items-start gap-3 mb-3 cursor-pointer p-2 rounded hover-bg"
+              >
+                <input
+                  type="checkbox"
+                  class="ingredient-checkbox mt-1"
+                  checked
+                />
+                <div><span class="fw-bold">4 cloves</span> Garlic</div>
+              </label>
+            </div>
+          </div>
+          <div class="modal-footer border-top pt-3">
+            <button type="button" class="btn w-100 cook-mode-btn py-2">
+              Add Selected Items
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div th:replace="fragments/layout :: mobile-bottom-nav"></div>
+    <div th:replace="fragments/layout :: mobile-offcanvas"></div>
+  </body>
+</html>

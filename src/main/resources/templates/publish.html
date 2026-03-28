@@ -1,0 +1,177 @@
+<!doctype html>
+<html xmlns:th="http://www.thymeleaf.org">
+  <head>
+    <th:block th:replace="fragments/layout :: head"></th:block>
+    <link rel="stylesheet" th:href="@{/css/publish.css}" />
+  </head>
+  <body>
+    <div th:replace="fragments/layout :: navbar"></div>
+
+    <div class="container-md px-3 mt-4 mb-5 pb-5">
+      <div class="row justify-content-center">
+        <div class="col-lg-8 col-xl-7">
+          <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2 class="m-0 page-title">Create Recipe</h2>
+            <button class="btn import-btn d-flex align-items-center gap-2 px-4" data-bs-toggle="modal" data-bs-target="#importModal">
+              <i class="bi bi-link-45deg import-icon"></i> Import from URL
+            </button>
+          </div>
+
+          <form class="recipe-form">
+            <div class="image-dropzone mb-4">
+              <div class="mb-2">
+                <i class="bi bi-cloud-arrow-up dropzone-icon"></i>
+              </div>
+              <h5 class="m-0 dropzone-title">Upload Recipe Photo</h5>
+              <p class="mt-1 mb-0 dropzone-subtitle">Drag and drop or click to browse</p>
+            </div>
+
+            <div class="mb-4">
+              <label class="form-label">Recipe Title</label>
+              <input type="text" class="form-control custom-input" placeholder="e.g., Spicy Garlic Pasta" />
+            </div>
+
+            <div class="mb-4">
+              <label class="form-label">Description</label>
+              <textarea class="form-control custom-input" rows="3" placeholder="Briefly describe your recipe..."></textarea>
+            </div>
+
+            <div class="row g-3 mb-4">
+              <div class="col-sm-6">
+                <label class="form-label">Total Time (mins)</label>
+                <input type="number" class="form-control custom-input" placeholder="e.g., 25" />
+              </div>
+              <div class="col-sm-6">
+                <label class="form-label">Base Yield (Servings)</label>
+                <input type="number" class="form-control custom-input" placeholder="e.g., 2" />
+              </div>
+            </div>
+
+            <div class="mb-4">
+              <label class="form-label mb-3">Primary Category</label>
+              <div class="chip-group mb-4">
+                <input type="radio" name="mealType" id="type-breakfast" class="chip-input" />
+                <label for="type-breakfast" class="chip-label">Breakfast</label>
+
+                <input type="radio" name="mealType" id="type-lunch" class="chip-input" />
+                <label for="type-lunch" class="chip-label">Lunch</label>
+
+                <input type="radio" name="mealType" id="type-dinner" class="chip-input" />
+                <label for="type-dinner" class="chip-label">Dinner</label>
+
+                <input type="radio" name="mealType" id="type-snack" class="chip-input" />
+                <label for="type-snack" class="chip-label">Snack</label>
+
+                <input type="radio" name="mealType" id="type-bev" class="chip-input" />
+                <label for="type-bev" class="chip-label">Beverage</label>
+              </div>
+
+              <label class="form-label mb-3">Secondary Tags</label>
+              <input type="text" class="form-control custom-input mb-3" placeholder="e.g., Vegan, Gluten-Free" />
+              <div class="d-flex flex-wrap gap-2">
+                <span class="badge px-3 py-2 secondary-tag-badge">
+                  Quick & Easy <i class="bi bi-x ms-1 cursor-pointer"></i>
+                </span>
+              </div>
+            </div>
+
+            <hr class="my-5 opacity-10" />
+
+            <div class="mb-4">
+              <label class="form-label section-title mb-4">Ingredients</label>
+
+              <div class="d-flex gap-2 mb-3 align-items-center">
+                <input type="number" class="form-control custom-input" style="width: 80px;" placeholder="Qty" />
+                <select class="form-select custom-input" style="width: 100px;">
+                  <option value="g">g</option>
+                  <option value="ml">ml</option>
+                  <option value="oz">oz</option>
+                  <option value="tbsp">tbsp</option>
+                  <option value="tsp">tsp</option>
+                  <option value="cup">cup</option>
+                  <option value="unit">unit</option>
+                </select>
+                <input type="text" class="form-control custom-input flex-grow-1" placeholder="Ingredient name (e.g., Unsalted butter)" />
+                <i class="bi bi-trash fs-5 text-muted cursor-pointer remove-item-btn"></i>
+              </div>
+              
+              <div class="d-flex gap-2 mb-2 align-items-center">
+                <input type="number" class="form-control custom-input" style="width: 80px;" placeholder="Qty" />
+                <select class="form-select custom-input" style="width: 100px;">
+                  <option value="g">g</option>
+                  <option value="ml">ml</option>
+                  <option value="tbsp">tbsp</option>
+                  <option value="tsp">tsp</option>
+                  <option value="cup">cup</option>
+                  <option value="unit">unit</option>
+                </select>
+                <input type="text" class="form-control custom-input flex-grow-1" placeholder="Ingredient name (e.g., Fettuccine pasta)" />
+                <i class="bi bi-trash fs-5 text-muted cursor-pointer remove-item-btn"></i>
+              </div>
+
+              <button type="button" class="add-item-btn mt-2">
+                <i class="bi bi-plus-lg me-1"></i> Add Another Ingredient
+              </button>
+            </div>
+
+            <hr class="my-5 opacity-10" />
+
+            <div class="mb-4">
+              <label class="form-label section-title mb-4">Instructions</label>
+
+              <div class="step-row mb-3">
+                <div class="step-number">1</div>
+                <div class="flex-grow-1">
+                  <textarea class="form-control custom-input" rows="2" placeholder="Describe this step..."></textarea>
+                </div>
+              </div>
+
+              <div class="step-row mb-2">
+                <div class="step-number">2</div>
+                <div class="flex-grow-1">
+                  <textarea class="form-control custom-input" rows="2" placeholder="Describe this step..."></textarea>
+                </div>
+              </div>
+
+              <button type="button" class="add-step-btn">
+                <i class="bi bi-plus-lg me-1"></i> Add Another Step
+              </button>
+            </div>
+
+            <div class="d-flex justify-content-end align-items-center mt-5 publish-action-group">
+              <button type="button" class="btn px-3 cancel-btn">Cancel</button>
+              <button type="submit" class="btn publish-submit-btn px-3 py-2">
+                Publish Recipe
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal fade" id="importModal" tabindex="-1">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content custom-modal">
+          <div class="modal-header pb-0">
+            <h5 class="modal-title">Import Recipe</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+          </div>
+          <div class="modal-body">
+            <p class="modal-desc">
+              Paste a link from your favorite food blog, and we'll extract the ingredients and instructions for you.
+            </p>
+            <input type="url" class="form-control custom-input py-2" placeholder="https://www.foodblog.com/recipe..." />
+          </div>
+          <div class="modal-footer pt-0">
+            <button type="button" class="btn w-100 publish-submit-btn py-2">
+              Import
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div th:replace="fragments/layout :: mobile-bottom-nav"></div>
+    <div th:replace="fragments/layout :: mobile-offcanvas"></div>
+  </body>
+</html>

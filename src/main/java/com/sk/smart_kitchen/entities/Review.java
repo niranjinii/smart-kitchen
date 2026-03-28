@@ -18,12 +18,9 @@ public class Review {
     private Recipe recipe;
 
     private Integer rating; // 1 to 5
-    
+
     @Column(length = 1000)
     private String comment;
-    
-    @Column(length = 1000)
-    private String uploadedImageUrl; // For Member 4's photo upload feature
 
     public Long getId() {
         return id;
@@ -65,13 +62,4 @@ public class Review {
         this.comment = comment;
     }
 
-    public String getUploadedImageUrl() {
-        return uploadedImageUrl;
-    }
-
-    public void setUploadedImageUrl(String uploadedImageUrl) {
-        this.uploadedImageUrl = uploadedImageUrl;
-    }
-
-    
 }
