@@ -1,5 +1,5 @@
 <!doctype html>
-<html xmlns:th="http://www.thymeleaf.org">
+<html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
   <head th:fragment="head">
     <meta charset="UTF-8" />
     <title>Smart Kitchen</title>
@@ -52,8 +52,13 @@
           <a href="/recipes/new" class="nav-icon-link" title="Publish">
             <i class="bi bi-plus-square"></i>
           </a>
-          <a href="/profile" class="ms-2 nav-icon-link profile-icon-link">
+          
+          <a sec:authorize="isAnonymous()" href="/login" class="ms-2 nav-icon-link profile-icon-link">
             <i class="bi bi-person-circle"></i>
+          </a>
+          
+          <a sec:authorize="isAuthenticated()" href="/profile" class="ms-2 nav-icon-link profile-icon-link text-decoration-none">
+            <span class="fs-6 fw-bold me-1" sec:authentication="principal.displayName"></span>
           </a>
         </div>
       </div>
@@ -77,8 +82,12 @@
       <a href="/planner" class="mobile-nav-item"
         ><i class="bi bi-calendar-week"></i
       ></a>
-      <a href="/profile" class="mobile-nav-item"
+      
+      <a sec:authorize="isAnonymous()" href="/login" class="mobile-nav-item"
         ><i class="bi bi-person-circle"></i
+      ></a>
+      <a sec:authorize="isAuthenticated()" href="/profile" class="mobile-nav-item"
+        ><i class="bi bi-person-check-fill"></i
       ></a>
     </div>
 

@@ -1,0 +1,63 @@
+<!doctype html>
+<html xmlns:th="http://www.thymeleaf.org">
+  <head>
+    <th:block th:replace="fragments/layout :: head"></th:block>
+    <link rel="stylesheet" th:href="@{/css/login.css}" />
+  </head>
+  <body>
+    <div th:replace="fragments/layout :: navbar"></div>
+
+    <div class="container-md px-3 mt-5 mb-5 pb-5">
+      <div class="row justify-content-center align-items-center auth-wrapper">
+        <div class="col-md-8 col-lg-6 col-xl-5">
+          
+          <div class="auth-card p-4 p-md-5">
+            <div class="text-center mb-4">
+              <div class="brand-icon mb-3" style="font-size: 2.5rem;">
+                <i class="bi bi-egg-fried"></i>
+              </div>
+              <h2 class="auth-title m-0">Join Smart Kitchen</h2>
+              <p class="auth-subtitle mt-2">Create an account to start cooking.</p>
+            </div>
+
+            <div th:if="${error}" class="alert alert-danger custom-alert text-center mb-4" role="alert">
+              <i class="bi bi-exclamation-circle me-2"></i> <span th:text="${error}"></span>
+            </div>
+
+            <form th:action="@{/register}" th:object="${user}" method="post">
+              
+              <div class="mb-3">
+                <label for="username" class="form-label">Display Name</label>
+                <input type="text" id="username" th:field="*{username}" class="form-control custom-input" placeholder="e.g., Chef Gordon" required autofocus />
+              </div>
+
+              <div class="mb-3">
+                <label for="email" class="form-label">Email address</label>
+                <input type="email" id="email" th:field="*{email}" class="form-control custom-input" placeholder="name@example.com" required />
+              </div>
+
+              <div class="mb-4">
+                <label for="password" class="form-label m-0 mb-2">Password</label>
+                <input type="password" id="password" th:field="*{password}" class="form-control custom-input" placeholder="Create a strong password" required minlength="6" />
+              </div>
+
+              <button type="submit" class="btn w-100 auth-submit-btn py-3 mt-2">
+                Create Account
+              </button>
+            </form>
+
+            <div class="text-center mt-4">
+              <p class="text-muted m-0">
+                Already have an account? <a href="/login" class="auth-link">Sign in</a>
+              </p>
+            </div>
+            
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div th:replace="fragments/layout :: mobile-bottom-nav"></div>
+    <div th:replace="fragments/layout :: mobile-offcanvas"></div>
+  </body>
+</html>

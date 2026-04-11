@@ -1,0 +1,126 @@
+/* =========================================
+   AUTH LAYOUT & TYPOGRAPHY
+   ========================================= */
+.auth-wrapper {
+  min-height: calc(100vh - 200px); /* Keeps the card centered vertically */
+}
+
+.auth-card {
+  background-color: #ffffff;
+  border-radius: 20px;
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.01);
+}
+
+.auth-title {
+  font-family: "Plus Jakarta Sans", sans-serif;
+  font-weight: 800;
+  color: #111827;
+  letter-spacing: -0.03em;
+}
+
+.auth-subtitle {
+  color: #6b7280;
+  font-size: 1rem;
+}
+
+/* =========================================
+   FORM INPUTS (Inherited from our UI library)
+   ========================================= */
+input.form-control.custom-input {
+  border-radius: 12px;
+  border: 1px solid #e5e7eb;
+  background-color: #f9fafb;
+  padding: 14px 16px;
+  font-size: 1rem;
+  color: #111827;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+input.form-control.custom-input:focus {
+  background-color: #ffffff;
+  border-color: #a7b8af;
+  box-shadow: 0 0 0 4px rgba(43, 76, 59, 0.08);
+  outline: none;
+}
+
+.custom-input::placeholder {
+  color: #9ca3af;
+}
+
+.form-label {
+  color: #374151;
+  font-size: 0.95rem;
+  font-weight: 700;
+}
+
+/* =========================================
+   BUTTONS & LINKS
+   ========================================= */
+.auth-submit-btn {
+  background-color: var(--brand-green);
+  color: white;
+  border-radius: 12px;
+  font-weight: 700;
+  font-size: 1.05rem;
+  letter-spacing: 0.02em;
+  transition: all 0.3s ease;
+}
+
+.auth-submit-btn:hover {
+  background-color: #1f382a;
+  color: white;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 16px rgba(43, 76, 59, 0.2);
+}
+
+.forgot-link, .auth-link {
+  color: var(--brand-green);
+  font-weight: 600;
+  text-decoration: none;
+  font-size: 0.9rem;
+  transition: color 0.2s ease;
+}
+
+.forgot-link:hover, .auth-link:hover {
+  color: var(--brand-yellow);
+  text-decoration: underline;
+}
+
+/* =========================================
+   ALERTS (Error / Success styling)
+   ========================================= */
+.custom-alert {
+  border-radius: 12px;
+  font-size: 0.95rem;
+  font-weight: 500;
+  border: none;
+}
+
+.alert-danger {
+  background-color: #fef2f2;
+  color: #991b1b;
+}
+
+.alert-success {
+  background-color: #f0fdf4;
+  color: #166534;
+}
+
+/* =========================================
+   MOBILE RESPONSIVENESS
+   ========================================= */
+@media (max-width: 767px) {
+  .auth-card {
+    border-radius: 16px;
+    border: none;
+    box-shadow: none;
+    background-color: transparent; /* Blends into the background on small screens */
+    padding: 1rem 0 !important;
+  }
+  
+  .auth-wrapper {
+    align-items: flex-start;
+    margin-top: 2rem;
+  }
+}
