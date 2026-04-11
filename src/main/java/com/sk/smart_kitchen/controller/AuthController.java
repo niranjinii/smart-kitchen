@@ -20,10 +20,23 @@ public class AuthController {
 
     // --- LOGIN ---
     @GetMapping("/login")
-    public String showLoginForm() {
+    public String showLoginForm(
+            @org.springframework.web.bind.annotation.RequestParam(name = "continue", required = false) String continueUrl, 
+            Model model,
+            java.security.Principal principal) {
+        
+        // If the user is ALREADY logged in, bounce them to the home page
+        if (principal != null) {
+            return "redirect:/";
+        }
+
+        // Pass the URL directly to the HTML page
+        if (continueUrl != null) {
+            model.addAttribute("redirectUrl", continueUrl);
+        }
+        
         return "login";
     }
-
     // --- REGISTRATION ---
     @GetMapping("/register")
     public String showRegistrationForm(Model model) {

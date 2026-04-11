@@ -1,5 +1,7 @@
 package com.sk.smart_kitchen.config;
 
+import org.springframework.security.web.savedrequest.HttpSessionRequestCache;
+import org.springframework.security.web.savedrequest.SavedRequest;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -25,7 +27,25 @@ public class SecurityConfig {
             )
             .formLogin(form -> form
                 .loginPage("/login") 
-                .defaultSuccessUrl("/") // Redirects to the homepage after logging in!
+                .successHandler((request, response, authentication) -> {
+    // 1. FIRST check the hidden input from the login form (Your Pinterest Flow)
+    // This ensures if you are on the Pasta page, you STAY on the Pasta page.
+    String customRedirect = request.getParameter("redirectUrl");
+    if (customRedirect != null && !customRedirect.isEmpty()) {
+        response.sendRedirect(customRedirect);
+        return;
+    }
+
+    // 2. SECOND check if Spring Security intercepted a direct link (like /recipes/new)
+    SavedRequest savedRequest = new HttpSessionRequestCache().getRequest(request, response);
+    if (savedRequest != null) {
+        response.sendRedirect(savedRequest.getRedirectUrl());
+        return;
+    }
+
+    // 3. FALLBACK to home feed
+    response.sendRedirect("/");
+})
                 .permitAll()
             )
             .logout(logout -> logout

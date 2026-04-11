@@ -120,11 +120,18 @@
             class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3"
           >
             <h3 class="section-title m-0">Instructions</h3>
-            <button
-              class="btn cook-mode-btn px-4 py-2 d-flex align-items-center gap-2"
-            >
-              <i class="bi bi-play-fill fs-5"></i> Start Cook Mode
-            </button>
+            
+            <div sec:authorize="isAuthenticated()">
+              <button class="btn cook-mode-btn px-4 py-2 d-flex align-items-center gap-2">
+                <i class="bi bi-play-fill fs-5"></i> Start Cook Mode
+              </button>
+            </div>
+            
+            <div sec:authorize="isAnonymous()">
+              <a th:href="@{/login(continue=|/recipes/${recipeId}|)}" class="btn btn-outline-dark px-4 py-2 d-flex align-items-center gap-2" style="border-radius: 6px; font-weight: 600;">
+                <i class="bi bi-lock-fill"></i> Log in for Cook Mode
+              </a>
+            </div>
           </div>
 
           <div class="instruction-steps">
@@ -180,7 +187,7 @@
             <h6 class="fw-bold mb-3">Leave a review as <span sec:authentication="principal.displayName"></span></h6>
             
             <form th:action="@{/reviews/add}" method="post" id="reviewForm">
-                <input type="hidden" name="recipeId" th:value="${recipe != null ? recipe.id : 1}"> 
+                <input type="hidden" name="recipeId" th:value="${recipeId}"> 
                 <input type="hidden" name="rating" id="ratingInput" value="5">
                 
                 <div class="d-flex gap-2 mb-3" id="starContainer">
@@ -201,7 +208,7 @@
           <div sec:authorize="isAnonymous()" class="review-input-box p-4 mb-5 text-center">
             <h6 class="fw-bold mb-3">Want to leave a review?</h6>
             <p class="text-muted small">Join the Smart Kitchen community to rate recipes, save your favorites, and access Cook Mode.</p>
-            <a href="/login" class="btn editorial-submit-btn px-4 mt-2">Log in to Review</a>
+            <a th:href="@{/login(continue=|/recipes/${recipeId}|)}" class="btn editorial-submit-btn px-4 mt-2">Log in to Review</a>
           </div>
 
           <div class="review-card mb-4 pb-4 border-bottom">
@@ -570,7 +577,12 @@
             if(recognition) recognition.stop();
             if(mobileSmackOverlay) mobileSmackOverlay.classList.add('d-none');
             currentStepIndex = -1;
+            
+            // NEW: Actually kill the timer in the background
+            clearInterval(countdownInterval);
             timerWidget.classList.add('d-none');
+            startTimerBtn.classList.remove('d-none');
+            timerWidget.classList.replace('bg-danger', 'bg-dark');
           }
         });
 
@@ -579,7 +591,12 @@
           const checkbox = step.querySelector('.step-checkbox');
           checkbox.addEventListener('change', () => {
             if (isCookModeActive && checkbox.checked) {
+              
+              // NEW: Kill the old step's timer so it doesn't ring later
+              clearInterval(countdownInterval);
               timerWidget.classList.add('d-none'); 
+              startTimerBtn.classList.remove('d-none');
+              timerWidget.classList.replace('bg-danger', 'bg-dark');
 
               if (index + 1 < steps.length) {
                 const nextStepText = steps[index + 1].querySelector('.step-text').innerText;
