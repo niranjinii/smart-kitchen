@@ -34,3 +34,6 @@ build/
 
 # Ignore local secret properties
 application-secrets.properties
+
+# Runtime uploaded files
+uploads/
