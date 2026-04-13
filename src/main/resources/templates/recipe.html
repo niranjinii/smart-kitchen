@@ -47,7 +47,7 @@
               home. Perfect for busy weeknights!
             </p>
 
-            <div class="d-flex gap-2 mt-3">
+            <div class="d-flex gap-2 mt-3" th:if="${#authorization.expression('isAuthenticated()') and recipe.author != null and #authentication.principal.displayName == recipe.author.username}">
               <a th:href="@{/recipes/{id}/edit(id=${recipe.id})}" class="btn cook-mode-btn px-3 py-2">Edit</a>
               <form th:action="@{/recipes/{id}/delete(id=${recipe.id})}" method="post">
                 <button type="submit" class="btn btn-outline-danger px-3 py-2">Delete</button>
@@ -106,7 +106,7 @@
             <h3 class="section-title m-0">Instructions</h3>
             
             <div sec:authorize="isAuthenticated()">
-              <button class="btn cook-mode-btn px-4 py-2 d-flex align-items-center gap-2">
+              <button id="startCookModeBtn" class="btn cook-mode-btn px-4 py-2 d-flex align-items-center gap-2">
                 <i class="bi bi-play-fill fs-5"></i> Start Cook Mode
               </button>
             </div>
@@ -325,7 +325,7 @@
     </script>
     <script>
       document.addEventListener('DOMContentLoaded', () => {
-        const cookModeBtn = document.querySelector('.cook-mode-btn');
+        const cookModeBtn = document.getElementById('startCookModeBtn');
         if(!cookModeBtn) return; // Exit if user isn't logged in
 
         const steps = document.querySelectorAll('.step-card');

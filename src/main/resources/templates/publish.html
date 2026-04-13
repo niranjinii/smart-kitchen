@@ -20,21 +20,16 @@
           <div class="alert alert-danger" th:if="${uploadError}" th:text="${uploadError}"></div>
 
           <form class="recipe-form" method="post" th:object="${recipeForm}" th:action="${isEdit} ? @{/recipes/{id}(id=${recipeId})} : @{/recipes}">
-            <div class="image-dropzone mb-4">
+            <div id="imageDropzone" class="image-dropzone mb-4" role="button" tabindex="0" aria-label="Upload recipe photo">
               <div class="mb-2">
                 <i class="bi bi-cloud-arrow-up dropzone-icon"></i>
               </div>
               <h5 class="m-0 dropzone-title">Upload Recipe Photo</h5>
-              <p class="mt-1 mb-0 dropzone-subtitle">Drag and drop or click to browse</p>
-              <input id="imageFileInput" type="file" accept="image/*" class="form-control custom-input mt-3" />
+              <p class="mt-1 mb-0 dropzone-subtitle">Drag and drop or click anywhere in this box</p>
+              <input id="imageFileInput" type="file" accept="image/*" class="visually-hidden" />
+              <input id="imageUrlInput" type="hidden" th:field="*{imageUrl}" />
               <div id="imageFileMeta" class="small text-muted mt-1"></div>
               <div class="small text-muted">After choosing a file, wait for the upload success message before publishing.</div>
-            </div>
-
-            <div class="mb-4">
-              <label class="form-label">Recipe Image URL</label>
-              <input id="imageUrlInput" type="text" class="form-control custom-input" placeholder="https://... or /uploads/your-file.jpg" maxlength="2048" th:field="*{imageUrl}" />
-              <div class="small text-muted mt-1">Use either an absolute image link (http/https) or uploaded path like /uploads/filename.jpg. Do not paste data:image/base64 strings.</div>
             </div>
 
             <div class="mb-4">
@@ -44,24 +39,24 @@
 
             <div class="mb-4">
               <label class="form-label">Description</label>
-              <textarea class="form-control custom-input" rows="3" placeholder="Briefly describe your recipe..." th:field="*{description}"></textarea>
+              <textarea class="form-control custom-input" rows="3" placeholder="Briefly describe your recipe..." th:field="*{description}" required></textarea>
             </div>
 
             <div class="row g-3 mb-4">
               <div class="col-sm-6">
                 <label class="form-label">Total Time (mins)</label>
-                <input type="number" class="form-control custom-input" placeholder="e.g., 25" th:field="*{prepTimeMins}" min="0" />
+                <input type="number" class="form-control custom-input" placeholder="e.g., 25" th:field="*{prepTimeMins}" min="1" required />
               </div>
               <div class="col-sm-6">
                 <label class="form-label">Base Yield (Servings)</label>
-                <input type="number" class="form-control custom-input" placeholder="e.g., 2" th:field="*{defaultServings}" min="1" />
+                <input type="number" class="form-control custom-input" placeholder="e.g., 2" th:field="*{defaultServings}" min="1" required />
               </div>
             </div>
 
             <div class="mb-4">
               <label class="form-label mb-3">Primary Category</label>
               <div class="chip-group mb-4">
-                <input type="radio" id="type-breakfast" class="chip-input" th:field="*{mealType}" value="Breakfast" />
+                <input type="radio" id="type-breakfast" class="chip-input" th:field="*{mealType}" value="Breakfast" required />
                 <label for="type-breakfast" class="chip-label">Breakfast</label>
 
                 <input type="radio" id="type-lunch" class="chip-input" th:field="*{mealType}" value="Lunch" />
@@ -91,9 +86,37 @@
             <div class="mb-4">
               <label class="form-label section-title mb-4">Ingredients</label>
 
-              <div class="d-flex gap-2 mb-3 align-items-center" th:each="line, stat : *{ingredients}">
-                <input type="number" class="form-control custom-input" style="width: 80px;" placeholder="Qty" step="0.01" min="0" th:field="*{ingredients[__${stat.index}__].quantity}" />
-                <select class="form-select custom-input" style="width: 100px;" th:field="*{ingredients[__${stat.index}__].unit}">
+              <div id="ingredientsRows">
+                <div class="d-flex gap-2 mb-3 align-items-center ingredient-row" th:each="line, stat : *{ingredients}">
+                  <input type="number" class="form-control custom-input ingredient-quantity" style="width: 80px;" placeholder="Qty" step="0.01" min="0.01" th:field="*{ingredients[__${stat.index}__].quantity}" />
+                  <select class="form-select custom-input ingredient-unit" style="width: 100px;" th:field="*{ingredients[__${stat.index}__].unit}">
+                    <option value="">Unit</option>
+                    <option value="g">g</option>
+                    <option value="ml">ml</option>
+                    <option value="oz">oz</option>
+                    <option value="tbsp">tbsp</option>
+                    <option value="tsp">tsp</option>
+                    <option value="cup">cup</option>
+                    <option value="unit">unit</option>
+                  </select>
+                  <input type="text" class="form-control custom-input flex-grow-1 ingredient-name" placeholder="Ingredient name (e.g., Unsalted butter)" th:field="*{ingredients[__${stat.index}__].name}" />
+                  <button type="button" class="btn btn-sm remove-row-btn ingredient-remove-btn" aria-label="Remove ingredient row">
+                    <i class="bi bi-x-circle"></i>
+                  </button>
+                </div>
+              </div>
+
+              <button id="addIngredientBtn" type="button" class="btn import-btn d-inline-flex align-items-center gap-2 px-3 py-2">
+                <i class="bi bi-plus-circle"></i> Add Ingredient
+              </button>
+
+              <div class="small text-muted mt-2">Add at least one complete ingredient. You can keep adding as many rows as you need.</div>
+            </div>
+
+            <template id="ingredientRowTemplate">
+              <div class="d-flex gap-2 mb-3 align-items-center ingredient-row">
+                <input type="number" class="form-control custom-input ingredient-quantity" style="width: 80px;" placeholder="Qty" step="0.01" min="0.01" />
+                <select class="form-select custom-input ingredient-unit" style="width: 100px;">
                   <option value="">Unit</option>
                   <option value="g">g</option>
                   <option value="ml">ml</option>
@@ -103,26 +126,48 @@
                   <option value="cup">cup</option>
                   <option value="unit">unit</option>
                 </select>
-                <input type="text" class="form-control custom-input flex-grow-1" placeholder="Ingredient name (e.g., Unsalted butter)" th:field="*{ingredients[__${stat.index}__].name}" />
-                <i class="bi bi-dot fs-5 text-muted"></i>
+                <input type="text" class="form-control custom-input flex-grow-1 ingredient-name" placeholder="Ingredient name (e.g., Unsalted butter)" />
+                <button type="button" class="btn btn-sm remove-row-btn ingredient-remove-btn" aria-label="Remove ingredient row">
+                  <i class="bi bi-x-circle"></i>
+                </button>
               </div>
-
-              <div class="small text-muted mt-2">You currently have 3 ingredient rows. Save after filling any used rows.</div>
-            </div>
+            </template>
 
             <hr class="my-5 opacity-10" />
 
             <div class="mb-4">
               <label class="form-label section-title mb-4">Instructions</label>
 
-              <div class="step-row mb-3" th:each="step, stat : *{instructionSteps}">
-                <div class="step-number" th:text="${stat.index + 1}">1</div>
-                <div class="flex-grow-1">
-                  <textarea class="form-control custom-input" rows="2" placeholder="Describe this step..." th:field="*{instructionSteps[__${stat.index}__]}"></textarea>
+              <div id="instructionRows">
+                <div class="step-row mb-3" th:each="step, stat : *{instructionSteps}">
+                  <div class="step-number" th:text="${stat.index + 1}">1</div>
+                  <div class="flex-grow-1">
+                    <textarea class="form-control custom-input instruction-text" rows="2" placeholder="Describe this step..." th:field="*{instructionSteps[__${stat.index}__]}"></textarea>
+                  </div>
+                  <button type="button" class="btn btn-sm remove-row-btn instruction-remove-btn mt-1" aria-label="Remove instruction row">
+                    <i class="bi bi-x-circle"></i>
+                  </button>
                 </div>
               </div>
-              <div class="small text-muted">Add up to 3 steps for now.</div>
+
+              <button id="addInstructionBtn" type="button" class="btn import-btn d-inline-flex align-items-center gap-2 px-3 py-2">
+                <i class="bi bi-plus-circle"></i> Add Instruction
+              </button>
+
+              <div class="small text-muted mt-2">Add at least one instruction step. You can add as many steps as you need.</div>
             </div>
+
+            <template id="instructionRowTemplate">
+              <div class="step-row mb-3">
+                <div class="step-number">1</div>
+                <div class="flex-grow-1">
+                  <textarea class="form-control custom-input instruction-text" rows="2" placeholder="Describe this step..."></textarea>
+                </div>
+                <button type="button" class="btn btn-sm remove-row-btn instruction-remove-btn mt-1" aria-label="Remove instruction row">
+                  <i class="bi bi-x-circle"></i>
+                </button>
+              </div>
+            </template>
 
             <div class="d-flex justify-content-end align-items-center mt-5 publish-action-group">
               <a th:href="@{/}" class="btn px-3 cancel-btn">Cancel</a>
@@ -163,14 +208,154 @@
     <script>
       (function () {
         const form = document.querySelector('.recipe-form');
+        const imageDropzone = document.getElementById('imageDropzone');
         const fileInput = document.getElementById('imageFileInput');
         const fileMeta = document.getElementById('imageFileMeta');
         const maxBytes = 25 * 1024 * 1024;
+        const MIN_DYNAMIC_ROWS = 2;
         const imageUrlInput = document.getElementById('imageUrlInput');
+        const ingredientsRows = document.getElementById('ingredientsRows');
+        const ingredientRowTemplate = document.getElementById('ingredientRowTemplate');
+        const addIngredientBtn = document.getElementById('addIngredientBtn');
+        const instructionRows = document.getElementById('instructionRows');
+        const instructionRowTemplate = document.getElementById('instructionRowTemplate');
+        const addInstructionBtn = document.getElementById('addInstructionBtn');
         let uploadInProgress = false;
 
         if (!form || !fileInput || !fileMeta) {
           return;
+        }
+
+        function updateRemoveButtons() {
+          if (ingredientsRows) {
+            const ingredientRows = ingredientsRows.querySelectorAll('.ingredient-row');
+            const canRemoveIngredient = ingredientRows.length > MIN_DYNAMIC_ROWS;
+            ingredientRows.forEach((row) => {
+              const button = row.querySelector('.ingredient-remove-btn');
+              if (button) {
+                button.disabled = !canRemoveIngredient;
+                button.classList.toggle('d-none', !canRemoveIngredient);
+              }
+            });
+          }
+
+          if (instructionRows) {
+            const stepRows = instructionRows.querySelectorAll('.step-row');
+            const canRemoveStep = stepRows.length > MIN_DYNAMIC_ROWS;
+            stepRows.forEach((row) => {
+              const button = row.querySelector('.instruction-remove-btn');
+              if (button) {
+                button.disabled = !canRemoveStep;
+                button.classList.toggle('d-none', !canRemoveStep);
+              }
+            });
+          }
+        }
+
+        function normalizeRows() {
+          if (ingredientsRows) {
+            const ingredientRows = ingredientsRows.querySelectorAll('.ingredient-row');
+            ingredientRows.forEach((row, index) => {
+              const quantityInput = row.querySelector('.ingredient-quantity');
+              const unitInput = row.querySelector('.ingredient-unit');
+              const nameInput = row.querySelector('.ingredient-name');
+              if (quantityInput) {
+                quantityInput.name = 'ingredients[' + index + '].quantity';
+                quantityInput.id = 'ingredients' + index + '.quantity';
+              }
+              if (unitInput) {
+                unitInput.name = 'ingredients[' + index + '].unit';
+                unitInput.id = 'ingredients' + index + '.unit';
+              }
+              if (nameInput) {
+                nameInput.name = 'ingredients[' + index + '].name';
+                nameInput.id = 'ingredients' + index + '.name';
+              }
+            });
+          }
+
+          if (instructionRows) {
+            const stepRows = instructionRows.querySelectorAll('.step-row');
+            stepRows.forEach((row, index) => {
+              const stepNumber = row.querySelector('.step-number');
+              const textArea = row.querySelector('.instruction-text');
+              if (stepNumber) {
+                stepNumber.textContent = String(index + 1);
+              }
+              if (textArea) {
+                textArea.name = 'instructionSteps[' + index + ']';
+                textArea.id = 'instructionSteps' + index;
+              }
+            });
+          }
+
+          updateRemoveButtons();
+        }
+
+        function addIngredientRow() {
+          if (!ingredientsRows || !ingredientRowTemplate) {
+            return;
+          }
+          const fragment = ingredientRowTemplate.content.cloneNode(true);
+          ingredientsRows.appendChild(fragment);
+          normalizeRows();
+        }
+
+        function addInstructionRow() {
+          if (!instructionRows || !instructionRowTemplate) {
+            return;
+          }
+          const fragment = instructionRowTemplate.content.cloneNode(true);
+          instructionRows.appendChild(fragment);
+          normalizeRows();
+        }
+
+        function validateMinimumSections() {
+          const ingredientRows = ingredientsRows ? ingredientsRows.querySelectorAll('.ingredient-row') : [];
+          let completeIngredientCount = 0;
+
+          for (const row of ingredientRows) {
+            const qty = (row.querySelector('.ingredient-quantity')?.value || '').trim();
+            const unit = (row.querySelector('.ingredient-unit')?.value || '').trim();
+            const name = (row.querySelector('.ingredient-name')?.value || '').trim();
+            const hasAny = qty || unit || name;
+            if (!hasAny) {
+              continue;
+            }
+            if (!qty || !unit || !name) {
+              fileMeta.textContent = 'Each used ingredient row must include quantity, unit, and name.';
+              fileMeta.classList.add('text-danger');
+              return false;
+            }
+            if (Number(qty) <= 0) {
+              fileMeta.textContent = 'Ingredient quantity must be greater than 0.';
+              fileMeta.classList.add('text-danger');
+              return false;
+            }
+            completeIngredientCount++;
+          }
+
+          if (completeIngredientCount < 1) {
+            fileMeta.textContent = 'Please add at least one complete ingredient.';
+            fileMeta.classList.add('text-danger');
+            return false;
+          }
+
+          const instructionFields = instructionRows ? instructionRows.querySelectorAll('.instruction-text') : [];
+          let nonBlankInstructions = 0;
+          for (const field of instructionFields) {
+            if ((field.value || '').trim()) {
+              nonBlankInstructions++;
+            }
+          }
+
+          if (nonBlankInstructions < 1) {
+            fileMeta.textContent = 'Please add at least one instruction step.';
+            fileMeta.classList.add('text-danger');
+            return false;
+          }
+
+          return true;
         }
 
         function formatBytes(bytes) {
@@ -271,6 +456,96 @@
           }
           uploadSelectedFile(file);
         });
+
+        if (imageDropzone) {
+          imageDropzone.addEventListener('click', function () {
+            fileInput.click();
+          });
+
+          imageDropzone.addEventListener('keydown', function (event) {
+            if (event.key === 'Enter' || event.key === ' ') {
+              event.preventDefault();
+              fileInput.click();
+            }
+          });
+
+          imageDropzone.addEventListener('dragover', function (event) {
+            event.preventDefault();
+            imageDropzone.classList.add('is-dragover');
+          });
+
+          imageDropzone.addEventListener('dragleave', function () {
+            imageDropzone.classList.remove('is-dragover');
+          });
+
+          imageDropzone.addEventListener('drop', function (event) {
+            event.preventDefault();
+            imageDropzone.classList.remove('is-dragover');
+            const droppedFile = event.dataTransfer && event.dataTransfer.files && event.dataTransfer.files[0];
+            if (!droppedFile) {
+              return;
+            }
+            if (!droppedFile.type || !droppedFile.type.startsWith('image/')) {
+              fileMeta.textContent = 'Only image files are supported.';
+              fileMeta.classList.add('text-danger');
+              return;
+            }
+            const transfer = new DataTransfer();
+            transfer.items.add(droppedFile);
+            fileInput.files = transfer.files;
+            renderFileMeta();
+            if (droppedFile.size > maxBytes) {
+              return;
+            }
+            uploadSelectedFile(droppedFile);
+          });
+        }
+
+        if (addIngredientBtn) {
+          addIngredientBtn.addEventListener('click', addIngredientRow);
+        }
+
+        if (addInstructionBtn) {
+          addInstructionBtn.addEventListener('click', addInstructionRow);
+        }
+
+        if (ingredientsRows) {
+          ingredientsRows.addEventListener('click', function (event) {
+            const button = event.target.closest('.ingredient-remove-btn');
+            if (!button) {
+              return;
+            }
+            const rows = ingredientsRows.querySelectorAll('.ingredient-row');
+            if (rows.length <= MIN_DYNAMIC_ROWS) {
+              return;
+            }
+            const row = button.closest('.ingredient-row');
+            if (row) {
+              row.remove();
+              normalizeRows();
+            }
+          });
+        }
+
+        if (instructionRows) {
+          instructionRows.addEventListener('click', function (event) {
+            const button = event.target.closest('.instruction-remove-btn');
+            if (!button) {
+              return;
+            }
+            const rows = instructionRows.querySelectorAll('.step-row');
+            if (rows.length <= MIN_DYNAMIC_ROWS) {
+              return;
+            }
+            const row = button.closest('.step-row');
+            if (row) {
+              row.remove();
+              normalizeRows();
+            }
+          });
+        }
+
+        normalizeRows();
         renderFileMeta();
 
         form.addEventListener('submit', function (event) {
@@ -295,8 +570,16 @@
               event.preventDefault();
               fileMeta.textContent = 'Invalid image URL. Please use an uploaded image path or an http/https URL.';
               fileMeta.classList.add('text-danger');
+              return;
             }
           }
+
+          if (!validateMinimumSections()) {
+            event.preventDefault();
+            return;
+          }
+
+          fileMeta.classList.remove('text-danger');
         });
       })();
     </script>

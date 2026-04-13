@@ -12,6 +12,8 @@ import com.sk.smart_kitchen.repositories.RecipeIngredientRepository;
 import com.sk.smart_kitchen.repositories.RecipeRepository;
 import com.sk.smart_kitchen.repositories.TagRepository;
 import com.sk.smart_kitchen.repositories.UserRepository;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -21,6 +23,7 @@ import java.util.Arrays;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
@@ -29,8 +32,8 @@ import java.util.regex.Pattern;
 @Service
 public class RecipeService {
 
-    private static final int DEFAULT_INGREDIENT_ROWS = 3;
-    private static final int DEFAULT_INSTRUCTION_ROWS = 3;
+    private static final int DEFAULT_INGREDIENT_ROWS = 2;
+    private static final int DEFAULT_INSTRUCTION_ROWS = 2;
     private static final Pattern ABSOLUTE_HTTP_URL_PATTERN = Pattern.compile("^https?://.*", Pattern.CASE_INSENSITIVE);
 
     private final RecipeRepository recipeRepository;
@@ -62,7 +65,7 @@ public class RecipeService {
 
     public Recipe findRecipeOrThrow(Long id) {
         return recipeRepository.findWithTagsAndAuthorById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Recipe not found"));
+                .orElseThrow(() -> new NoSuchElementException("Recipe not found"));
     }
 
     public List<RecipeIngredient> findRecipeIngredients(Long recipeId) {
@@ -115,7 +118,9 @@ public class RecipeService {
 
     @Transactional
     public Recipe createRecipe(RecipeForm form) {
+        validateRequiredFields(form);
         Recipe recipe = new Recipe();
+        recipe.setAuthor(resolveCurrentUserOrThrow());
         applyFormValues(recipe, form);
         Recipe savedRecipe = recipeRepository.save(recipe);
         upsertIngredients(savedRecipe, form);
@@ -124,6 +129,7 @@ public class RecipeService {
 
     @Transactional
     public Recipe updateRecipe(Long recipeId, RecipeForm form) {
+        validateRequiredFields(form);
         Recipe recipe = findRecipeOrThrow(recipeId);
         applyFormValues(recipe, form);
         Recipe savedRecipe = recipeRepository.save(recipe);
@@ -135,7 +141,12 @@ public class RecipeService {
 
     @Transactional
     public void deleteRecipe(Long recipeId) {
+        User currentUser = resolveCurrentUserOrThrow();
         Recipe recipe = findRecipeOrThrow(recipeId);
+        if (recipe.getAuthor() == null || recipe.getAuthor().getId() == null
+                || !recipe.getAuthor().getId().equals(currentUser.getId())) {
+            throw new SecurityException("You can only delete your own recipes.");
+        }
         recipeIngredientRepository.deleteByRecipe(recipe);
         recipeRepository.delete(recipe);
     }
@@ -164,11 +175,106 @@ public class RecipeService {
         recipe.setInstructions(joinInstructionSteps(form.getInstructionSteps()));
 
         recipe.setTags(parseTags(form.getTagInput()));
+    }
 
-        if (recipe.getAuthor() == null) {
-            Optional<User> maybeAuthor = userRepository.findAll().stream().findFirst();
-            maybeAuthor.ifPresent(recipe::setAuthor);
+    private void validateRequiredFields(RecipeForm form) {
+        if (form == null) {
+            throw new IllegalArgumentException("Recipe form is required.");
         }
+
+        requireNonBlank(form.getTitle(), "Recipe title is required.");
+        requireNonBlank(form.getDescription(), "Description is required.");
+        if (normalizeImageUrl(form.getImageUrl()) == null) {
+            throw new IllegalArgumentException("Recipe image URL is required.");
+        }
+        if (form.getPrepTimeMins() == null || form.getPrepTimeMins() < 1) {
+            throw new IllegalArgumentException("Total time must be at least 1 minute.");
+        }
+        if (form.getDefaultServings() == null || form.getDefaultServings() < 1) {
+            throw new IllegalArgumentException("Base yield must be at least 1 serving.");
+        }
+        requireNonBlank(form.getMealType(), "Primary category is required.");
+
+        validateIngredients(form.getIngredients());
+        validateInstructionSteps(form.getInstructionSteps());
+    }
+
+    private void validateIngredients(List<IngredientLineForm> ingredients) {
+        if (ingredients == null || ingredients.isEmpty()) {
+            throw new IllegalArgumentException("At least one ingredient is required.");
+        }
+
+        int completeRows = 0;
+        for (int i = 0; i < ingredients.size(); i++) {
+            IngredientLineForm line = ingredients.get(i);
+            int row = i + 1;
+            if (line == null) {
+                continue;
+            }
+
+            String name = trimToNull(line.getName());
+            String unit = trimToNull(line.getUnit());
+            String quantity = trimToNull(line.getQuantity());
+            boolean hasAnyField = name != null || unit != null || quantity != null;
+
+            if (!hasAnyField) {
+                continue;
+            }
+
+            if (name == null || unit == null || quantity == null) {
+                throw new IllegalArgumentException("Ingredient row " + row + " is incomplete. Add name, unit, and quantity.");
+            }
+
+            completeRows++;
+
+            double parsedQuantity;
+            try {
+                parsedQuantity = Double.parseDouble(quantity);
+            } catch (NumberFormatException ex) {
+                throw new IllegalArgumentException("Ingredient quantity must be a number in row " + row + ".", ex);
+            }
+            if (parsedQuantity <= 0) {
+                throw new IllegalArgumentException("Ingredient quantity must be greater than 0 in row " + row + ".");
+            }
+        }
+
+        if (completeRows < 1) {
+            throw new IllegalArgumentException("Please add at least one ingredient.");
+        }
+    }
+
+    private void validateInstructionSteps(List<String> steps) {
+        if (steps == null || steps.isEmpty()) {
+            throw new IllegalArgumentException("At least one instruction step is required.");
+        }
+
+        int nonBlankSteps = 0;
+        for (int i = 0; i < steps.size(); i++) {
+            if (trimToNull(steps.get(i)) != null) {
+                nonBlankSteps++;
+            }
+        }
+
+        if (nonBlankSteps < 1) {
+            throw new IllegalArgumentException("Please add at least one instruction step.");
+        }
+    }
+
+    private void requireNonBlank(String value, String message) {
+        if (trimToNull(value) == null) {
+            throw new IllegalArgumentException(message);
+        }
+    }
+
+    private User resolveCurrentUserOrThrow() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || !authentication.isAuthenticated() || "anonymousUser".equals(authentication.getPrincipal())) {
+            throw new SecurityException("You must be logged in to perform this action.");
+        }
+
+        String email = authentication.getName();
+        return userRepository.findByEmail(email)
+                .orElseThrow(() -> new SecurityException("Authenticated user account was not found."));
     }
 
     private void upsertIngredients(Recipe recipe, RecipeForm form) {

@@ -18,6 +18,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 import java.util.Map;
+import java.util.NoSuchElementException;
 
 @Controller
 @RequestMapping("/recipes")
@@ -38,14 +39,21 @@ public class RecipeController {
 
     @PostMapping
     public String createRecipe(@ModelAttribute("recipeForm") RecipeForm recipeForm) {
-        Recipe created = recipeService.createRecipe(recipeForm);
-        return "redirect:/recipes/" + created.getId();
+        try {
+            Recipe created = recipeService.createRecipe(recipeForm);
+            return "redirect:/recipes/" + created.getId();
+        } catch (IllegalArgumentException ex) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, ex.getMessage(), ex);
+        } catch (SecurityException ex) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, ex.getMessage(), ex);
+        }
     }
 
     @GetMapping("/{id}")
     public String showRecipeView(@PathVariable Long id, Model model) {
         Recipe recipe = getRecipeOr404(id);
         model.addAttribute("recipe", recipe);
+        model.addAttribute("recipeId", id);
         model.addAttribute("ingredients", recipeService.findRecipeIngredients(id));
         model.addAttribute("instructionSteps", recipeService.toInstructionSteps(recipe));
         return "recipe";
@@ -62,13 +70,16 @@ public class RecipeController {
 
     @PostMapping("/{id}")
     public String updateRecipe(@PathVariable Long id, @ModelAttribute("recipeForm") RecipeForm recipeForm) {
-        Recipe updated;
         try {
-            updated = recipeService.updateRecipe(id, recipeForm);
-        } catch (IllegalArgumentException ex) {
+            Recipe updated = recipeService.updateRecipe(id, recipeForm);
+            return "redirect:/recipes/" + updated.getId();
+        } catch (NoSuchElementException ex) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Recipe not found", ex);
+        } catch (IllegalArgumentException ex) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, ex.getMessage(), ex);
+        } catch (SecurityException ex) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, ex.getMessage(), ex);
         }
-        return "redirect:/recipes/" + updated.getId();
     }
 
     @PostMapping("/upload-image")
@@ -88,8 +99,10 @@ public class RecipeController {
     public String deleteRecipe(@PathVariable Long id) {
         try {
             recipeService.deleteRecipe(id);
-        } catch (IllegalArgumentException ex) {
+        } catch (NoSuchElementException ex) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Recipe not found", ex);
+        } catch (SecurityException ex) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, ex.getMessage(), ex);
         }
         return "redirect:/";
     }
@@ -97,7 +110,7 @@ public class RecipeController {
     private Recipe getRecipeOr404(Long id) {
         try {
             return recipeService.findRecipeOrThrow(id);
-        } catch (IllegalArgumentException ex) {
+        } catch (NoSuchElementException ex) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Recipe not found", ex);
         }
     }
