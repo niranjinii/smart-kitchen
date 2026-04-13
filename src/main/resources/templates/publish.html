@@ -1,84 +1,73 @@
 <!doctype html>
 <html xmlns:th="http://www.thymeleaf.org">
   <head>
-    <th:block th:replace="~{fragments/layout :: head}"></th:block>
+    <th:block th:replace="fragments/layout :: head"></th:block>
     <link rel="stylesheet" th:href="@{/css/publish.css}" />
   </head>
   <body>
-    <div th:replace="~{fragments/layout :: navbar}"></div>
+    <div th:replace="fragments/layout :: navbar"></div>
 
     <div class="container-md px-3 mt-4 mb-5 pb-5">
       <div class="row justify-content-center">
         <div class="col-lg-8 col-xl-7">
           <div class="d-flex justify-content-between align-items-center mb-4">
-            <h2 class="m-0 page-title" th:text="${isEdit} ? 'Edit Recipe' : 'Create Recipe'">Create Recipe</h2>
+            <h2 class="m-0 page-title">Create Recipe</h2>
             <button class="btn import-btn d-flex align-items-center gap-2 px-4" data-bs-toggle="modal" data-bs-target="#importModal">
               <i class="bi bi-link-45deg import-icon"></i> Import from URL
             </button>
           </div>
 
-          <div class="alert alert-danger" th:if="${uploadError}" th:text="${uploadError}"></div>
-
-          <form class="recipe-form" method="post" th:object="${recipeForm}" th:action="${isEdit} ? @{/recipes/{id}(id=${recipeId})} : @{/recipes}">
+          <form class="recipe-form">
             <div class="image-dropzone mb-4">
               <div class="mb-2">
                 <i class="bi bi-cloud-arrow-up dropzone-icon"></i>
               </div>
               <h5 class="m-0 dropzone-title">Upload Recipe Photo</h5>
               <p class="mt-1 mb-0 dropzone-subtitle">Drag and drop or click to browse</p>
-              <input id="imageFileInput" type="file" accept="image/*" class="form-control custom-input mt-3" />
-              <div id="imageFileMeta" class="small text-muted mt-1"></div>
-              <div class="small text-muted">After choosing a file, wait for the upload success message before publishing.</div>
-            </div>
-
-            <div class="mb-4">
-              <label class="form-label">Recipe Image URL</label>
-              <input id="imageUrlInput" type="text" class="form-control custom-input" placeholder="https://... or /uploads/your-file.jpg" maxlength="2048" th:field="*{imageUrl}" />
-              <div class="small text-muted mt-1">Use either an absolute image link (http/https) or uploaded path like /uploads/filename.jpg. Do not paste data:image/base64 strings.</div>
             </div>
 
             <div class="mb-4">
               <label class="form-label">Recipe Title</label>
-              <input type="text" class="form-control custom-input" placeholder="e.g., Spicy Garlic Pasta" th:field="*{title}" required />
+              <input type="text" class="form-control custom-input" placeholder="e.g., Spicy Garlic Pasta" />
             </div>
 
             <div class="mb-4">
               <label class="form-label">Description</label>
-              <textarea class="form-control custom-input" rows="3" placeholder="Briefly describe your recipe..." th:field="*{description}"></textarea>
+              <textarea class="form-control custom-input" rows="3" placeholder="Briefly describe your recipe..."></textarea>
             </div>
 
             <div class="row g-3 mb-4">
               <div class="col-sm-6">
                 <label class="form-label">Total Time (mins)</label>
-                <input type="number" class="form-control custom-input" placeholder="e.g., 25" th:field="*{prepTimeMins}" min="0" />
+                <input type="number" class="form-control custom-input" placeholder="e.g., 25" />
               </div>
               <div class="col-sm-6">
                 <label class="form-label">Base Yield (Servings)</label>
-                <input type="number" class="form-control custom-input" placeholder="e.g., 2" th:field="*{defaultServings}" min="1" />
+                <input type="number" class="form-control custom-input" placeholder="e.g., 2" />
               </div>
             </div>
 
             <div class="mb-4">
               <label class="form-label mb-3">Primary Category</label>
               <div class="chip-group mb-4">
-                <input type="radio" id="type-breakfast" class="chip-input" th:field="*{mealType}" value="Breakfast" />
+                <input type="radio" name="mealType" id="type-breakfast" class="chip-input" />
                 <label for="type-breakfast" class="chip-label">Breakfast</label>
 
-                <input type="radio" id="type-lunch" class="chip-input" th:field="*{mealType}" value="Lunch" />
+                <input type="radio" name="mealType" id="type-lunch" class="chip-input" />
                 <label for="type-lunch" class="chip-label">Lunch</label>
 
-                <input type="radio" id="type-dinner" class="chip-input" th:field="*{mealType}" value="Dinner" />
+                <input type="radio" name="mealType" id="type-dinner" class="chip-input" />
                 <label for="type-dinner" class="chip-label">Dinner</label>
 
-                <input type="radio" id="type-snack" class="chip-input" th:field="*{mealType}" value="Snack" />
+                <input type="radio" name="mealType" id="type-snack" class="chip-input" />
                 <label for="type-snack" class="chip-label">Snack</label>
 
-                <input type="radio" id="type-bev" class="chip-input" th:field="*{mealType}" value="Beverage" />
+                <input type="radio" name="mealType" id="type-bev" class="chip-input" />
                 <label for="type-bev" class="chip-label">Beverage</label>
               </div>
 
               <label class="form-label mb-3">Secondary Tags</label>
-              <input type="text" class="form-control custom-input mb-3" placeholder="e.g., Vegan, Gluten-Free" th:field="*{tagInput}" />
+              <input type="text" class="form-control custom-input mb-3" placeholder="e.g., Vegan, Gluten-Free" />
               <div class="d-flex flex-wrap gap-2">
                 <span class="badge px-3 py-2 secondary-tag-badge">
                   Quick & Easy <i class="bi bi-x ms-1 cursor-pointer"></i>
@@ -91,10 +80,9 @@
             <div class="mb-4">
               <label class="form-label section-title mb-4">Ingredients</label>
 
-              <div class="d-flex gap-2 mb-3 align-items-center" th:each="line, stat : *{ingredients}">
-                <input type="number" class="form-control custom-input" style="width: 80px;" placeholder="Qty" step="0.01" min="0" th:field="*{ingredients[__${stat.index}__].quantity}" />
-                <select class="form-select custom-input" style="width: 100px;" th:field="*{ingredients[__${stat.index}__].unit}">
-                  <option value="">Unit</option>
+              <div class="d-flex gap-2 mb-3 align-items-center">
+                <input type="number" class="form-control custom-input" style="width: 80px;" placeholder="Qty" />
+                <select class="form-select custom-input" style="width: 100px;">
                   <option value="g">g</option>
                   <option value="ml">ml</option>
                   <option value="oz">oz</option>
@@ -103,11 +91,27 @@
                   <option value="cup">cup</option>
                   <option value="unit">unit</option>
                 </select>
-                <input type="text" class="form-control custom-input flex-grow-1" placeholder="Ingredient name (e.g., Unsalted butter)" th:field="*{ingredients[__${stat.index}__].name}" />
-                <i class="bi bi-dot fs-5 text-muted"></i>
+                <input type="text" class="form-control custom-input flex-grow-1" placeholder="Ingredient name (e.g., Unsalted butter)" />
+                <i class="bi bi-trash fs-5 text-muted cursor-pointer remove-item-btn"></i>
+              </div>
+              
+              <div class="d-flex gap-2 mb-2 align-items-center">
+                <input type="number" class="form-control custom-input" style="width: 80px;" placeholder="Qty" />
+                <select class="form-select custom-input" style="width: 100px;">
+                  <option value="g">g</option>
+                  <option value="ml">ml</option>
+                  <option value="tbsp">tbsp</option>
+                  <option value="tsp">tsp</option>
+                  <option value="cup">cup</option>
+                  <option value="unit">unit</option>
+                </select>
+                <input type="text" class="form-control custom-input flex-grow-1" placeholder="Ingredient name (e.g., Fettuccine pasta)" />
+                <i class="bi bi-trash fs-5 text-muted cursor-pointer remove-item-btn"></i>
               </div>
 
-              <div class="small text-muted mt-2">You currently have 3 ingredient rows. Save after filling any used rows.</div>
+              <button type="button" class="add-item-btn mt-2">
+                <i class="bi bi-plus-lg me-1"></i> Add Another Ingredient
+              </button>
             </div>
 
             <hr class="my-5 opacity-10" />
@@ -115,19 +119,29 @@
             <div class="mb-4">
               <label class="form-label section-title mb-4">Instructions</label>
 
-              <div class="step-row mb-3" th:each="step, stat : *{instructionSteps}">
-                <div class="step-number" th:text="${stat.index + 1}">1</div>
+              <div class="step-row mb-3">
+                <div class="step-number">1</div>
                 <div class="flex-grow-1">
-                  <textarea class="form-control custom-input" rows="2" placeholder="Describe this step..." th:field="*{instructionSteps[__${stat.index}__]}"></textarea>
+                  <textarea class="form-control custom-input" rows="2" placeholder="Describe this step..."></textarea>
                 </div>
               </div>
-              <div class="small text-muted">Add up to 3 steps for now.</div>
+
+              <div class="step-row mb-2">
+                <div class="step-number">2</div>
+                <div class="flex-grow-1">
+                  <textarea class="form-control custom-input" rows="2" placeholder="Describe this step..."></textarea>
+                </div>
+              </div>
+
+              <button type="button" class="add-step-btn">
+                <i class="bi bi-plus-lg me-1"></i> Add Another Step
+              </button>
             </div>
 
             <div class="d-flex justify-content-end align-items-center mt-5 publish-action-group">
-              <a th:href="@{/}" class="btn px-3 cancel-btn">Cancel</a>
+              <button type="button" class="btn px-3 cancel-btn">Cancel</button>
               <button type="submit" class="btn publish-submit-btn px-3 py-2">
-                <span th:text="${isEdit} ? 'Update Recipe' : 'Publish Recipe'">Publish Recipe</span>
+                Publish Recipe
               </button>
             </div>
           </form>
@@ -157,148 +171,7 @@
       </div>
     </div>
 
-    <div th:replace="~{fragments/layout :: mobile-bottom-nav}"></div>
-    <div th:replace="~{fragments/layout :: mobile-offcanvas}"></div>
-
-    <script>
-      (function () {
-        const form = document.querySelector('.recipe-form');
-        const fileInput = document.getElementById('imageFileInput');
-        const fileMeta = document.getElementById('imageFileMeta');
-        const maxBytes = 25 * 1024 * 1024;
-        const imageUrlInput = document.getElementById('imageUrlInput');
-        let uploadInProgress = false;
-
-        if (!form || !fileInput || !fileMeta) {
-          return;
-        }
-
-        function formatBytes(bytes) {
-          if (bytes < 1024) return bytes + ' B';
-          if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
-          return (bytes / (1024 * 1024)).toFixed(2) + ' MB';
-        }
-
-        function renderFileMeta() {
-          const file = fileInput.files && fileInput.files[0];
-          if (!file) {
-            fileMeta.textContent = 'No file selected.';
-            fileMeta.classList.remove('text-danger');
-            return;
-          }
-
-          fileMeta.textContent = 'Selected: ' + file.name + ' (' + formatBytes(file.size) + ')';
-          if (file.size > maxBytes) {
-            fileMeta.classList.add('text-danger');
-          } else {
-            fileMeta.classList.remove('text-danger');
-          }
-        }
-
-        function normalizeImageUrl(url) {
-          if (!url) {
-            return '';
-          }
-
-          let normalized = String(url).trim().replace(/\\/g, '/');
-          if (!normalized) {
-            return '';
-          }
-
-          if (/^https?:\/\//i.test(normalized)) {
-            return normalized;
-          }
-
-          normalized = normalized.replace(/^\/+/, '/');
-          if (!normalized.startsWith('/')) {
-            normalized = '/' + normalized;
-          }
-          return normalized;
-        }
-
-        function isInvalidLocalPath(url) {
-          if (!url) {
-            return false;
-          }
-          return /^file:/i.test(url) || /^[a-zA-Z]:\//.test(url);
-        }
-
-        async function uploadSelectedFile(file) {
-          const formData = new FormData();
-          formData.append('imageFile', file);
-
-          uploadInProgress = true;
-          fileMeta.textContent = 'Uploading image...';
-          fileMeta.classList.remove('text-danger');
-
-          try {
-            const response = await fetch('/recipes/upload-image', {
-              method: 'POST',
-              body: formData
-            });
-
-            if (!response.ok) {
-              throw new Error('Upload failed with status ' + response.status);
-            }
-
-            const payload = await response.json();
-            if (!payload.imageUrl) {
-              throw new Error('Server did not return image URL.');
-            }
-
-            const normalizedUrl = normalizeImageUrl(payload.imageUrl);
-            if (!normalizedUrl) {
-              throw new Error('Server returned an invalid image URL.');
-            }
-
-            if (imageUrlInput) {
-              imageUrlInput.value = normalizedUrl;
-            }
-            fileMeta.textContent = 'Upload complete. Saved image URL: ' + normalizedUrl;
-          } catch (err) {
-            fileMeta.textContent = 'Upload failed. ' + err.message;
-            fileMeta.classList.add('text-danger');
-          } finally {
-            uploadInProgress = false;
-          }
-        }
-
-        fileInput.addEventListener('change', function () {
-          renderFileMeta();
-          const file = fileInput.files && fileInput.files[0];
-          if (!file || file.size > maxBytes) {
-            return;
-          }
-          uploadSelectedFile(file);
-        });
-        renderFileMeta();
-
-        form.addEventListener('submit', function (event) {
-          if (uploadInProgress) {
-            event.preventDefault();
-            fileMeta.textContent = 'Please wait for the image upload to finish before updating the recipe.';
-            fileMeta.classList.add('text-danger');
-            return;
-          }
-
-          const file = fileInput.files && fileInput.files[0];
-          if (file && file.size > maxBytes) {
-            event.preventDefault();
-            fileMeta.textContent = 'File is too large (' + formatBytes(file.size) + '). Max allowed is 25 MB.';
-            fileMeta.classList.add('text-danger');
-            return;
-          }
-
-          if (imageUrlInput) {
-            imageUrlInput.value = normalizeImageUrl(imageUrlInput.value);
-            if (isInvalidLocalPath(imageUrlInput.value)) {
-              event.preventDefault();
-              fileMeta.textContent = 'Invalid image URL. Please use an uploaded image path or an http/https URL.';
-              fileMeta.classList.add('text-danger');
-            }
-          }
-        });
-      })();
-    </script>
+    <div th:replace="fragments/layout :: mobile-bottom-nav"></div>
+    <div th:replace="fragments/layout :: mobile-offcanvas"></div>
   </body>
 </html>
