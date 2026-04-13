@@ -1,0 +1,63 @@
+package com.sk.smart_kitchen.config;
+
+import org.springframework.security.web.savedrequest.HttpSessionRequestCache;
+import org.springframework.security.web.savedrequest.SavedRequest;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.web.SecurityFilterChain;
+
+@Configuration
+@EnableWebSecurity
+public class SecurityConfig {
+
+    @Bean
+    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+        http
+            // 🚨 THIS IS THE MAGIC LINE THAT FIXES THE 403 ERROR 🚨
+            .csrf(csrf -> csrf.disable()) 
+            
+            .authorizeHttpRequests(auth -> auth
+                .requestMatchers("/", "/recipes/*", "/css/**", "/images/**", "/register").permitAll()
+                .requestMatchers("/reviews/add", "/recipes/new", "/pantry/**", "/profile").authenticated()
+                .anyRequest().authenticated()
+            )
+            .formLogin(form -> form
+                .loginPage("/login") 
+                .successHandler((request, response, authentication) -> {
+    // 1. FIRST check the hidden input from the login form (Your Pinterest Flow)
+    // This ensures if you are on the Pasta page, you STAY on the Pasta page.
+    String customRedirect = request.getParameter("redirectUrl");
+    if (customRedirect != null && !customRedirect.isEmpty()) {
+        response.sendRedirect(customRedirect);
+        return;
+    }
+
+    // 2. SECOND check if Spring Security intercepted a direct link (like /recipes/new)
+    SavedRequest savedRequest = new HttpSessionRequestCache().getRequest(request, response);
+    if (savedRequest != null) {
+        response.sendRedirect(savedRequest.getRedirectUrl());
+        return;
+    }
+
+    // 3. FALLBACK to home feed
+    response.sendRedirect("/");
+})
+                .permitAll()
+            )
+            .logout(logout -> logout
+                .logoutSuccessUrl("/") 
+                .permitAll()
+            );
+
+        return http.build();
+    }
+
+    @Bean
+    public PasswordEncoder passwordEncoder() {
+        return new BCryptPasswordEncoder();
+    }
+}

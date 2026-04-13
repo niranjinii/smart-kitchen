@@ -40,13 +40,10 @@ public class HomeController {
         return "publish"; // This looks for publish.html
     }
 
-    @GetMapping("/recipes/{id}")
+   @GetMapping("/recipes/{id}")
     public String showRecipeView(@PathVariable Long id, Model model) {
-
-        // NOTE: Right now, this just returns a static dummy HTML.
-        // Later, when your database is ready, you will do something like this:
-        // Recipe recipe = recipeRepository.findById(id).orElseThrow();
-        // model.addAttribute("recipe", recipe);
+        // Add the ID to the model so our HTML can use it to build the return URL!
+        model.addAttribute("recipeId", id); 
         return "recipe";
     }
 }

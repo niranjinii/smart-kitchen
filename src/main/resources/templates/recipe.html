@@ -1,5 +1,5 @@
 <!doctype html>
-<html xmlns:th="http://www.thymeleaf.org">
+<html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
   <head>
     <th:block th:replace="fragments/layout :: head"></th:block>
     <link rel="stylesheet" th:href="@{/css/recipe.css}" />
@@ -120,11 +120,18 @@
             class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3"
           >
             <h3 class="section-title m-0">Instructions</h3>
-            <button
-              class="btn cook-mode-btn px-4 py-2 d-flex align-items-center gap-2"
-            >
-              <i class="bi bi-play-fill fs-5"></i> Start Cook Mode
-            </button>
+            
+            <div sec:authorize="isAuthenticated()">
+              <button class="btn cook-mode-btn px-4 py-2 d-flex align-items-center gap-2">
+                <i class="bi bi-play-fill fs-5"></i> Start Cook Mode
+              </button>
+            </div>
+            
+            <div sec:authorize="isAnonymous()">
+              <a th:href="@{/login(continue=|/recipes/${recipeId}|)}" class="btn btn-outline-dark px-4 py-2 d-flex align-items-center gap-2" style="border-radius: 6px; font-weight: 600;">
+                <i class="bi bi-lock-fill"></i> Log in for Cook Mode
+              </a>
+            </div>
           </div>
 
           <div class="instruction-steps">
@@ -176,33 +183,32 @@
             >
           </div>
 
-          <div class="review-input-box p-4 mb-5">
-            <h6 class="fw-bold mb-3">Leave a review</h6>
-            <div class="d-flex gap-2 mb-3">
-              <i
-                class="bi bi-star fs-5 cursor-pointer text-muted hover-warning"
-              ></i>
-              <i
-                class="bi bi-star fs-5 cursor-pointer text-muted hover-warning"
-              ></i>
-              <i
-                class="bi bi-star fs-5 cursor-pointer text-muted hover-warning"
-              ></i>
-              <i
-                class="bi bi-star fs-5 cursor-pointer text-muted hover-warning"
-              ></i>
-              <i
-                class="bi bi-star fs-5 cursor-pointer text-muted hover-warning"
-              ></i>
-            </div>
-            <textarea
-              class="form-control editorial-input mb-3"
-              rows="2"
-              placeholder="What did you think of this recipe?"
-            ></textarea>
-            <div class="d-flex justify-content-end">
-              <button class="btn editorial-submit-btn px-4">Post Review</button>
-            </div>
+          <div sec:authorize="isAuthenticated()" class="review-input-box p-4 mb-5">
+            <h6 class="fw-bold mb-3">Leave a review as <span sec:authentication="principal.displayName"></span></h6>
+            
+            <form th:action="@{/reviews/add}" method="post" id="reviewForm">
+                <input type="hidden" name="recipeId" th:value="${recipeId}"> 
+                <input type="hidden" name="rating" id="ratingInput" value="5">
+                
+                <div class="d-flex gap-2 mb-3" id="starContainer">
+                    <i class="bi bi-star-fill fs-5 cursor-pointer text-warning star-btn" data-value="1"></i>
+                    <i class="bi bi-star-fill fs-5 cursor-pointer text-warning star-btn" data-value="2"></i>
+                    <i class="bi bi-star-fill fs-5 cursor-pointer text-warning star-btn" data-value="3"></i>
+                    <i class="bi bi-star-fill fs-5 cursor-pointer text-warning star-btn" data-value="4"></i>
+                    <i class="bi bi-star-fill fs-5 cursor-pointer text-warning star-btn" data-value="5"></i>
+                </div>
+                
+                <textarea name="comment" class="form-control editorial-input mb-3" rows="2" placeholder="What did you think of this recipe?"></textarea>
+                <div class="d-flex justify-content-end">
+                  <button type="submit" class="btn editorial-submit-btn px-4">Post Review</button>
+                </div>
+            </form>
+          </div>
+
+          <div sec:authorize="isAnonymous()" class="review-input-box p-4 mb-5 text-center">
+            <h6 class="fw-bold mb-3">Want to leave a review?</h6>
+            <p class="text-muted small">Join the Smart Kitchen community to rate recipes, save your favorites, and access Cook Mode.</p>
+            <a th:href="@{/login(continue=|/recipes/${recipeId}|)}" class="btn editorial-submit-btn px-4 mt-2">Log in to Review</a>
           </div>
 
           <div class="review-card mb-4 pb-4 border-bottom">
@@ -307,5 +313,313 @@
 
     <div th:replace="fragments/layout :: mobile-bottom-nav"></div>
     <div th:replace="fragments/layout :: mobile-offcanvas"></div>
+    <div id="mobileSmackOverlay" class="d-none d-md-none" style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 1040; cursor: pointer;"></div>
+
+    <div id="smartTimerWidget" class="d-none bg-dark text-white shadow-lg p-4 rounded-4 d-flex align-items-center gap-4" style="position: fixed; bottom: 40px; left: 50%; transform: translateX(-50%); z-index: 1060; min-width: 380px; border: 2px solid #4b5563;">
+        <div class="timer-icon text-warning" style="font-size: 2.5rem;">
+            <i class="bi bi-hourglass-split"></i>
+        </div>
+        <div class="flex-grow-1 text-center">
+            <div class="small text-muted fw-bold text-uppercase mb-1" style="letter-spacing: 0.1em; font-size: 0.85rem;">Suggested Time</div>
+            <div id="timerDisplay" class="display-4 fw-bold" style="font-family: monospace; line-height: 1;">00:00</div>
+        </div>
+        <div class="d-flex flex-column gap-2">
+            <button id="startTimerBtn" class="btn btn-success btn-lg fw-bold px-4">START <span id="timerSuggestedTime"></span></button>
+            <button id="closeTimerBtn" class="btn btn-outline-light"><i class="bi bi-x-lg fs-5"></i></button>
+        </div>
+    </div>
+    <script>
+      document.addEventListener('DOMContentLoaded', () => {
+        // --- STAR RATING LOGIC ---
+        const stars = document.querySelectorAll('.star-btn');
+        const ratingInput = document.getElementById('ratingInput');
+
+        stars.forEach(star => {
+          star.addEventListener('click', function() {
+            const ratingValue = this.getAttribute('data-value');
+            ratingInput.value = ratingValue; // Update the hidden form input
+            
+            // Visually update the stars (fill in the clicked one and all before it)
+            stars.forEach(s => {
+              if (s.getAttribute('data-value') <= ratingValue) {
+                s.classList.replace('bi-star', 'bi-star-fill');
+              } else {
+                s.classList.replace('bi-star-fill', 'bi-star');
+              }
+            });
+          });
+        });
+      });
+    </script>
+    <script>
+      document.addEventListener('DOMContentLoaded', () => {
+        const cookModeBtn = document.querySelector('.cook-mode-btn');
+        if(!cookModeBtn) return; // Exit if user isn't logged in
+
+        const steps = document.querySelectorAll('.step-card');
+        const mobileSmackOverlay = document.getElementById('mobileSmackOverlay');
+        const synth = window.speechSynthesis;
+        
+        // --- STATE VARIABLES ---
+        let wakeLock = null;
+        let isCookModeActive = false;
+        let currentStepIndex = -1; 
+        
+        // --- VOICE RECOGNITION VARIABLES ---
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        let recognition = null;
+        let isSpeaking = false; // Prevents the app from listening to its own voice
+        
+        // Dictionary of allowed commands
+        const nextCommands = ['next', 'done', 'okay', 'ready', 'move on', 'finish'];
+        const repeatCommands = ['repeat', 'again', 'what was that', 'pardon'];
+        // --- NEW: Timer commands ---
+        const timerCommands = ['start timer', 'start the timer', 'begin timer', 'start clock', 'start'];
+
+        // --- TIMER VARIABLES ---
+        const timerWidget = document.getElementById('smartTimerWidget');
+        const timerDisplay = document.getElementById('timerDisplay');
+        const startTimerBtn = document.getElementById('startTimerBtn');
+        const timerSuggestedTime = document.getElementById('timerSuggestedTime');
+        const closeTimerBtn = document.getElementById('closeTimerBtn');
+        let countdownInterval;
+        let suggestedSeconds = 0;
+
+        // --- 1. VOICE COMMAND LOGIC ---
+        if (SpeechRecognition) {
+          recognition = new SpeechRecognition();
+          recognition.continuous = true; // Keep listening
+          recognition.interimResults = false; // Only trigger on final words
+          recognition.lang = 'en-US';
+
+          recognition.onresult = (event) => {
+            if (isSpeaking) return; // Ignore if the computer is currently talking
+            
+            // Get the last thing the user said and make it lowercase
+            const transcript = event.results[event.results.length - 1][0].transcript.trim().toLowerCase();
+            console.log("🗣️ User said:", transcript);
+
+            // Check if what they said contains any of our "Next" variations
+            if (nextCommands.some(cmd => transcript.includes(cmd))) {
+              console.log("✅ 'Next' command detected!");
+              advanceCookModeStep();
+            } 
+            // Check if what they said contains any of our "Repeat" variations
+            else if (repeatCommands.some(cmd => transcript.includes(cmd))) {
+              console.log("🔄 'Repeat' command detected!");
+              if (currentStepIndex >= 0 && currentStepIndex < steps.length) {
+                 const currentText = steps[currentStepIndex].querySelector('.step-text').innerText;
+                 speakText("Repeating Step " + (currentStepIndex + 1) + ". " + currentText);
+              }
+            }
+            else if (timerCommands.some(cmd => transcript.includes(cmd))) {
+              console.log("⏱️ 'Start Timer' command detected!");
+              
+              // Only start it if the widget is visible and the start button hasn't been clicked yet
+              if (!timerWidget.classList.contains('d-none') && !startTimerBtn.classList.contains('d-none')) {
+                speakText("Starting timer.");
+                startTimerBtn.click(); // This magically clicks the button for them!
+              }
+            }
+          };
+
+          // The "Continuous Listener Hack" - if the browser auto-closes the mic, turn it back on!
+          recognition.onend = () => {
+            if (isCookModeActive && !isSpeaking) {
+              try { recognition.start(); } catch(e){}
+            }
+          };
+        } else {
+          console.warn("Speech Recognition API not supported in this browser.");
+        }
+
+        // Custom speaking function that manages the mic
+        const speakText = (text) => {
+          synth.cancel();
+          isSpeaking = true;
+          if(recognition) recognition.stop(); // Stop listening so it doesn't hear itself
+
+          const utterance = new SpeechSynthesisUtterance(text);
+          utterance.onend = () => {
+            isSpeaking = false;
+            // Turn mic back on after speaking
+            if(isCookModeActive && recognition) {
+              try { recognition.start(); } catch(e){}
+            }
+          };
+          synth.speak(utterance);
+        };
+
+        // --- 2. WAKE LOCK LOGIC ---
+        const requestWakeLock = async () => {
+          try { wakeLock = await navigator.wakeLock.request('screen'); } catch (err) {}
+        };
+        const releaseWakeLock = () => {
+          if (wakeLock !== null) { wakeLock.release().then(() => wakeLock = null); }
+        };
+
+        // --- 3. SMART TIMER LOGIC ---
+        const scanForTime = (text) => {
+          let totalSeconds = 0;
+          let labelParts = [];
+
+          if (/half an? hour/i.test(text)) {
+            totalSeconds += 30 * 60;
+            labelParts.push("30 Min");
+          } else {
+            const hourMatch = text.match(/(\d+(?:\.\d+)?)\s*(?:hr|hour)s?/i);
+            if (hourMatch) {
+              const hours = parseFloat(hourMatch[1]);
+              totalSeconds += hours * 3600;
+              labelParts.push(`${hours} Hr`);
+            }
+            const minMatch = text.match(/(\d+)\s*(?:-|to\s+\d+\s+)?(?:min|minute)s?/i);
+            if (minMatch) {
+              const minutes = parseInt(minMatch[1]);
+              totalSeconds += minutes * 60;
+              labelParts.push(`${minutes} Min`);
+            }
+          }
+
+          if (totalSeconds > 0) {
+            suggestedSeconds = totalSeconds;
+            timerSuggestedTime.innerText = labelParts.join(' ');
+            const h = Math.floor(totalSeconds / 3600);
+            const m = Math.floor((totalSeconds % 3600) / 60).toString().padStart(2, '0');
+            timerDisplay.innerText = h > 0 ? `${h}:${m}:00` : `${m}:00`;
+            timerWidget.classList.remove('d-none'); 
+          }
+        };
+
+        startTimerBtn.addEventListener('click', () => {
+          startTimerBtn.classList.add('d-none');
+          let timeLeft = suggestedSeconds;
+          
+          clearInterval(countdownInterval);
+          countdownInterval = setInterval(() => {
+            timeLeft--;
+            const h = Math.floor(timeLeft / 3600);
+            const m = Math.floor((timeLeft % 3600) / 60).toString().padStart(2, '0');
+            const s = (timeLeft % 60).toString().padStart(2, '0');
+            timerDisplay.innerText = h > 0 ? `${h}:${m}:${s}` : `${m}:${s}`;
+            
+            if (timeLeft <= 0) {
+              clearInterval(countdownInterval);
+              timerDisplay.innerText = "DONE!";
+              timerWidget.classList.replace('bg-dark', 'bg-danger');
+              new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3').play();
+              speakText("Timer is up!");
+            }
+          }, 1000);
+        });
+
+        closeTimerBtn.addEventListener('click', () => {
+          timerWidget.classList.add('d-none');
+          clearInterval(countdownInterval);
+          startTimerBtn.classList.remove('d-none');
+          timerWidget.classList.replace('bg-danger', 'bg-dark');
+        });
+
+        // --- 4. UNIVERSAL ADVANCE FUNCTION ---
+        const advanceCookModeStep = () => {
+          if (isCookModeActive && currentStepIndex >= 0 && currentStepIndex < steps.length) {
+            const currentCheckbox = steps[currentStepIndex].querySelector('.step-checkbox');
+            if (!currentCheckbox.checked) {
+              currentCheckbox.checked = true; 
+              currentCheckbox.dispatchEvent(new Event('change')); 
+            }
+            currentStepIndex++; 
+          }
+        };
+
+        if(mobileSmackOverlay) mobileSmackOverlay.addEventListener('click', advanceCookModeStep);
+
+        document.addEventListener('keydown', (e) => {
+          if (isCookModeActive && e.code === 'Space') {
+            e.preventDefault(); 
+            advanceCookModeStep();
+          }
+        });
+
+        // --- 5. COOK MODE TOGGLE ---
+        cookModeBtn.addEventListener('click', () => {
+          isCookModeActive = !isCookModeActive;
+
+          if (isCookModeActive) {
+            cookModeBtn.classList.add('cook-mode-active');
+            cookModeBtn.innerHTML = '<i class="bi bi-mic-fill fs-5"></i> End Cook Mode';
+            requestWakeLock();
+            if(mobileSmackOverlay) mobileSmackOverlay.classList.remove('d-none');
+            
+            // Turn on the Microphone!
+            if(recognition) {
+              try { recognition.start(); } catch(e) {}
+            }
+            
+            speakText("Cook mode started. Say 'Next' or hit the spacebar to advance.");
+            
+            if (steps.length > 0) {
+              currentStepIndex = 0;
+              const firstStepText = steps[0].querySelector('.step-text').innerText;
+              setTimeout(() => { // Small delay so the intro voice doesn't overlap step 1
+                 speakText("Step 1. " + firstStepText);
+                 scanForTime(firstStepText);
+              }, 4000);
+            }
+
+          } else {
+            // Turn off everything
+            cookModeBtn.classList.remove('cook-mode-active');
+            cookModeBtn.innerHTML = '<i class="bi bi-play-fill fs-5"></i> Start Cook Mode';
+            isCookModeActive = false;
+            releaseWakeLock();
+            synth.cancel();
+            if(recognition) recognition.stop();
+            if(mobileSmackOverlay) mobileSmackOverlay.classList.add('d-none');
+            currentStepIndex = -1;
+            
+            // NEW: Actually kill the timer in the background
+            clearInterval(countdownInterval);
+            timerWidget.classList.add('d-none');
+            startTimerBtn.classList.remove('d-none');
+            timerWidget.classList.replace('bg-danger', 'bg-dark');
+          }
+        });
+
+        // --- 6. CHECKBOX LOGIC ---
+        steps.forEach((step, index) => {
+          const checkbox = step.querySelector('.step-checkbox');
+          checkbox.addEventListener('change', () => {
+            if (isCookModeActive && checkbox.checked) {
+              
+              // NEW: Kill the old step's timer so it doesn't ring later
+              clearInterval(countdownInterval);
+              timerWidget.classList.add('d-none'); 
+              startTimerBtn.classList.remove('d-none');
+              timerWidget.classList.replace('bg-danger', 'bg-dark');
+
+              if (index + 1 < steps.length) {
+                const nextStepText = steps[index + 1].querySelector('.step-text').innerText;
+                speakText("Step " + (index + 2) + ". " + nextStepText);
+                scanForTime(nextStepText); 
+              } else {
+                speakText("All steps completed. Enjoy your meal!");
+                
+                // Auto-reset
+                setTimeout(() => {
+                  isCookModeActive = false;
+                  cookModeBtn.classList.remove('cook-mode-active');
+                  cookModeBtn.innerHTML = '<i class="bi bi-play-fill fs-5"></i> Start Cook Mode';
+                  releaseWakeLock();
+                  if(recognition) recognition.stop();
+                  if(mobileSmackOverlay) mobileSmackOverlay.classList.add('d-none');
+                  currentStepIndex = -1;
+                }, 4000);
+              }
+            }
+          });
+        });
+      });
+    </script>
   </body>
 </html>
