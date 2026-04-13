@@ -1,9 +1,7 @@
 package com.sk.smart_kitchen.entities;
 
 import jakarta.persistence.*;
-import java.util.ArrayList;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 
 @Entity
@@ -45,9 +43,6 @@ public class Recipe {
         inverseJoinColumns = @JoinColumn(name = "tag_id")
     )
     private Set<Tag> tags = new HashSet<>();
-
-    @OneToMany(mappedBy = "recipe", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<RecipeIngredient> recipeIngredients = new ArrayList<>();
 
 
     public Long getId() {
@@ -128,14 +123,6 @@ public class Recipe {
 
     public void setDefaultServings(Integer defaultServings) {
         this.defaultServings = defaultServings;
-    }
-
-    public List<RecipeIngredient> getRecipeIngredients() {
-        return recipeIngredients;
-    }
-
-    public void setRecipeIngredients(List<RecipeIngredient> recipeIngredients) {
-        this.recipeIngredients = recipeIngredients;
     }
 
 

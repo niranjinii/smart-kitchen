@@ -1,17 +1,17 @@
 <!doctype html>
 <html xmlns:th="http://www.thymeleaf.org">
   <head>
-    <th:block th:replace="~{fragments/layout :: head}"></th:block>
+    <th:block th:replace="fragments/layout :: head"></th:block>
     <link rel="stylesheet" th:href="@{/css/recipe.css}" />
   </head>
   <body>
-    <div th:replace="~{fragments/layout :: navbar}"></div>
+    <div th:replace="fragments/layout :: navbar"></div>
 
     <div class="container-md px-3 mt-4 mb-5 pb-5">
       <div class="recipe-hero position-relative">
         <img
-          th:src="${recipe.imageUrl != null ? ((recipe.imageUrl.startsWith('http://') || recipe.imageUrl.startsWith('https://') || recipe.imageUrl.startsWith('/')) ? recipe.imageUrl : '/' + recipe.imageUrl) : 'https://images.unsplash.com/photo-1621996346565-e3dbc646d9a9?auto=format&fit=crop&w=1200&q=80'}"
-          th:alt="${recipe.title}"
+          src="https://images.unsplash.com/photo-1621996346565-e3dbc646d9a9?auto=format&fit=crop&w=1200&q=80"
+          alt="Spicy Garlic Pasta"
           class="hero-img shadow-sm"
         />
 
@@ -23,8 +23,8 @@
       <div class="row mb-5">
         <div class="col-12">
           <div class="mb-4">
-            <span class="badge category-badge mb-3" th:text="${recipe.mealType}">Dinner</span>
-            <h1 class="recipe-title-display m-0" th:text="${recipe.title}">Spicy Garlic Butter Pasta</h1>
+            <span class="badge category-badge mb-3">Dinner</span>
+            <h1 class="recipe-title-display m-0">Spicy Garlic Butter Pasta</h1>
 
             <div class="d-flex align-items-center mt-3 mb-4">
               <img
@@ -33,26 +33,19 @@
                 class="author-avatar me-2 shadow-sm"
               />
               <div class="recipe-author m-0">
-                <span class="fw-bold text-dark" th:text="${recipe.author != null ? recipe.author.username : 'Smart Kitchen Chef'}">John Doe</span>
+                <span class="fw-bold text-dark">John Doe</span>
                 <span class="text-muted mx-2">•</span>
                 <i class="bi bi-star-fill text-warning me-1"></i> 4.9 (120
                 reviews)
               </div>
             </div>
 
-            <p class="recipe-description" th:text="${recipe.description}">
+            <p class="recipe-description">
               This spicy garlic butter pasta is the ultimate comfort food. Ready
               in just 25 minutes, it combines rich butter, fiery red pepper
               flakes, and plenty of parmesan for a restaurant-quality meal at
               home. Perfect for busy weeknights!
             </p>
-
-            <div class="d-flex gap-2 mt-3">
-              <a th:href="@{/recipes/{id}/edit(id=${recipe.id})}" class="btn cook-mode-btn px-3 py-2">Edit</a>
-              <form th:action="@{/recipes/{id}/delete(id=${recipe.id})}" method="post">
-                <button type="submit" class="btn btn-outline-danger px-3 py-2">Delete</button>
-              </form>
-            </div>
           </div>
 
           <div
@@ -60,11 +53,11 @@
           >
             <div class="meta-item">
               <span class="meta-label">Total Time</span>
-              <span class="meta-value" th:text="${recipe.prepTimeMins != null ? recipe.prepTimeMins + ' mins' : '-'}">25 mins</span>
+              <span class="meta-value">25 mins</span>
             </div>
             <div class="meta-item">
               <span class="meta-label">Yield</span>
-              <span class="meta-value" th:text="${recipe.defaultServings != null ? recipe.defaultServings + ' Servings' : '-'}">2 Servings</span>
+              <span class="meta-value">2 Servings</span>
             </div>
           </div>
         </div>
@@ -84,9 +77,32 @@
           </div>
 
           <ul class="ingredient-list list-unstyled mb-4">
-            <li class="ingredient-item" th:each="ingredient : ${ingredients}">
-              <span class="fw-bold me-2" th:text="${ingredient.quantityNeeded + (ingredient.unit != null ? ingredient.unit : '')}">250g</span>
-              <span th:text="${ingredient.ingredient.name}">Fettuccine pasta</span>
+            <li class="ingredient-item">
+              <span class="fw-bold me-2">250g</span> Fettuccine pasta
+            </li>
+
+            <li class="ingredient-item flex-column align-items-start gap-1">
+              <div><span class="fw-bold me-2">30g</span> Unsalted butter</div>
+              <div class="swap-hint">
+                <i class="bi bi-arrow-return-right me-1"></i> Can be swapped
+                with 2 tbsp Olive Oil
+              </div>
+            </li>
+
+            <li class="ingredient-item">
+              <span class="fw-bold me-2">4 cloves</span> Garlic, minced
+            </li>
+
+            <li class="ingredient-item">
+              <span class="fw-bold me-2">1 tsp</span> Red pepper flakes
+            </li>
+
+            <li class="ingredient-item flex-column align-items-start gap-1">
+              <div><span class="fw-bold me-2">50g</span> Parmesan cheese</div>
+              <div class="swap-hint">
+                <i class="bi bi-arrow-return-right me-1"></i> Can be swapped
+                with Nutritional Yeast (Vegan)
+              </div>
             </li>
           </ul>
 
@@ -112,14 +128,26 @@
           </div>
 
           <div class="instruction-steps">
-            <label class="step-card d-flex gap-3 p-4 cursor-pointer" th:each="step, stat : ${instructionSteps}">
+            <label class="step-card d-flex gap-3 p-4 cursor-pointer">
               <input type="checkbox" class="step-checkbox mt-1" />
               <div class="step-content">
-                <h5 class="step-number mb-2" th:text="${'Step ' + (stat.index + 1)}">Step 1</h5>
-                <p class="step-text m-0" th:text="${step}">
+                <h5 class="step-number mb-2">Step 1</h5>
+                <p class="step-text m-0">
                   Bring a large pot of heavily salted water to a boil. Add the
                   fettuccine and cook until al dente, about 8-10 minutes.
                   Reserve 1/2 cup of pasta water before draining.
+                </p>
+              </div>
+            </label>
+
+            <label class="step-card d-flex gap-3 p-4 cursor-pointer">
+              <input type="checkbox" class="step-checkbox mt-1" />
+              <div class="step-content">
+                <h5 class="step-number mb-2">Step 2</h5>
+                <p class="step-text m-0">
+                  In a large skillet over medium-low heat, melt the butter. Add
+                  the minced garlic and red pepper flakes. Sauté for 1-2 minutes
+                  until fragrant (do not burn the garlic).
                 </p>
               </div>
             </label>
@@ -277,7 +305,7 @@
       </div>
     </div>
 
-    <div th:replace="~{fragments/layout :: mobile-bottom-nav}"></div>
-    <div th:replace="~{fragments/layout :: mobile-offcanvas}"></div>
+    <div th:replace="fragments/layout :: mobile-bottom-nav"></div>
+    <div th:replace="fragments/layout :: mobile-offcanvas"></div>
   </body>
 </html>

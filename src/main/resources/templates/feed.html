@@ -1,11 +1,11 @@
 <!doctype html>
 <html xmlns:th="http://www.thymeleaf.org">
   <head>
-    <th:block th:replace="~{fragments/layout :: head}"></th:block>
+    <th:block th:replace="fragments/layout :: head"></th:block>
     <link rel="stylesheet" th:href="@{/css/feed.css}" />
   </head>
   <body>
-    <div th:replace="~{fragments/layout :: navbar}"></div>
+    <div th:replace="fragments/layout :: navbar"></div>
 
     <div class="container-md px-3 mt-5 mb-5">
       <div class="row mb-4 justify-content-center">
@@ -41,12 +41,12 @@
       </div>
 
       <div class="masonry-grid">
-        <a th:href="@{/recipes/{id}(id=${recipe.id})}" class="recipe-card" th:each="recipe, stat : ${recipes}">
+        <a href="#" class="recipe-card" th:each="recipe, stat : ${recipes}">
           <div class="img-wrapper">
             <div
               class="img-placeholder"
               th:classappend="${stat.index % 3 == 0 ? 'height-tall' : (stat.index % 3 == 1 ? 'height-medium' : 'height-short')}"
-              th:style="'background-image: url(' + (${recipe.imageUrl != null ? ((recipe.imageUrl.startsWith('http://') || recipe.imageUrl.startsWith('https://') || recipe.imageUrl.startsWith('/')) ? recipe.imageUrl : '/' + recipe.imageUrl) : 'https://images.unsplash.com/photo-1621996346565-e3dbc646d9a9?auto=format&fit=crop&w=1200&q=80'}) + ');'"
+              th:style="'background-image: url(' + ${recipe.imageUrl} + ');'"
             ></div>
             <div class="floating-time-badge">
               <i class="bi bi-clock"></i>
@@ -66,7 +66,7 @@
       </div>
     </div>
 
-    <div th:replace="~{fragments/layout :: mobile-bottom-nav}"></div>
-    <div th:replace="~{fragments/layout :: mobile-offcanvas}"></div>
+    <div th:replace="fragments/layout :: mobile-bottom-nav"></div>
+    <div th:replace="fragments/layout :: mobile-offcanvas"></div>
   </body>
 </html>
