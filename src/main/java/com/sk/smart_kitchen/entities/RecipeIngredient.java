@@ -21,6 +21,8 @@ public class RecipeIngredient {
     @Column(nullable = false)
     private Double quantityNeeded;
 
+    private String unit;
+
     public Long getId() {
         return id;
     }
@@ -51,6 +53,14 @@ public class RecipeIngredient {
 
     public void setQuantityNeeded(Double quantityNeeded) {
         this.quantityNeeded = quantityNeeded;
+    }
+
+    public String getUnit() {
+        return unit;
+    }
+
+    public void setUnit(String unit) {
+        this.unit = unit;
     }
 
 }

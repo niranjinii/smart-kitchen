@@ -4,6 +4,7 @@ import org.springframework.security.web.savedrequest.HttpSessionRequestCache;
 import org.springframework.security.web.savedrequest.SavedRequest;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -21,8 +22,10 @@ public class SecurityConfig {
             .csrf(csrf -> csrf.disable()) 
             
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/", "/recipes/*", "/css/**", "/images/**", "/register").permitAll()
-                .requestMatchers("/reviews/add", "/recipes/new", "/pantry/**", "/profile").authenticated()
+                .requestMatchers("/", "/css/**", "/images/**", "/uploads/**", "/register", "/login").permitAll()
+                .requestMatchers("/reviews/add", "/recipes/new", "/recipes/upload-image", "/pantry/**", "/profile").authenticated()
+                .requestMatchers(HttpMethod.POST, "/recipes", "/recipes/**").authenticated()
+                .requestMatchers(HttpMethod.GET, "/recipes/**").permitAll()
                 .anyRequest().authenticated()
             )
             .formLogin(form -> form
