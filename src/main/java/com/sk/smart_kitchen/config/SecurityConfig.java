@@ -1,5 +1,5 @@
 package com.sk.smart_kitchen.config;
-
+import org.springframework.security.config.annotation.web.configuration.WebSecurityCustomizer;
 import org.springframework.security.web.savedrequest.HttpSessionRequestCache;
 import org.springframework.security.web.savedrequest.SavedRequest;
 import org.springframework.context.annotation.Bean;
@@ -18,11 +18,10 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
-            // 🚨 THIS IS THE MAGIC LINE THAT FIXES THE 403 ERROR 🚨
             .csrf(csrf -> csrf.disable()) 
             
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/", "/css/**", "/images/**", "/uploads/**", "/register", "/login").permitAll()
+                .requestMatchers("/", "/register", "/login").permitAll()
                 .requestMatchers("/reviews/add", "/recipes/new", "/recipes/upload-image", "/pantry/**", "/profile").authenticated()
                 .requestMatchers(HttpMethod.POST, "/recipes", "/recipes/**").authenticated()
                 .requestMatchers(HttpMethod.GET, "/recipes/**").permitAll()
@@ -63,4 +62,12 @@ public class SecurityConfig {
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
     }
+
+    @Bean
+    public WebSecurityCustomizer webSecurityCustomizer() {
+        // This tells Spring Security to completely ignore these paths
+        // They will never be blocked, regardless of login status
+        return (web) -> web.ignoring().requestMatchers("/css/**", "/images/**", "/uploads/**");
+    }
 }
+
