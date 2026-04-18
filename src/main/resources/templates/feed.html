@@ -40,38 +40,84 @@
         >
       </div>
 
-      <div class="masonry-grid">
-      
-        <a th:href="@{/recipes/{id}(id=${recipe.id})}" class="recipe-card text-decoration-none text-dark" th:each="recipe, stat : ${recipes}">
-          <div class="img-wrapper position-relative">
-            <div
-              class="img-placeholder"
-              th:classappend="${stat.index % 3 == 0 ? 'height-tall' : (stat.index % 3 == 1 ? 'height-medium' : 'height-short')}"
-              th:style="'background-image: url(' + (${recipe.imageUrl != null ? ((recipe.imageUrl.startsWith('http://') || recipe.imageUrl.startsWith('https://') || recipe.imageUrl.startsWith('/')) ? recipe.imageUrl : '/' + recipe.imageUrl) : 'https://images.unsplash.com/photo-1621996346565-e3dbc646d9a9?auto=format&fit=crop&w=1200&q=80'}) + ');'"
-            ></div>
-            <div class="floating-time-badge position-absolute bottom-0 start-0 m-2 bg-dark text-white px-2 py-1 rounded small">
-              <i class="bi bi-clock"></i>
-              <span th:text="${recipe.prepTimeMins != null ? recipe.prepTimeMins + ' mins' : '-'}">15 mins</span>
-            </div>
-          </div>
-
-          <div class="recipe-card-header d-flex justify-content-between align-items-start mt-3 px-1">
-            <h5 class="recipe-title fw-bold m-0" th:text="${recipe.title}">Recipe Title</h5>
-            
-            <i class="bi fs-5 bookmark-btn" 
-               th:classappend="${savedRecipeIds != null and #lists.contains(savedRecipeIds, recipe.id)} ? 'bi-bookmark-check-fill text-success' : 'bi-bookmark'"></i>
-          </div>
-
-          <div class="recipe-meta text-muted small mt-1 px-1" th:text="${recipe.mealType}">
-            Category
-          </div>
-        </a>
-        
-      </div>
+<div class="masonry-grid">
+  <a th:href="@{/recipes/{id}(id=${recipe.id})}" class="recipe-card" th:each="recipe, stat : ${recipes}">
+    <div class="img-wrapper">
+      <div
+        class="img-placeholder"
+        th:classappend="${stat.index % 3 == 0 ? 'height-tall' : (stat.index % 3 == 1 ? 'height-medium' : 'height-short')}"
+        th:style="'background-image: url(' + (${recipe.imageUrl != null ? ((recipe.imageUrl.startsWith('http://') || recipe.imageUrl.startsWith('https://') || recipe.imageUrl.startsWith('/')) ? recipe.imageUrl : '/' + recipe.imageUrl) : 'https://images.unsplash.com/photo-1621996346565-e3dbc646d9a9?auto=format&fit=crop&w=1200&q=80'}) + ');'"
+      ></div>
+      <div class="floating-time-badge">
+        <i class="bi bi-clock"></i>
+        <span th:text="${recipe.prepTimeMins != null ? recipe.prepTimeMins + ' mins' : '15 mins'}">15 mins</span>
       </div>
     </div>
 
+    <div class="recipe-card-header">
+      <h5 class="recipe-title" th:text="${recipe.title}">Recipe Title</h5>
+      
+      <i class="bi bookmark-btn feed-bookmark-btn fs-5"
+         style="cursor: pointer; transition: color 0.2s;"
+         th:classappend="${savedRecipeIds != null and #lists.contains(savedRecipeIds, recipe.id)} ? 'bi-bookmark-fill' : 'bi-bookmark'"
+         th:styleappend="${savedRecipeIds != null and #lists.contains(savedRecipeIds, recipe.id)} ? 'color: var(--brand-green);' : 'color: #9ca3af;'"
+         th:data-recipe-id="${recipe.id}"
+         title="Save Recipe">
+      </i>
+      
+    </div>
+
+    <div class="recipe-meta mt-1" th:text="${recipe.mealType}">
+      Category
+    </div>
+  </a>
+</div>
+      </div>
+
     <div th:replace="~{fragments/layout :: mobile-bottom-nav}"></div>
     <div th:replace="~{fragments/layout :: mobile-offcanvas}"></div>
+
+    <script>
+      document.addEventListener('DOMContentLoaded', () => {
+        // Select all the bookmark icons on the feed
+        const feedBookmarks = document.querySelectorAll('.feed-bookmark-btn');
+
+        feedBookmarks.forEach(icon => {
+          icon.addEventListener('click', async function(e) {
+              e.preventDefault();
+              e.stopPropagation(); // Prevents the card from clicking through to the recipe page!
+              
+              const recipeId = this.getAttribute('data-recipe-id');
+              if (!recipeId) return; // Safety check so it doesn't fire on empty IDs
+
+              try {
+                  // Call the exact same endpoint we used on the recipe page
+                  const response = await fetch(`/recipes/${recipeId}/save`, { 
+                      method: 'POST', 
+                      headers: { 'Content-Type': 'application/json' } 
+                  });
+
+                  if (response.ok) { 
+                      const data = await response.json();
+                      
+                      // Toggle the UI instantly based on the backend response
+                      if (data.status === 'added') {
+                          this.classList.replace('bi-bookmark', 'bi-bookmark-fill'); 
+                          this.style.color = 'var(--brand-green)';
+                      } else {
+                          this.classList.replace('bi-bookmark-fill', 'bi-bookmark'); 
+                          this.style.color = '#9ca3af';
+                      }
+                  } else if (response.status === 401) { 
+                      // Bounces them to login if they try to save while logged out
+                      window.location.href = '/login'; 
+                  }
+              } catch (error) {
+                  console.error("Error saving recipe:", error);
+              }
+          });
+        });
+      });
+    </script>
   </body>
 </html>

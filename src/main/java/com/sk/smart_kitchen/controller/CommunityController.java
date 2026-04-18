@@ -7,6 +7,7 @@ import com.sk.smart_kitchen.entities.Recipe;
 import com.sk.smart_kitchen.repositories.UserRepository;
 import com.sk.smart_kitchen.repositories.RecipeRepository;
 import com.sk.smart_kitchen.repositories.ChefsNoteRepository;
+import com.sk.smart_kitchen.repositories.ReviewRepository; // <-- Added this import
 import com.sk.smart_kitchen.services.reviews.ReviewService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -30,6 +31,9 @@ public class CommunityController {
     @Autowired
     private ChefsNoteRepository chefsNoteRepository;
 
+    @Autowired // <-- Added the repository for deleting reviews
+    private ReviewRepository reviewRepository;
+
     // We explicitly tell Spring to inject the PROXY, not the real one!
     public CommunityController(@Qualifier("reviewServiceProxy") ReviewService reviewService) {
         this.reviewService = reviewService;
@@ -40,6 +44,18 @@ public class CommunityController {
     public String addReview(Review review, Principal principal, @RequestParam Long recipeId) {
         // The controller doesn't know it's talking to a proxy!
         reviewService.saveReview(review, recipeId, principal.getName());
+        return "redirect:/recipes/" + recipeId;
+    }
+
+    // --- NEW: DELETE REVIEW ENDPOINT ---
+    @PostMapping("/reviews/delete")
+    public String deleteReview(@RequestParam Long reviewId, @RequestParam Long recipeId, Principal principal) {
+        // Safe Delete: Checks the database to make sure the logged-in user actually owns the review
+        reviewRepository.findById(reviewId).ifPresent(review -> {
+            if (review.getUser().getEmail().equals(principal.getName())) {
+                reviewRepository.delete(review);
+            }
+        });
         return "redirect:/recipes/" + recipeId;
     }
 

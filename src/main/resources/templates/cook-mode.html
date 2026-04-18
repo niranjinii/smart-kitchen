@@ -1,0 +1,258 @@
+<!doctype html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cook Mode - Smart Kitchen</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" />
+    <link rel="stylesheet" th:href="@{/css/global.css}" />
+    <link rel="stylesheet" th:href="@{/css/cook-mode.css}" />
+</head>
+<body>
+
+    <div class="top-bar">
+        <i class="bi bi-mic-fill text-danger" id="micStatusIcon" style="display: none;"></i>
+        <div class="d-flex align-items-center gap-2">
+            <label class="custom-switch">
+                <input type="checkbox" id="voiceToggle">
+                <span class="custom-slider"></span>
+            </label>
+            <span class="fw-bold text-dark" style="font-size: 0.9rem;">Voice Control</span>
+        </div>
+        <div style="width: 1px; height: 20px; background: #e5e7eb;"></div>
+        <a th:href="@{/recipes/{id}(id=${recipe.id})}" class="btn btn-sm btn-danger fw-bold rounded-pill px-3">Exit</a>
+    </div>
+
+    <div class="cook-layout">
+        <div class="ingredients-panel">
+            <h3 class="fw-bold mb-4" style="color: var(--brand-green);">Ingredients</h3>
+            <div class="ingredient-item" th:each="ingredient : ${ingredients}">
+                <span class="fw-bold" th:text="${ingredient.quantityNeeded + (ingredient.unit != null ? ingredient.unit : '')}"></span> 
+                <span class="ingredient-name" th:text="${ingredient.ingredient.name}"></span>
+            </div>
+        </div>
+
+        <div class="steps-panel" id="stepsContainer">
+            <div class="step-card" th:each="step, stat : ${instructionSteps}">
+                <div class="mt-2"><input type="checkbox" class="step-checkbox" /></div>
+                <div class="flex-grow-1 position-relative">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div class="step-number" th:text="${'Step ' + (stat.index + 1)}"></div>
+                        <i class="bi bi-arrow-repeat manual-audio-btn" title="Repeat Audio"></i>
+                    </div>
+                    <div class="step-text" th:text="${step}"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="smartTimerWidget" class="timer-widget d-none">
+        <i class="bi bi-hourglass-split fs-4" style="color: var(--brand-green);"></i>
+        
+        <div class="d-flex flex-column">
+            <span class="text-uppercase fw-bold" style="font-size: 0.7rem; letter-spacing: 0.1em; color: #6b7280; margin-bottom: 2px;">Time Remaining</span>
+            <div class="timer-display" id="timerDisplay">00:00</div>
+        </div>
+        
+        <div class="d-flex align-items-center ms-auto gap-3">
+            <button id="startTimerBtn" class="timer-btn-start shadow-sm">START <span id="timerSuggestedTime"></span></button>
+            <button id="closeTimerBtn" class="timer-close-btn p-0"><i class="bi bi-x-lg fs-5"></i></button>
+        </div>
+    </div>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const steps = document.querySelectorAll('.step-card');
+            const synth = window.speechSynthesis;
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            
+            let currentStepIndex = 0; 
+            let recognition = null; 
+            let isSpeaking = false;
+            
+            const voiceToggle = document.getElementById('voiceToggle');
+            const micStatusIcon = document.getElementById('micStatusIcon');
+            
+            // Timer Elements
+            const timerWidget = document.getElementById('smartTimerWidget');
+            const timerDisplay = document.getElementById('timerDisplay');
+            const startTimerBtn = document.getElementById('startTimerBtn');
+            const closeTimerBtn = document.getElementById('closeTimerBtn');
+            const timerSuggestedTime = document.getElementById('timerSuggestedTime');
+            let countdownInterval; 
+            let suggestedSeconds = 0;
+
+            // 1. SMART INGREDIENT SCRATCH-OFF
+            const updateIngredients = () => {
+                let remainingText = "";
+                for(let i = currentStepIndex; i < steps.length; i++) {
+                    remainingText += steps[i].innerText.toLowerCase() + " ";
+                }
+                
+                document.querySelectorAll('.ingredient-item').forEach(item => {
+                    let name = item.querySelector('.ingredient-name').innerText.toLowerCase();
+                    let words = name.match(/\b[a-z]{4,}\b/g) || [];
+                    
+                    let isNeeded = words.some(word => remainingText.includes(word));
+                    item.classList.toggle('checked-out', !isNeeded);
+                });
+            };
+
+            // 2. UI UPDATER
+            const updateVisualStep = (skipSpeech = false) => {
+                steps.forEach((step, i) => {
+                    step.classList.remove('active-step');
+                    const cb = step.querySelector('.step-checkbox');
+                    cb.checked = (i < currentStepIndex);
+
+                    if (i === currentStepIndex) {
+                        step.classList.add('active-step');
+                        step.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        
+                        const currentText = step.querySelector('.step-text').innerText;
+                        scanForTime(currentText);
+                        
+                        if (voiceToggle.checked && !skipSpeech) {
+                            speakText("Step " + (i + 1) + ". " + currentText);
+                        }
+                    }
+                });
+                updateIngredients();
+            };
+
+            // 3. ADVANCE LOGIC
+            const advanceStep = () => {
+                if (currentStepIndex < steps.length) {
+                    // Kill old timer
+                    clearInterval(countdownInterval); 
+                    timerWidget.classList.add('d-none'); 
+                    timerWidget.classList.remove('ringing');
+                    startTimerBtn.classList.remove('d-none');
+                    
+                    currentStepIndex++;
+                    if (currentStepIndex < steps.length) {
+                        updateVisualStep();
+                    } else {
+                        if (voiceToggle.checked) speakText("All steps completed. Enjoy your meal!");
+                    }
+                }
+            };
+
+            // 4. CLICK EVENTS
+            steps.forEach((step, index) => {
+                step.addEventListener('click', (e) => {
+                    if (e.target.classList.contains('manual-audio-btn')) {
+                        speakText("Step " + (index + 1) + ". " + step.querySelector('.step-text').innerText);
+                        return;
+                    }
+                    if (index === currentStepIndex && e.target.classList.contains('step-checkbox')) {
+                        advanceStep();
+                        return;
+                    }
+                    if (index !== currentStepIndex) {
+                        e.preventDefault();
+                        currentStepIndex = index;
+                        updateVisualStep();
+                    }
+                });
+            });
+
+            document.addEventListener('keydown', (e) => { if (e.code === 'Space') { e.preventDefault(); advanceStep(); } });
+
+            // 5. TIMER LOGIC
+            const scanForTime = (text) => {
+                const minMatch = text.match(/(\d+)\s*(?:to|-)?\s*(?:\d+)?\s*(?:min|minute)s?/i);
+                if (minMatch) {
+                    suggestedSeconds = parseInt(minMatch[1]) * 60;
+                    timerSuggestedTime.innerText = `(${minMatch[1]} Min)`;
+                    const m = Math.floor(suggestedSeconds / 60).toString().padStart(2, '0');
+                    timerDisplay.innerText = `${m}:00`;
+                    timerWidget.classList.remove('d-none');
+                }
+            };
+
+            startTimerBtn.addEventListener('click', () => {
+                startTimerBtn.classList.add('d-none'); 
+                let timeLeft = suggestedSeconds;
+                
+                clearInterval(countdownInterval);
+                countdownInterval = setInterval(() => {
+                    timeLeft--;
+                    const m = Math.floor(timeLeft / 60).toString().padStart(2, '0');
+                    const s = (timeLeft % 60).toString().padStart(2, '0');
+                    timerDisplay.innerText = `${m}:${s}`;
+                    
+                    if (timeLeft <= 0) {
+                        clearInterval(countdownInterval); 
+                        timerDisplay.innerText = "DONE"; 
+                        timerWidget.classList.add('ringing');
+                        new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3').play();
+                    }
+                }, 1000);
+            });
+
+            closeTimerBtn.addEventListener('click', () => {
+                timerWidget.classList.add('d-none'); 
+                clearInterval(countdownInterval);
+                timerWidget.classList.remove('ringing');
+                startTimerBtn.classList.remove('d-none');
+            });
+
+            // 6. VOICE LOGIC
+            const speakText = (text) => {
+                synth.cancel();
+                if(recognition) { try { recognition.stop(); } catch(e){} }
+                setTimeout(() => {
+                    const utterance = new SpeechSynthesisUtterance(text);
+                    utterance.onstart = () => { isSpeaking = true; micStatusIcon.classList.replace('text-danger', 'text-muted'); };
+                    utterance.onend = () => {
+                        isSpeaking = false; micStatusIcon.classList.replace('text-muted', 'text-danger');
+                        if(voiceToggle.checked && recognition) { try { recognition.start(); } catch(e){} }
+                    };
+                    synth.speak(utterance);
+                }, 100); 
+            };
+
+            if (SpeechRecognition) {
+                recognition = new SpeechRecognition();
+                recognition.continuous = true; recognition.interimResults = false;
+                
+                recognition.onresult = (event) => {
+                    if (!voiceToggle.checked || isSpeaking) return; 
+                    const t = event.results[event.results.length - 1][0].transcript.trim().toLowerCase();
+                    
+                    if (['next', 'done', 'okay'].some(cmd => t.includes(cmd))) advanceStep();
+                    else if (['repeat', 'again'].some(cmd => t.includes(cmd))) speakText(steps[currentStepIndex].querySelector('.step-text').innerText);
+                    else if (['start timer'].some(cmd => t.includes(cmd)) && !timerWidget.classList.contains('d-none')) startTimerBtn.click();
+                };
+
+                recognition.onend = () => { if (!isSpeaking && voiceToggle.checked) { try { recognition.start(); } catch(e){} } };
+
+                voiceToggle.addEventListener('change', () => {
+                    if (voiceToggle.checked) {
+                        document.body.classList.add('voice-mode-on');
+                        micStatusIcon.style.display = 'block';
+                        try { recognition.start(); } catch(e){}
+                        
+                        // Welcome Message logic!
+                        updateVisualStep(true); // Don't speak step 1 immediately
+                        speakText("Welcome to Cook Mode. Say 'Next' to advance, or 'Repeat' to hear the step again.");
+                        setTimeout(() => {
+                             if(currentStepIndex === 0) speakText("Step 1. " + steps[0].querySelector('.step-text').innerText);
+                        }, 5000);
+
+                    } else { 
+                        document.body.classList.remove('voice-mode-on');
+                        micStatusIcon.style.display = 'none';
+                        recognition.stop(); 
+                        synth.cancel(); 
+                    }
+                });
+            }
+
+            // Init
+            updateVisualStep(true);
+        });
+    </script>
+</body>
+</html>
