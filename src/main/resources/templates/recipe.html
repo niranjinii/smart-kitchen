@@ -9,14 +9,10 @@
 
     <div class="container-md px-3 mt-4 mb-5 pb-5">
       <div class="recipe-hero position-relative">
-        <img
-          th:src="${recipe.imageUrl != null ? ((recipe.imageUrl.startsWith('http://') || recipe.imageUrl.startsWith('https://') || recipe.imageUrl.startsWith('/')) ? recipe.imageUrl : '/' + recipe.imageUrl) : 'https://images.unsplash.com/photo-1621996346565-e3dbc646d9a9?auto=format&fit=crop&w=1200&q=80'}"
-          th:alt="${recipe.title}"
-          class="hero-img shadow-sm"
-        />
-
-        <button class="btn bookmark-fab shadow">
-          <i class="bi bi-bookmark fs-5"></i>
+        <img th:src="${recipe.imageUrl != null ? ((recipe.imageUrl.startsWith('http://') || recipe.imageUrl.startsWith('https://') || recipe.imageUrl.startsWith('/')) ? recipe.imageUrl : '/' + recipe.imageUrl) : 'https://images.unsplash.com/photo-1621996346565-e3dbc646d9a9?auto=format&fit=crop&w=1200&q=80'}" th:alt="${recipe.title}" class="hero-img shadow-sm" />
+        <button class="btn bookmark-fab shadow" 
+                th:style="${isSaved} ? 'background-color: var(--brand-green); color: white;' : ''">
+          <i class="fs-5" th:class="${isSaved} ? 'bi bi-bookmark-check-fill' : 'bi bi-bookmark'"></i>
         </button>
       </div>
 
@@ -24,48 +20,22 @@
         <div class="col-12">
           <div class="mb-4">
             <span class="badge category-badge mb-3" th:text="${recipe.mealType}">Dinner</span>
-            <h1 class="recipe-title-display m-0" th:text="${recipe.title}">Spicy Garlic Butter Pasta</h1>
+            <h1 class="recipe-title-display m-0" th:text="${recipe.title}">Spicy Garlic Pasta</h1>
 
             <div class="d-flex align-items-center mt-3 mb-4">
-              <img
-                src="https://images.unsplash.com/photo-1438761681033-6461ffad8d80?auto=format&fit=crop&w=100&q=80"
-                alt="Author Avatar"
-                class="author-avatar me-2 shadow-sm"
-              />
+              <img src="https://images.unsplash.com/photo-1438761681033-6461ffad8d80?auto=format&fit=crop&w=100&q=80" alt="Author Avatar" class="author-avatar me-2 shadow-sm" />
               <div class="recipe-author m-0">
                 <span class="fw-bold text-dark" th:text="${recipe.author != null ? recipe.author.username : 'Smart Kitchen Chef'}">John Doe</span>
                 <span class="text-muted mx-2">•</span>
-                <i class="bi bi-star-fill text-warning me-1"></i> 4.9 (120
-                reviews)
+                <i class="bi bi-star-fill text-warning me-1"></i> 4.9 (120 reviews)
               </div>
             </div>
-
-            <p class="recipe-description" th:text="${recipe.description}">
-              This spicy garlic butter pasta is the ultimate comfort food. Ready
-              in just 25 minutes, it combines rich butter, fiery red pepper
-              flakes, and plenty of parmesan for a restaurant-quality meal at
-              home. Perfect for busy weeknights!
-            </p>
-
-            <div class="d-flex gap-2 mt-3" th:if="${#authorization.expression('isAuthenticated()') and recipe.author != null and #authentication.principal.displayName == recipe.author.username}">
-              <a th:href="@{/recipes/{id}/edit(id=${recipe.id})}" class="btn cook-mode-btn px-3 py-2">Edit</a>
-              <form th:action="@{/recipes/{id}/delete(id=${recipe.id})}" method="post">
-                <button type="submit" class="btn btn-outline-danger px-3 py-2">Delete</button>
-              </form>
-            </div>
+            <p class="recipe-description" th:text="${recipe.description}">Description</p>
           </div>
 
-          <div
-            class="d-flex gap-5 mt-4 recipe-meta-bar py-3 border-top border-bottom"
-          >
-            <div class="meta-item">
-              <span class="meta-label">Total Time</span>
-              <span class="meta-value" th:text="${recipe.prepTimeMins != null ? recipe.prepTimeMins + ' mins' : '-'}">25 mins</span>
-            </div>
-            <div class="meta-item">
-              <span class="meta-label">Yield</span>
-              <span class="meta-value" th:text="${recipe.defaultServings != null ? recipe.defaultServings + ' Servings' : '-'}">2 Servings</span>
-            </div>
+          <div class="d-flex gap-5 mt-4 recipe-meta-bar py-3 border-top border-bottom">
+            <div class="meta-item"><span class="meta-label">Total Time</span><span class="meta-value" th:text="${recipe.prepTimeMins != null ? recipe.prepTimeMins + ' mins' : '-'}">25 mins</span></div>
+            <div class="meta-item"><span class="meta-label">Yield</span><span class="meta-value" th:text="${recipe.defaultServings != null ? recipe.defaultServings + ' Servings' : '-'}">2 Servings</span></div>
           </div>
         </div>
       </div>
@@ -74,47 +44,33 @@
         <div class="col-lg-4 order-2 order-lg-1">
           <div class="d-flex justify-content-between align-items-end mb-4">
             <h3 class="section-title m-0">Ingredients</h3>
-            <div
-              class="yield-adjuster d-flex align-items-center gap-3 px-2 py-1"
-            >
-              <i class="bi bi-dash cursor-pointer"></i>
-              <span class="fw-bold" style="font-size: 0.9rem">2 Servings</span>
-              <i class="bi bi-plus cursor-pointer"></i>
+            <div class="yield-adjuster d-flex align-items-center gap-3 px-2 py-1">
+              <i class="bi bi-dash cursor-pointer"></i><span class="fw-bold" style="font-size: 0.9rem">2 Servings</span><i class="bi bi-plus cursor-pointer"></i>
             </div>
           </div>
-
           <ul class="ingredient-list list-unstyled mb-4">
             <li class="ingredient-item" th:each="ingredient : ${ingredients}">
               <span class="fw-bold me-2" th:text="${ingredient.quantityNeeded + (ingredient.unit != null ? ingredient.unit : '')}">250g</span>
-              <span th:text="${ingredient.ingredient.name}">Fettuccine pasta</span>
+              <span th:text="${ingredient.ingredient.name}">Pasta</span>
             </li>
           </ul>
-
-          <button
-            class="btn w-100 add-to-cart-btn py-2 d-flex justify-content-center align-items-center gap-2"
-            data-bs-toggle="modal"
-            data-bs-target="#shoppingListModal"
-          >
+          <button class="btn w-100 add-to-cart-btn py-2 d-flex justify-content-center align-items-center gap-2" data-bs-toggle="modal" data-bs-target="#shoppingListModal">
             <i class="bi bi-cart-plus"></i> Add to Shopping List
           </button>
         </div>
 
         <div class="col-lg-8 order-1 order-lg-2">
-          <div
-            class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3"
-          >
+          <div id="instructionsHeader" class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
             <h3 class="section-title m-0">Instructions</h3>
-            
             <div sec:authorize="isAuthenticated()">
-              <button id="startCookModeBtn" class="btn cook-mode-btn px-4 py-2 d-flex align-items-center gap-2">
-                <i class="bi bi-play-fill fs-5"></i> Start Cook Mode
-              </button>
+                <button id="mainCookModeBtn" class="btn px-4 py-2 d-flex align-items-center gap-2 shadow-sm" style="background-color: var(--brand-green); color: white; border-radius: 8px; font-weight: bold;">
+                  <i class="bi bi-play-fill fs-5"></i> Start Cook Mode
+                </button>
             </div>
-            
             <div sec:authorize="isAnonymous()">
-              <a th:href="@{/login(continue=|/recipes/${recipeId}|)}" class="btn btn-outline-dark px-4 py-2 d-flex align-items-center gap-2" style="border-radius: 6px; font-weight: 600;">
-                <i class="bi bi-lock-fill"></i> Log in for Cook Mode
-              </a>
+                <a th:href="@{/login(continue=|/recipes/${recipeId}|)}" class="btn btn-outline-dark px-4 py-2 d-flex align-items-center gap-2" style="border-radius: 8px; font-weight: 600;">
+                  <i class="bi bi-lock-fill"></i> Log in for Cook Mode
+                </a>
             </div>
           </div>
 
@@ -123,45 +79,34 @@
               <input type="checkbox" class="step-checkbox mt-1" />
               <div class="step-content">
                 <h5 class="step-number mb-2" th:text="${'Step ' + (stat.index + 1)}">Step 1</h5>
-                <p class="step-text m-0" th:text="${step}">
-                  Bring a large pot of heavily salted water to a boil. Add the
-                  fettuccine and cook until al dente, about 8-10 minutes.
-                  Reserve 1/2 cup of pasta water before draining.
-                </p>
+                <p class="step-text m-0" th:text="${step}">Step Text</p>
               </div>
             </label>
           </div>
 
-          <div class="chefs-notes mt-5 p-4">
-            <div class="d-flex align-items-center gap-2 mb-3">
-              <h5 class="m-0 fw-bold editorial-heading">Chef's Notes</h5>
-            </div>
-            <textarea
-              class="form-control custom-note-input"
-              rows="3"
-              placeholder="Jot down your tweaks here..."
-            ></textarea>
+          <div sec:authorize="isAuthenticated()" class="chefs-notes mt-5 p-4">
+            <h5 class="m-0 fw-bold editorial-heading mb-3">Chef's Notes</h5>
+            <form th:action="@{/notes/add}" method="post">
+                <input type="hidden" name="recipeId" th:value="${recipeId}">
+                <textarea name="content" class="form-control custom-note-input mb-3" rows="3" placeholder="Jot down your tweaks here..." required th:text="${myNote != null ? myNote.content : ''}"></textarea>
+                <div class="d-flex justify-content-end">
+                    <button type="submit" class="btn btn-sm btn-outline-dark fw-bold px-3">Save Note</button>
+                </div>
+            </form>
           </div>
         </div>
-      </div>
-
-      <div class="row mt-5 pt-5 mb-5 border-top">
+      </div> <div id="reviewsSection" class="row mt-5 pt-5 mb-5 border-top">
         <div class="col-lg-8">
           <div class="d-flex justify-content-between align-items-end mb-4">
             <h3 class="section-title m-0">Reviews</h3>
-            <span class="fw-bold" style="font-size: 1.1rem"
-              ><i class="bi bi-star-fill text-warning me-1"></i> 4.9
-              <span class="text-muted fw-normal">(120)</span></span
-            >
+            <span class="fw-bold" style="font-size: 1.1rem"><i class="bi bi-star-fill text-warning me-1"></i> 4.9 <span class="text-muted fw-normal">(120)</span></span>
           </div>
 
           <div sec:authorize="isAuthenticated()" class="review-input-box p-4 mb-5">
             <h6 class="fw-bold mb-3">Leave a review as <span sec:authentication="principal.displayName"></span></h6>
-            
             <form th:action="@{/reviews/add}" method="post" id="reviewForm">
                 <input type="hidden" name="recipeId" th:value="${recipeId}"> 
                 <input type="hidden" name="rating" id="ratingInput" value="5">
-                
                 <div class="d-flex gap-2 mb-3" id="starContainer">
                     <i class="bi bi-star-fill fs-5 cursor-pointer text-warning star-btn" data-value="1"></i>
                     <i class="bi bi-star-fill fs-5 cursor-pointer text-warning star-btn" data-value="2"></i>
@@ -169,427 +114,368 @@
                     <i class="bi bi-star-fill fs-5 cursor-pointer text-warning star-btn" data-value="4"></i>
                     <i class="bi bi-star-fill fs-5 cursor-pointer text-warning star-btn" data-value="5"></i>
                 </div>
-                
                 <textarea name="comment" class="form-control editorial-input mb-3" rows="2" placeholder="What did you think of this recipe?"></textarea>
-                <div class="d-flex justify-content-end">
-                  <button type="submit" class="btn editorial-submit-btn px-4">Post Review</button>
-                </div>
+                <div class="d-flex justify-content-end"><button type="submit" class="btn editorial-submit-btn px-4">Post Review</button></div>
             </form>
           </div>
 
           <div sec:authorize="isAnonymous()" class="review-input-box p-4 mb-5 text-center">
             <h6 class="fw-bold mb-3">Want to leave a review?</h6>
-            <p class="text-muted small">Join the Smart Kitchen community to rate recipes, save your favorites, and access Cook Mode.</p>
             <a th:href="@{/login(continue=|/recipes/${recipeId}|)}" class="btn editorial-submit-btn px-4 mt-2">Log in to Review</a>
           </div>
 
-          <div class="review-card mb-4 pb-4 border-bottom">
+          <div th:each="review : ${reviews}" class="review-card mb-4 pb-4 border-bottom">
             <div class="d-flex justify-content-between align-items-start mb-2">
-              <div class="fw-bold text-dark">Sarah Jenkins</div>
+              <div class="fw-bold text-dark" th:text="${review.user.username}">Real User</div>
               <div class="text-warning small">
-                <i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i
-                ><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i
-                ><i class="bi bi-star-fill"></i>
+                <i class="bi bi-star-fill" th:if="${review.rating >= 1}" th:each="i : ${#numbers.sequence(1, review.rating)}"></i>
+                <i class="bi bi-star" th:if="${review.rating < 5}" th:each="i : ${#numbers.sequence(review.rating + 1, 5)}"></i>
               </div>
             </div>
-            <p class="review-text m-0">
-              Absolutely delicious and so easy to make on a weeknight. I swapped
-              the butter for olive oil and added a little bit of lemon zest at
-              the end. Highly recommend!
-            </p>
-            <div class="text-muted small mt-2">Posted 2 days ago</div>
+            <p class="review-text m-0" th:text="${review.comment}">Real comment from the database.</p>
+          </div>
+
+          <div th:if="${#lists.isEmpty(reviews)}" class="text-center text-muted py-4">
+              <p>No reviews yet. Be the first to review this recipe!</p>
           </div>
         </div>
       </div>
-    </div>
 
     <div class="modal fade" id="shoppingListModal" tabindex="-1">
       <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content custom-modal">
           <div class="modal-header border-bottom pb-3">
             <h5 class="modal-title section-title">Add to List</h5>
-            <button
-              type="button"
-              class="btn-close"
-              data-bs-dismiss="modal"
-            ></button>
+            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
           </div>
-          <div class="modal-body py-4">
-            <p class="text-muted small mb-4">
-              Select the ingredients you need. We'll add them to your Smart
-              Kitchen shopping list.
-            </p>
-
-            <div class="shopping-modal-list">
-              <label
-                class="d-flex align-items-start gap-3 mb-3 cursor-pointer p-2 rounded hover-bg"
-              >
-                <input
-                  type="checkbox"
-                  class="ingredient-checkbox mt-1"
-                  checked
-                />
-                <div><span class="fw-bold">250g</span> Fettuccine pasta</div>
-              </label>
-
-              <div
-                class="swap-group mb-3 p-3 rounded"
-                style="background-color: #f9fafb; border: 1px solid #e5e7eb"
-              >
-                <div class="fw-bold mb-2 text-dark" style="font-size: 0.9rem">
-                  Fat Source (Choose one):
-                </div>
-                <label
-                  class="d-flex align-items-start gap-3 mb-2 cursor-pointer"
-                >
-                  <input
-                    type="radio"
-                    name="fatSource"
-                    class="ingredient-checkbox mt-1"
-                    checked
-                  />
-                  <div><span class="fw-bold">30g</span> Unsalted butter</div>
-                </label>
-                <label class="d-flex align-items-start gap-3 cursor-pointer">
-                  <input
-                    type="radio"
-                    name="fatSource"
-                    class="ingredient-checkbox mt-1"
-                  />
-                  <div>
-                    <span class="fw-bold">2 tbsp</span> Olive Oil (Swap)
-                  </div>
-                </label>
-              </div>
-
-              <label
-                class="d-flex align-items-start gap-3 mb-3 cursor-pointer p-2 rounded hover-bg"
-              >
-                <input
-                  type="checkbox"
-                  class="ingredient-checkbox mt-1"
-                  checked
-                />
-                <div><span class="fw-bold">4 cloves</span> Garlic</div>
-              </label>
-            </div>
-          </div>
-          <div class="modal-footer border-top pt-3">
-            <button type="button" class="btn w-100 cook-mode-btn py-2">
-              Add Selected Items
-            </button>
-          </div>
+          <div class="modal-body py-4"><p class="text-muted small mb-4">Added to list.</p></div>
         </div>
       </div>
     </div>
 
-    <div th:replace="fragments/layout :: mobile-bottom-nav"></div>
-    <div th:replace="fragments/layout :: mobile-offcanvas"></div>
-    <div id="mobileSmackOverlay" class="d-none d-md-none" style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 1040; cursor: pointer;"></div>
+    <div th:replace="~{fragments/layout :: mobile-bottom-nav}"></div>
+    <div th:replace="~{fragments/layout :: mobile-offcanvas}"></div>
 
-    <div id="smartTimerWidget" class="d-none bg-dark text-white shadow-lg p-4 rounded-4 d-flex align-items-center gap-4" style="position: fixed; bottom: 40px; left: 50%; transform: translateX(-50%); z-index: 1060; min-width: 380px; border: 2px solid #4b5563;">
-        <div class="timer-icon text-warning" style="font-size: 2.5rem;">
-            <i class="bi bi-hourglass-split"></i>
+    <div id="zenVoiceToggle" class="d-none bg-white px-4 py-3 shadow-sm" style="position: fixed; top: 30px; right: 30px; z-index: 9999; align-items: center; gap: 15px; border-radius: 16px; border: 1px solid #e5e7eb;">
+        <i class="bi bi-mic-fill text-danger fs-5" id="micStatusIcon" title="Mic is listening"></i>
+        <div class="custom-switch-container">
+            <label class="custom-switch">
+                <input type="checkbox" id="voiceToggle" checked>
+                <span class="custom-slider"></span>
+            </label>
+            <span class="fw-bold text-dark" style="font-size: 0.9rem;">Voice Control</span>
         </div>
+        <div style="width: 1px; height: 25px; background: #e5e7eb; margin: 0 5px;"></div>
+        <button class="btn btn-sm btn-danger fw-bold px-3" id="exitCookModeBtn" style="border-radius: 8px;">Exit Cook Mode</button>
+    </div>
+
+    <div id="smartTimerWidget" class="d-none bg-dark text-white shadow-lg p-3 rounded-4 d-flex align-items-center gap-3" style="position: fixed; bottom: 30px; left: 30px; z-index: 2060; width: 28%; min-width: 300px; border: 2px solid #4b5563;">
+        <div class="timer-icon text-warning" style="font-size: 2rem;"><i class="bi bi-hourglass-split"></i></div>
         <div class="flex-grow-1 text-center">
-            <div class="small text-muted fw-bold text-uppercase mb-1" style="letter-spacing: 0.1em; font-size: 0.85rem;">Suggested Time</div>
-            <div id="timerDisplay" class="display-4 fw-bold" style="font-family: monospace; line-height: 1;">00:00</div>
+            <div class="small text-muted fw-bold text-uppercase mb-1" style="letter-spacing: 0.1em; font-size: 0.75rem;">Suggested Time</div>
+            <div id="timerDisplay" class="display-6 fw-bold" style="font-family: monospace; line-height: 1;">00:00</div>
         </div>
         <div class="d-flex flex-column gap-2">
-            <button id="startTimerBtn" class="btn btn-success btn-lg fw-bold px-4">START <span id="timerSuggestedTime"></span></button>
-            <button id="closeTimerBtn" class="btn btn-outline-light"><i class="bi bi-x-lg fs-5"></i></button>
+            <button id="startTimerBtn" class="btn btn-success btn-sm fw-bold px-3">START <span id="timerSuggestedTime"></span></button>
+            <button id="closeTimerBtn" class="btn btn-outline-light btn-sm"><i class="bi bi-x-lg"></i></button>
         </div>
     </div>
+
     <script>
       document.addEventListener('DOMContentLoaded', () => {
-        // --- STAR RATING LOGIC ---
+        // --- STAR RATING & BOOKMARK ---
         const stars = document.querySelectorAll('.star-btn');
         const ratingInput = document.getElementById('ratingInput');
-
         stars.forEach(star => {
           star.addEventListener('click', function() {
             const ratingValue = this.getAttribute('data-value');
-            ratingInput.value = ratingValue; // Update the hidden form input
-            
-            // Visually update the stars (fill in the clicked one and all before it)
-            stars.forEach(s => {
-              if (s.getAttribute('data-value') <= ratingValue) {
-                s.classList.replace('bi-star', 'bi-star-fill');
-              } else {
-                s.classList.replace('bi-star-fill', 'bi-star');
-              }
-            });
+            if(ratingInput) ratingInput.value = ratingValue;
+            stars.forEach(s => { s.classList.replace(s.getAttribute('data-value') <= ratingValue ? 'bi-star' : 'bi-star-fill', s.getAttribute('data-value') <= ratingValue ? 'bi-star-fill' : 'bi-star'); });
           });
         });
-      });
-    </script>
-    <script>
-      document.addEventListener('DOMContentLoaded', () => {
-        const cookModeBtn = document.getElementById('startCookModeBtn');
-        if(!cookModeBtn) return; // Exit if user isn't logged in
+
+        const bookmarkBtn = document.querySelector('.bookmark-fab');
+        if (bookmarkBtn) {
+            bookmarkBtn.addEventListener('click', async function() {
+                const icon = this.querySelector('i');
+                const recipeId = document.querySelector('input[name="recipeId"]')?.value || "1"; 
+                try {
+                    const response = await fetch(`/recipes/${recipeId}/save`, { method: 'POST', headers: { 'Content-Type': 'application/json' } });
+                    if (response.ok) { 
+                        const data = await response.json();
+                        if (data.status === 'added') {
+                            this.style.backgroundColor = 'var(--brand-green)'; this.style.color = 'white'; 
+                            icon.classList.replace('bi-bookmark', 'bi-bookmark-check-fill'); 
+                        } else {
+                            this.style.backgroundColor = 'white'; this.style.color = '#111827'; 
+                            icon.classList.replace('bi-bookmark-check-fill', 'bi-bookmark'); 
+                        }
+                    } else if (response.status === 401) { window.location.href = '/login'; }
+                } catch (error) {}
+            });
+        }
+
+        // --- MASTER COOK MODE ENGINE ---
+        const cookModeBtn = document.getElementById('mainCookModeBtn');
+        if(!cookModeBtn) return; 
 
         const steps = document.querySelectorAll('.step-card');
-        const mobileSmackOverlay = document.getElementById('mobileSmackOverlay');
         const synth = window.speechSynthesis;
+        let isCookModeActive = false; let currentStepIndex = -1; 
         
-        // --- STATE VARIABLES ---
-        let wakeLock = null;
-        let isCookModeActive = false;
-        let currentStepIndex = -1; 
-        
-        // --- VOICE RECOGNITION VARIABLES ---
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-        let recognition = null;
-        let isSpeaking = false; // Prevents the app from listening to its own voice
+        let recognition = null; let isSpeaking = false;
         
-        // Dictionary of allowed commands
-        const nextCommands = ['next', 'done', 'okay', 'ready', 'move on', 'finish'];
-        const repeatCommands = ['repeat', 'again', 'what was that', 'pardon'];
-        // --- NEW: Timer commands ---
-        const timerCommands = ['start timer', 'start the timer', 'begin timer', 'start clock', 'start'];
+        const nextCommands = ['next', 'done', 'okay', 'ready', 'move on'];
+        const repeatCommands = ['repeat', 'again', 'what was that'];
+        const timerCommands = ['start timer', 'start', 'begin timer'];
+        const stopTimerCommands = ['stop timer', 'cancel timer', 'stop', 'clear timer'];
 
-        // --- TIMER VARIABLES ---
         const timerWidget = document.getElementById('smartTimerWidget');
         const timerDisplay = document.getElementById('timerDisplay');
         const startTimerBtn = document.getElementById('startTimerBtn');
         const timerSuggestedTime = document.getElementById('timerSuggestedTime');
         const closeTimerBtn = document.getElementById('closeTimerBtn');
-        let countdownInterval;
-        let suggestedSeconds = 0;
+        
+        const zenVoiceToggle = document.getElementById('zenVoiceToggle');
+        const voiceToggle = document.getElementById('voiceToggle');
+        const micStatusIcon = document.getElementById('micStatusIcon');
+        const exitCookModeBtn = document.getElementById('exitCookModeBtn');
+        let countdownInterval; let suggestedSeconds = 0;
 
-        // --- 1. VOICE COMMAND LOGIC ---
+        // INJECT REPEAT ARROWS (Top Right Corner)
+        steps.forEach((step, index) => {
+            const btn = document.createElement('i');
+            btn.className = 'bi bi-arrow-repeat manual-audio-btn'; 
+            btn.title = "Repeat Audio";
+            btn.onclick = (e) => {
+                e.stopPropagation(); // Stops the step from jumping when you click repeat
+                e.preventDefault(); 
+                const text = step.querySelector('.step-text').innerText;
+                speakText("Repeating Step " + (index + 1) + ". " + text);
+            };
+            const contentDiv = step.querySelector('.step-content');
+            if(contentDiv) {
+                contentDiv.classList.add('position-relative', 'w-100');
+                contentDiv.appendChild(btn);
+            }
+        });
+        
+        // SMART INGREDIENT SCRATCH-OFF
+        const checkIngredients = () => {
+            const ingredientItems = document.querySelectorAll('.ingredient-item');
+            
+            // NEW: If Cook Mode is OFF, just un-scratch everything and stop immediately!
+            if (!isCookModeActive) {
+                ingredientItems.forEach(item => item.classList.remove('checked-out'));
+                return; 
+            }
+
+            // Otherwise, run the smart matching logic...
+            let remainingStepsText = "";
+            for(let i = currentStepIndex; i < steps.length; i++) {
+                if (i >= 0) remainingStepsText += steps[i].innerText.toLowerCase() + " ";
+            }
+            
+            ingredientItems.forEach(item => {
+                let text = item.innerText.toLowerCase();
+                let words = text.match(/\b[a-z]{4,}\b/g) || [];
+                words = words.filter(w => !['tbsp', 'teaspoon', 'cups', 'cloves', 'grams', 'with'].includes(w));
+                
+                let isStillNeeded = words.some(word => remainingStepsText.includes(word)); 
+                
+                if (!isStillNeeded) {
+                    item.classList.add('checked-out');
+                } else { 
+                    item.classList.remove('checked-out'); 
+                }
+            });
+        };
+
+        // SPOTIFY LYRICS ENGINE (Handles checkboxes automatically!)
+        const updateVisualStep = () => {
+          steps.forEach((step, i) => {
+            step.classList.remove('active-step');
+            const checkbox = step.querySelector('.step-checkbox');
+            
+            // Auto check/uncheck based on jumping
+            if (i < currentStepIndex && checkbox) checkbox.checked = true;
+            else if (i > currentStepIndex && checkbox) checkbox.checked = false;
+
+            if (i === currentStepIndex) {
+              step.classList.add('active-step');
+              step.scrollIntoView({ behavior: 'smooth', block: 'center' });
+              if (checkbox) checkbox.checked = false; // Active step is open
+              
+              const currentText = step.querySelector('.step-text').innerText;
+              scanForTime(currentText); 
+              if (voiceToggle.checked) { speakText("Step " + (i + 1) + ". " + currentText); }
+            }
+          });
+          checkIngredients(); 
+        };
+
+        // CLICK TO JUMP LOGIC
+        steps.forEach((step, index) => {
+          step.addEventListener('click', (e) => {
+              if (!isCookModeActive) return;
+              if (e.target.classList.contains('manual-audio-btn')) return; // Ignore if they hit repeat
+
+              const checkbox = step.querySelector('.step-checkbox');
+              
+              // If they click the active step's checkbox, go forward!
+              if (e.target === checkbox && index === currentStepIndex) {
+                  advanceCookModeStep();
+                  return;
+              }
+
+              // JUMP TO CLICKED STEP
+              if (index !== currentStepIndex) {
+                  e.preventDefault(); 
+                  currentStepIndex = index;
+                  updateVisualStep();
+              }
+          });
+        });
+
+        // VOICE RECOGNITION
         if (SpeechRecognition) {
           recognition = new SpeechRecognition();
-          recognition.continuous = true; // Keep listening
-          recognition.interimResults = false; // Only trigger on final words
-          recognition.lang = 'en-US';
+          recognition.continuous = true; recognition.interimResults = false; recognition.lang = 'en-US';
 
           recognition.onresult = (event) => {
-            if (isSpeaking) return; // Ignore if the computer is currently talking
-            
-            // Get the last thing the user said and make it lowercase
+            if (!voiceToggle.checked || isSpeaking) return; 
             const transcript = event.results[event.results.length - 1][0].transcript.trim().toLowerCase();
-            console.log("🗣️ User said:", transcript);
 
-            // Check if what they said contains any of our "Next" variations
-            if (nextCommands.some(cmd => transcript.includes(cmd))) {
-              console.log("✅ 'Next' command detected!");
-              advanceCookModeStep();
-            } 
-            // Check if what they said contains any of our "Repeat" variations
+            if (nextCommands.some(cmd => transcript.includes(cmd))) advanceCookModeStep();
             else if (repeatCommands.some(cmd => transcript.includes(cmd))) {
-              console.log("🔄 'Repeat' command detected!");
               if (currentStepIndex >= 0 && currentStepIndex < steps.length) {
-                 const currentText = steps[currentStepIndex].querySelector('.step-text').innerText;
-                 speakText("Repeating Step " + (currentStepIndex + 1) + ". " + currentText);
+                 speakText("Repeating Step " + (currentStepIndex + 1) + ". " + steps[currentStepIndex].querySelector('.step-text').innerText);
               }
             }
             else if (timerCommands.some(cmd => transcript.includes(cmd))) {
-              console.log("⏱️ 'Start Timer' command detected!");
-              
-              // Only start it if the widget is visible and the start button hasn't been clicked yet
               if (!timerWidget.classList.contains('d-none') && !startTimerBtn.classList.contains('d-none')) {
-                speakText("Starting timer.");
-                startTimerBtn.click(); // This magically clicks the button for them!
+                speakText("Starting timer."); startTimerBtn.click();
               }
             }
-          };
-
-          // The "Continuous Listener Hack" - if the browser auto-closes the mic, turn it back on!
-          recognition.onend = () => {
-            if (isCookModeActive && !isSpeaking) {
-              try { recognition.start(); } catch(e){}
+            else if (stopTimerCommands.some(cmd => transcript.includes(cmd))) {
+              if (!timerWidget.classList.contains('d-none')) { speakText("Timer canceled."); closeTimerBtn.click(); }
             }
           };
-        } else {
-          console.warn("Speech Recognition API not supported in this browser.");
+
+          recognition.onend = () => { if (isCookModeActive && !isSpeaking && voiceToggle.checked) { try { recognition.start(); } catch(e){} } };
+
+          voiceToggle.addEventListener('change', () => {
+              if (voiceToggle.checked && isCookModeActive) {
+                  micStatusIcon.classList.remove('d-none'); try { recognition.start(); } catch(e){}
+              } else { micStatusIcon.classList.add('d-none'); recognition.stop(); synth.cancel(); }
+          });
         }
 
-        // Custom speaking function that manages the mic
         const speakText = (text) => {
           synth.cancel();
-          isSpeaking = true;
-          if(recognition) recognition.stop(); // Stop listening so it doesn't hear itself
-
-          const utterance = new SpeechSynthesisUtterance(text);
-          utterance.onend = () => {
-            isSpeaking = false;
-            // Turn mic back on after speaking
-            if(isCookModeActive && recognition) {
-              try { recognition.start(); } catch(e){}
-            }
-          };
-          synth.speak(utterance);
+          if(recognition) { try { recognition.stop(); } catch(e){} }
+          setTimeout(() => {
+              const utterance = new SpeechSynthesisUtterance(text);
+              utterance.onstart = () => { isSpeaking = true; micStatusIcon.classList.replace('text-danger', 'text-muted'); };
+              utterance.onend = () => {
+                  isSpeaking = false; micStatusIcon.classList.replace('text-muted', 'text-danger');
+                  if(isCookModeActive && voiceToggle.checked && recognition) { try { recognition.start(); } catch(e){} }
+              };
+              utterance.onerror = () => { isSpeaking = false; };
+              synth.speak(utterance);
+          }, 100); 
         };
 
-        // --- 2. WAKE LOCK LOGIC ---
-        const requestWakeLock = async () => {
-          try { wakeLock = await navigator.wakeLock.request('screen'); } catch (err) {}
-        };
-        const releaseWakeLock = () => {
-          if (wakeLock !== null) { wakeLock.release().then(() => wakeLock = null); }
-        };
-
-        // --- 3. SMART TIMER LOGIC ---
         const scanForTime = (text) => {
-          let totalSeconds = 0;
-          let labelParts = [];
-
-          if (/half an? hour/i.test(text)) {
-            totalSeconds += 30 * 60;
-            labelParts.push("30 Min");
-          } else {
-            const hourMatch = text.match(/(\d+(?:\.\d+)?)\s*(?:hr|hour)s?/i);
-            if (hourMatch) {
-              const hours = parseFloat(hourMatch[1]);
-              totalSeconds += hours * 3600;
-              labelParts.push(`${hours} Hr`);
-            }
-            const minMatch = text.match(/(\d+)\s*(?:-|to\s+\d+\s+)?(?:min|minute)s?/i);
-            if (minMatch) {
-              const minutes = parseInt(minMatch[1]);
-              totalSeconds += minutes * 60;
-              labelParts.push(`${minutes} Min`);
-            }
-          }
+          let totalSeconds = 0; let labelParts = [];
+          const minMatch = text.match(/(\d+)\s*(?:to|-)?\s*(?:\d+)?\s*(?:min|minute)s?/i);
+          if (minMatch) { totalSeconds += parseInt(minMatch[1]) * 60; labelParts.push(`${parseInt(minMatch[1])} Min`); }
 
           if (totalSeconds > 0) {
-            suggestedSeconds = totalSeconds;
-            timerSuggestedTime.innerText = labelParts.join(' ');
-            const h = Math.floor(totalSeconds / 3600);
-            const m = Math.floor((totalSeconds % 3600) / 60).toString().padStart(2, '0');
-            timerDisplay.innerText = h > 0 ? `${h}:${m}:00` : `${m}:00`;
-            timerWidget.classList.remove('d-none'); 
+            suggestedSeconds = totalSeconds; timerSuggestedTime.innerText = labelParts.join(' ');
+            const m = Math.floor(totalSeconds / 60).toString().padStart(2, '0');
+            timerDisplay.innerText = `${m}:00`; timerWidget.classList.remove('d-none'); 
           }
         };
 
-        startTimerBtn.addEventListener('click', () => {
-          startTimerBtn.classList.add('d-none');
-          let timeLeft = suggestedSeconds;
-          
-          clearInterval(countdownInterval);
-          countdownInterval = setInterval(() => {
-            timeLeft--;
-            const h = Math.floor(timeLeft / 3600);
-            const m = Math.floor((timeLeft % 3600) / 60).toString().padStart(2, '0');
-            const s = (timeLeft % 60).toString().padStart(2, '0');
-            timerDisplay.innerText = h > 0 ? `${h}:${m}:${s}` : `${m}:${s}`;
-            
-            if (timeLeft <= 0) {
+        if(startTimerBtn) {
+            startTimerBtn.addEventListener('click', () => {
+              startTimerBtn.classList.add('d-none'); let timeLeft = suggestedSeconds;
               clearInterval(countdownInterval);
-              timerDisplay.innerText = "DONE!";
-              timerWidget.classList.replace('bg-dark', 'bg-danger');
-              new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3').play();
-              speakText("Timer is up!");
-            }
-          }, 1000);
-        });
+              countdownInterval = setInterval(() => {
+                timeLeft--;
+                const m = Math.floor(timeLeft / 60).toString().padStart(2, '0');
+                const s = (timeLeft % 60).toString().padStart(2, '0');
+                timerDisplay.innerText = `${m}:${s}`;
+                if (timeLeft <= 0) {
+                  clearInterval(countdownInterval); timerDisplay.innerText = "DONE!"; timerWidget.classList.replace('bg-dark', 'bg-danger');
+                  new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3').play();
+                }
+              }, 1000);
+            });
+        }
 
-        closeTimerBtn.addEventListener('click', () => {
-          timerWidget.classList.add('d-none');
-          clearInterval(countdownInterval);
-          startTimerBtn.classList.remove('d-none');
-          timerWidget.classList.replace('bg-danger', 'bg-dark');
-        });
+        if(closeTimerBtn) {
+            closeTimerBtn.addEventListener('click', () => {
+              timerWidget.classList.add('d-none'); clearInterval(countdownInterval);
+              startTimerBtn.classList.remove('d-none'); timerWidget.classList.replace('bg-danger', 'bg-dark');
+            });
+        }
 
-        // --- 4. UNIVERSAL ADVANCE FUNCTION ---
         const advanceCookModeStep = () => {
           if (isCookModeActive && currentStepIndex >= 0 && currentStepIndex < steps.length) {
             const currentCheckbox = steps[currentStepIndex].querySelector('.step-checkbox');
-            if (!currentCheckbox.checked) {
-              currentCheckbox.checked = true; 
-              currentCheckbox.dispatchEvent(new Event('change')); 
+            if (currentCheckbox) currentCheckbox.checked = true;
+            
+            clearInterval(countdownInterval); timerWidget.classList.add('d-none'); startTimerBtn.classList.remove('d-none');
+            timerWidget.classList.replace('bg-danger', 'bg-dark');
+
+            currentStepIndex++;
+            if (currentStepIndex < steps.length) updateVisualStep();
+            else {
+                if (voiceToggle.checked) speakText("All steps completed. Enjoy your meal!");
+                setTimeout(() => exitCookModeBtn.click(), 4000);
             }
-            currentStepIndex++; 
           }
         };
 
-        if(mobileSmackOverlay) mobileSmackOverlay.addEventListener('click', advanceCookModeStep);
+        document.addEventListener('keydown', (e) => { if (isCookModeActive && e.code === 'Space') { e.preventDefault(); advanceCookModeStep(); } });
 
-        document.addEventListener('keydown', (e) => {
-          if (isCookModeActive && e.code === 'Space') {
-            e.preventDefault(); 
-            advanceCookModeStep();
-          }
-        });
-
-        // --- 5. COOK MODE TOGGLE ---
         cookModeBtn.addEventListener('click', () => {
-          isCookModeActive = !isCookModeActive;
-
-          if (isCookModeActive) {
-            cookModeBtn.classList.add('cook-mode-active');
-            cookModeBtn.innerHTML = '<i class="bi bi-mic-fill fs-5"></i> End Cook Mode';
-            requestWakeLock();
-            if(mobileSmackOverlay) mobileSmackOverlay.classList.remove('d-none');
-            
-            // Turn on the Microphone!
-            if(recognition) {
-              try { recognition.start(); } catch(e) {}
-            }
-            
-            speakText("Cook mode started. Say 'Next' or hit the spacebar to advance.");
-            
-            if (steps.length > 0) {
-              currentStepIndex = 0;
-              const firstStepText = steps[0].querySelector('.step-text').innerText;
-              setTimeout(() => { // Small delay so the intro voice doesn't overlap step 1
-                 speakText("Step 1. " + firstStepText);
-                 scanForTime(firstStepText);
-              }, 4000);
-            }
-
-          } else {
-            // Turn off everything
-            cookModeBtn.classList.remove('cook-mode-active');
-            cookModeBtn.innerHTML = '<i class="bi bi-play-fill fs-5"></i> Start Cook Mode';
-            isCookModeActive = false;
-            releaseWakeLock();
-            synth.cancel();
-            if(recognition) recognition.stop();
-            if(mobileSmackOverlay) mobileSmackOverlay.classList.add('d-none');
-            currentStepIndex = -1;
-            
-            // NEW: Actually kill the timer in the background
-            clearInterval(countdownInterval);
-            timerWidget.classList.add('d-none');
-            startTimerBtn.classList.remove('d-none');
-            timerWidget.classList.replace('bg-danger', 'bg-dark');
-          }
+          isCookModeActive = true;
+          document.body.classList.add('cook-mode-view'); 
+          zenVoiceToggle.classList.replace('d-none', 'd-flex');
+          
+          // BRUTEFORCE Hide ghost text
+          const topRow = document.querySelector('.recipe-title-display')?.closest('.row');
+          if (topRow) topRow.classList.add('d-none');
+          const header = document.getElementById('instructionsHeader');
+          if (header) header.classList.add('d-none');
+          const notes = document.querySelector('.chefs-notes');
+          if (notes) notes.classList.add('d-none');
+          
+          steps.forEach(step => { const cb = step.querySelector('.step-checkbox'); if(cb) cb.checked = false; });
+          if(recognition && voiceToggle.checked) { try { recognition.start(); } catch(e) {} }
+          currentStepIndex = 0; updateVisualStep();
         });
 
-        // --- 6. CHECKBOX LOGIC ---
-        steps.forEach((step, index) => {
-          const checkbox = step.querySelector('.step-checkbox');
-          checkbox.addEventListener('change', () => {
-            if (isCookModeActive && checkbox.checked) {
-              
-              // NEW: Kill the old step's timer so it doesn't ring later
-              clearInterval(countdownInterval);
-              timerWidget.classList.add('d-none'); 
-              startTimerBtn.classList.remove('d-none');
-              timerWidget.classList.replace('bg-danger', 'bg-dark');
+        exitCookModeBtn.addEventListener('click', () => {
+            isCookModeActive = false; document.body.classList.remove('cook-mode-view');
+            zenVoiceToggle.classList.replace('d-flex', 'd-none');
+            
+            // BRUTEFORCE Show ghost text again
+            const topRow = document.querySelector('.recipe-title-display')?.closest('.row');
+            if (topRow) topRow.classList.remove('d-none');
+            const header = document.getElementById('instructionsHeader');
+            if (header) header.classList.remove('d-none');
+            const notes = document.querySelector('.chefs-notes');
+            if (notes) notes.classList.remove('d-none');
 
-              if (index + 1 < steps.length) {
-                const nextStepText = steps[index + 1].querySelector('.step-text').innerText;
-                speakText("Step " + (index + 2) + ". " + nextStepText);
-                scanForTime(nextStepText); 
-              } else {
-                speakText("All steps completed. Enjoy your meal!");
-                
-                // Auto-reset
-                setTimeout(() => {
-                  isCookModeActive = false;
-                  cookModeBtn.classList.remove('cook-mode-active');
-                  cookModeBtn.innerHTML = '<i class="bi bi-play-fill fs-5"></i> Start Cook Mode';
-                  releaseWakeLock();
-                  if(recognition) recognition.stop();
-                  if(mobileSmackOverlay) mobileSmackOverlay.classList.add('d-none');
-                  currentStepIndex = -1;
-                }, 4000);
-              }
-            }
-          });
+            synth.cancel(); if(recognition) recognition.stop();
+            currentStepIndex = -1;
+            clearInterval(countdownInterval); timerWidget.classList.add('d-none'); startTimerBtn.classList.remove('d-none'); timerWidget.classList.replace('bg-danger', 'bg-dark');
+            checkIngredients(); 
         });
       });
     </script>

@@ -2,7 +2,10 @@ package com.sk.smart_kitchen.controller;
 
 import com.sk.smart_kitchen.dto.RecipeForm;
 import com.sk.smart_kitchen.entities.Recipe;
+import com.sk.smart_kitchen.entities.SavedRecipe;
+import com.sk.smart_kitchen.entities.User;
 import com.sk.smart_kitchen.services.RecipeService;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -14,17 +17,31 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
+import java.util.Optional;
 
 @Controller
 @RequestMapping("/recipes")
 public class RecipeController {
 
     private final RecipeService recipeService;
+
+    @Autowired
+    private com.sk.smart_kitchen.repositories.ReviewRepository reviewRepository;
+    
+    @Autowired
+    private com.sk.smart_kitchen.repositories.SavedRecipeRepository savedRecipeRepository;
+    
+    @Autowired
+    private com.sk.smart_kitchen.repositories.UserRepository userRepository;
+
+    @Autowired
+    private com.sk.smart_kitchen.repositories.ChefsNoteRepository chefsNoteRepository;
 
     public RecipeController(RecipeService recipeService) {
         this.recipeService = recipeService;
@@ -50,12 +67,41 @@ public class RecipeController {
     }
 
     @GetMapping("/{id}")
-    public String showRecipeView(@PathVariable Long id, Model model) {
+    public String showRecipeView(@PathVariable Long id, java.security.Principal principal, Model model) {
         Recipe recipe = getRecipeOr404(id);
         model.addAttribute("recipe", recipe);
         model.addAttribute("recipeId", id);
+        
+        // Load Ingredients & Instructions
         model.addAttribute("ingredients", recipeService.findRecipeIngredients(id));
         model.addAttribute("instructionSteps", recipeService.toInstructionSteps(recipe));
+
+        // Load Reviews
+        java.util.List<com.sk.smart_kitchen.entities.Review> reviews = reviewRepository.findAll().stream()
+                .filter(r -> r.getRecipe().getId().equals(id))
+                .collect(java.util.stream.Collectors.toList());
+        model.addAttribute("reviews", reviews);
+
+        // Check if Bookmarked
+        boolean isSaved = false;
+        if (principal != null) {
+            User user = userRepository.findByEmail(principal.getName()).orElse(null);
+            if(user != null) {
+                isSaved = savedRecipeRepository.findByUserAndRecipe(user, recipe).isPresent();
+            }
+        }
+        model.addAttribute("isSaved", isSaved);
+        
+        // Load the user's Chef Note
+        com.sk.smart_kitchen.entities.ChefsNote myNote = null;
+        if (principal != null) {
+            User user = userRepository.findByEmail(principal.getName()).orElse(null);
+            if(user != null) {
+                myNote = chefsNoteRepository.findFirstByUserAndRecipe(user, recipe).orElse(null);
+            }
+        }
+        model.addAttribute("myNote", myNote);
+
         return "recipe";
     }
 
@@ -112,6 +158,30 @@ public class RecipeController {
             return recipeService.findRecipeOrThrow(id);
         } catch (NoSuchElementException ex) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Recipe not found", ex);
+        }
+    }
+
+    @PostMapping("/{id}/save")
+    @ResponseBody
+    public ResponseEntity<?> toggleBookmark(@PathVariable Long id, java.security.Principal principal) {
+        if (principal == null) return ResponseEntity.status(401).build();
+
+        User user = userRepository.findByEmail(principal.getName()).orElseThrow();
+        // FIXED: Replaced recipeRepository with your existing getRecipeOr404 method
+        Recipe recipe = getRecipeOr404(id);
+
+        Optional<SavedRecipe> existing = savedRecipeRepository.findByUserAndRecipe(user, recipe);
+        
+        // TOGGLE LOGIC: If it exists, delete it. If not, save it.
+        if (existing.isPresent()) {
+            savedRecipeRepository.delete(existing.get());
+            return ResponseEntity.ok(Map.of("status", "removed"));
+        } else {
+            SavedRecipe savedRecipe = new SavedRecipe();
+            savedRecipe.setUser(user);
+            savedRecipe.setRecipe(recipe);
+            savedRecipeRepository.save(savedRecipe);
+            return ResponseEntity.ok(Map.of("status", "added"));
         }
     }
 
