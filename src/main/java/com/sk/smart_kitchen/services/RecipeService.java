@@ -173,7 +173,6 @@ public class RecipeService {
         recipe.setDefaultServings(form.getDefaultServings());
         recipe.setMealType(trimToNull(form.getMealType()));
         recipe.setInstructions(joinInstructionSteps(form.getInstructionSteps()));
-
         recipe.setTags(parseTags(form.getTagInput()));
     }
 
@@ -221,7 +220,7 @@ public class RecipeService {
                 continue;
             }
 
-            if (name == null || unit == null || quantity == null) {
+            if (name == null || quantity == null) {
                 throw new IllegalArgumentException("Ingredient row " + row + " is incomplete. Add name, unit, and quantity.");
             }
 
@@ -389,13 +388,19 @@ public class RecipeService {
         }
     }
 
-    private String normalizeTag(String rawTag) {
-        String tag = trimToNull(rawTag);
-        if (tag == null) {
-            return null;
-        }
-        return tag.toLowerCase(Locale.ROOT).substring(0, 1).toUpperCase(Locale.ROOT) + tag.toLowerCase(Locale.ROOT).substring(1);
+   private String normalizeTag(String rawTag) {
+    String tag = trimToNull(rawTag);
+    if (tag == null) {
+        return null;
     }
+
+    // Scrunches any accidental double/triple spaces inside the text into a single space
+    tag = tag.replaceAll("\\s+", " ");
+
+    // Existing logic
+    return tag.toLowerCase(Locale.ROOT).substring(0, 1).toUpperCase(Locale.ROOT) + 
+           tag.toLowerCase(Locale.ROOT).substring(1);
+}
 
     private String stripTrailingZero(Double value) {
         if (value == null) {
