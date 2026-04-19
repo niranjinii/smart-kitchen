@@ -18,6 +18,10 @@ public class CustomUserDetails implements UserDetails {
         return user.getUsername(); 
     }
 
+    public String getProfileImageUrl() {
+        return user.getProfileImageUrl();
+    }
+
     @Override
     public String getUsername() {
         return user.getEmail(); // Keep using email for the actual login math

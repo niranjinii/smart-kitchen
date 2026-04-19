@@ -88,30 +88,20 @@ button.filter-btn:hover i {
 /* =========================================
    MASONRY GRID & RECIPE CARDS
    ========================================= */
-/* --- TRUE MASONRY GRID --- */
 .masonry-grid {
-    column-count: 1;
-    column-gap: 1.5rem;
-    width: 100%;
-}
-
-@media (min-width: 768px) {
-    .masonry-grid {
-        column-count: 2; /* 2 columns on tablet */
-    }
-}
-
-@media (min-width: 992px) {
-    .masonry-grid {
-        column-count: 3; /* 3 columns on desktop */
-    }
+  column-count: 4;
+  column-gap: 1.5rem;
 }
 
 .recipe-card {
-    break-inside: avoid; /* CRITICAL: Stops cards from being split across columns! */
-    margin-bottom: 1.5rem;
-    display: block; 
-    width: 100%;
+  display: inline-block;
+  width: 100%;
+  break-inside: avoid;
+  page-break-inside: avoid;
+  margin-bottom: 2rem;
+  text-decoration: none;
+  color: inherit;
+  transition: transform 0.2s ease;
 }
 
 .recipe-card:hover {
@@ -131,6 +121,7 @@ button.filter-btn:hover i {
   background-position: center;
 }
 
+/* Pinterest varying heights */
 .height-tall { height: 380px; }
 .height-medium { height: 280px; }
 .height-short { height: 200px; }
@@ -160,7 +151,7 @@ button.filter-btn:hover i {
 
 .recipe-title {
   font-weight: 700;
-  font-size: 1.25rem;
+  font-size: 1.25rem; 
   letter-spacing: -0.01em;
   margin-bottom: 0.15rem;
   line-height: 1.3;
@@ -205,28 +196,4 @@ button.filter-btn:hover i {
     content: "";
     padding-right: 20px;
   }
-}
-/* --- FIXED PINTEREST GRID (Left-to-Right Stacking) --- */
-.pinterest-grid {
-    display: grid;
-    grid-template-columns: 1fr; /* 1 column on mobile */
-    gap: 1.5rem;
-    align-items: start; /* Prevents cards from stretching */
-    width: 100%;
-}
-
-@media (min-width: 768px) {
-    .pinterest-grid {
-        grid-template-columns: repeat(2, 1fr); /* 2 columns side-by-side on tablet */
-    }
-}
-
-@media (min-width: 992px) {
-    .pinterest-grid {
-        grid-template-columns: repeat(3, 1fr); /* 3 columns side-by-side on desktop */
-    }
-}
-
-.pinterest-item {
-    width: 100%;
 }

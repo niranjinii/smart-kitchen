@@ -76,12 +76,32 @@ public class RecipeController {
         model.addAttribute("ingredients", recipeService.findRecipeIngredients(id));
         model.addAttribute("instructionSteps", recipeService.toInstructionSteps(recipe));
 
-        // Load Reviews
-        java.util.List<com.sk.smart_kitchen.entities.Review> reviews = reviewRepository.findAll().stream()
-                .filter(r -> r.getRecipe().getId().equals(id))
-                .collect(java.util.stream.Collectors.toList());
-        model.addAttribute("reviews", reviews);
+        // --- NEW REVIEW MATH LOGIC ---
+        List<com.sk.smart_kitchen.entities.Review> allReviews = reviewRepository.findByRecipeIdOrderByIdDesc(id);
+        
+        double averageRating = allReviews.isEmpty() ? 0.0 : allReviews.stream().mapToInt(com.sk.smart_kitchen.entities.Review::getRating).average().orElse(0.0);
 
+        com.sk.smart_kitchen.entities.Review currentUserReview = null;
+        if (principal != null) {
+            com.sk.smart_kitchen.entities.User currentUser = userRepository.findByEmail(principal.getName()).orElse(null);
+            if (currentUser != null) {
+                currentUserReview = allReviews.stream()
+                        .filter(r -> r.getUser().getId().equals(currentUser.getId()))
+                        .findFirst().orElse(null);
+
+                // Remove it from the main list so we don't display it twice
+                if (currentUserReview != null) {
+                    allReviews.remove(currentUserReview);
+                }
+            }
+        }
+
+        model.addAttribute("allReviews", allReviews);
+        model.addAttribute("currentUserReview", currentUserReview);
+        model.addAttribute("averageRating", Math.round(averageRating * 10) / 10.0); 
+        model.addAttribute("totalReviews", allReviews.size() + (currentUserReview != null ? 1 : 0));
+
+        // --- TEAMMATE'S LOGIC (PRESERVED) ---
         // Check if Bookmarked
         boolean isSaved = false;
         if (principal != null) {
@@ -103,6 +123,21 @@ public class RecipeController {
         model.addAttribute("myNote", myNote);
 
         return "recipe";
+    }
+
+    @GetMapping("/{id}/cook")
+    public String showCookMode(@PathVariable Long id, Model model, java.security.Principal principal) {
+        // Must be logged in to use Cook Mode!
+        if (principal == null) {
+            return "redirect:/login?continue=/recipes/" + id + "/cook";
+        }
+        
+        Recipe recipe = getRecipeOr404(id);
+        model.addAttribute("recipe", recipe);
+        model.addAttribute("ingredients", recipeService.findRecipeIngredients(id));
+        model.addAttribute("instructionSteps", recipeService.toInstructionSteps(recipe));
+        
+        return "cook-mode"; // Points to our brand new HTML file!
     }
 
     @GetMapping("/{id}/edit")

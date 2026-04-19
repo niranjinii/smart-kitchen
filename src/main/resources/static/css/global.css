@@ -174,3 +174,75 @@ a.nav-icon-link:hover i {
     padding-bottom: 80px;
   }
 }
+
+/* --- Profile Dropdown & Avatars --- */
+.nav-profile-btn {
+  background: transparent;
+  box-shadow: none;
+  border: none;
+  cursor: pointer;
+  transition: transform 0.2s ease;
+}
+
+.nav-profile-btn:hover {
+  transform: scale(1.02);
+}
+
+.nav-profile-avatar {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 1px solid #d1d5db;
+}
+
+.profile-dropdown-menu {
+  border-radius: 16px;
+  border: 1px solid #e5e7eb;
+  padding: 0.5rem;
+  min-width: 220px;
+  margin-top: 12px;
+}
+
+/* Mobile Bottom Nav Avatar */
+.mobile-profile-avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid transparent;
+  transition: border-color 0.2s ease;
+}
+
+.mobile-nav-item.active .mobile-profile-avatar {
+  border-color: var(--brand-green);
+}
+
+/* --- Desktop Profile Dropdown --- */
+.profile-dropdown-btn {
+  border-radius: 30px;
+  font-weight: 600;
+  padding: 5px 15px 5px 5px;
+}
+
+.profile-dropdown-avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+/* --- Mobile Offcanvas (Slide-up) Menus --- */
+.offcanvas-bottom-custom {
+  height: auto;
+  border-top-left-radius: 24px;
+  border-top-right-radius: 24px;
+  z-index: 1060 !important; /* Forces it to pop up OVER the bottom nav! */
+}
+
+.offcanvas-profile-avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  object-fit: cover;
+}
