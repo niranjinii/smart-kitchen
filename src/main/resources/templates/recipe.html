@@ -1,5 +1,8 @@
 <!doctype html>
-<html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<html
+  xmlns:th="http://www.thymeleaf.org"
+  xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
+>
   <head>
     <th:block th:replace="~{fragments/layout :: head}"></th:block>
     <link rel="stylesheet" th:href="@{/css/recipe.css}" />
@@ -9,33 +12,77 @@
 
     <div class="container-md px-3 mt-4 mb-5 pb-5">
       <div class="recipe-hero position-relative">
-        <img th:src="${recipe.imageUrl != null ? ((recipe.imageUrl.startsWith('http://') || recipe.imageUrl.startsWith('https://') || recipe.imageUrl.startsWith('/')) ? recipe.imageUrl : '/' + recipe.imageUrl) : 'https://images.unsplash.com/photo-1621996346565-e3dbc646d9a9?auto=format&fit=crop&w=1200&q=80'}" th:alt="${recipe.title}" class="hero-img shadow-sm" />
-        <button class="btn bookmark-fab shadow" 
-                th:style="${isSaved} ? 'background-color: var(--brand-green); color: white;' : ''">
-          <i class="fs-5" th:class="${isSaved} ? 'bi bi-bookmark-check-fill' : 'bi bi-bookmark'"></i>
+        <img
+          th:src="${recipe.imageUrl != null ? ((recipe.imageUrl.startsWith('http://') || recipe.imageUrl.startsWith('https://') || recipe.imageUrl.startsWith('/')) ? recipe.imageUrl : '/' + recipe.imageUrl) : 'https://images.unsplash.com/photo-1621996346565-e3dbc646d9a9?auto=format&fit=crop&w=1200&q=80'}"
+          th:alt="${recipe.title}"
+          class="hero-img shadow-sm"
+        />
+        <button
+          class="btn bookmark-fab shadow"
+          th:style="${isSaved} ? 'background-color: var(--brand-green); color: white;' : ''"
+        >
+          <i
+            class="fs-5"
+            th:class="${isSaved} ? 'bi bi-bookmark-check-fill' : 'bi bi-bookmark'"
+          ></i>
         </button>
       </div>
 
       <div class="row mb-5">
         <div class="col-12">
           <div class="mb-4">
-            <span class="badge category-badge mb-3" th:text="${recipe.mealType}">Dinner</span>
-            <h1 class="recipe-title-display m-0" th:text="${recipe.title}">Spicy Garlic Pasta</h1>
+            <span class="badge category-badge mb-3" th:text="${recipe.mealType}"
+              >Dinner</span
+            >
+            <h1 class="recipe-title-display m-0" th:text="${recipe.title}">
+              Spicy Garlic Pasta
+            </h1>
 
             <div class="d-flex align-items-center mt-3 mb-4">
-              <img th:src="${recipe.author != null && recipe.author.profileImageUrl != null ? recipe.author.profileImageUrl : 'https://ui-avatars.com/api/?name=Chef&background=random'}" alt="Author Avatar" class="author-avatar me-2 shadow-sm" />
+              <img
+                th:src="${recipe.author != null && recipe.author.profileImageUrl != null ? recipe.author.profileImageUrl : 'https://ui-avatars.com/api/?name=Chef&background=random'}"
+                alt="Author Avatar"
+                class="author-avatar me-2 shadow-sm"
+              />
               <div class="recipe-author m-0">
-                <span class="fw-bold text-dark" th:text="${recipe.author != null ? recipe.author.username : 'Smart Kitchen Chef'}">John Doe</span>
+                <span
+                  class="fw-bold text-dark"
+                  th:text="${recipe.author != null ? recipe.author.username : 'Smart Kitchen Chef'}"
+                  >John Doe</span
+                >
                 <span class="text-muted mx-2">•</span>
-                <i class="bi bi-star-fill text-warning me-1"></i> <span th:text="${averageRating}">4.9</span> (<span th:text="${totalReviews}">0</span> reviews)
+                <i class="bi bi-star-fill text-warning me-1"></i>
+                <span th:text="${averageRating}">4.9</span> (<span
+                  th:text="${totalReviews}"
+                  >0</span
+                >
+                reviews)
               </div>
             </div>
-            <p class="recipe-description" th:text="${recipe.description}">Description</p>
+            <p class="recipe-description" th:text="${recipe.description}">
+              Description
+            </p>
           </div>
 
-          <div class="d-flex gap-5 mt-4 recipe-meta-bar py-3 border-top border-bottom">
-            <div class="meta-item"><span class="meta-label">Total Time</span><span class="meta-value" th:text="${recipe.prepTimeMins != null ? recipe.prepTimeMins + ' mins' : '-'}">25 mins</span></div>
-            <div class="meta-item"><span class="meta-label">Yield</span><span class="meta-value" th:text="${recipe.defaultServings != null ? recipe.defaultServings + ' Servings' : '-'}">2 Servings</span></div>
+          <div
+            class="d-flex gap-5 mt-4 recipe-meta-bar py-3 border-top border-bottom"
+          >
+            <div class="meta-item">
+              <span class="meta-label">Total Time</span
+              ><span
+                class="meta-value"
+                th:text="${recipe.prepTimeMins != null ? recipe.prepTimeMins + ' mins' : '-'}"
+                >25 mins</span
+              >
+            </div>
+            <div class="meta-item">
+              <span class="meta-label">Yield</span
+              ><span
+                class="meta-value"
+                th:text="${recipe.defaultServings != null ? recipe.defaultServings + ' Servings' : '-'}"
+                >2 Servings</span
+              >
+            </div>
           </div>
         </div>
       </div>
@@ -44,41 +91,95 @@
         <div class="col-lg-4 order-2 order-lg-1">
           <div class="d-flex justify-content-between align-items-end mb-4">
             <h3 class="section-title m-0">Ingredients</h3>
-            <div class="yield-adjuster d-flex align-items-center gap-3 px-2 py-1">
-              <i class="bi bi-dash cursor-pointer"></i><span class="fw-bold" style="font-size: 0.9rem">2 Servings</span><i class="bi bi-plus cursor-pointer"></i>
+            <div
+              class="yield-adjuster d-flex align-items-center gap-3 px-2 py-1"
+            >
+              <i class="bi bi-dash cursor-pointer"></i>
+              <span
+                id="currentYield"
+                class="fw-bold"
+                style="font-size: 0.9rem"
+                th:text="${recipe.defaultServings != null ? recipe.defaultServings + ' Servings' : '2 Servings'}"
+                >2 Servings</span
+              >
+              <i class="bi bi-plus cursor-pointer"></i>
             </div>
           </div>
           <ul class="ingredient-list list-unstyled mb-4">
             <li class="ingredient-item" th:each="ingredient : ${ingredients}">
-              <span class="fw-bold me-2" th:text="${ingredient.quantityNeeded + (ingredient.unit != null ? ingredient.unit : '')}">250g</span>
+              <span
+                class="fw-bold me-2"
+                th:text="${ingredient.quantityNeeded + (ingredient.unit != null ? ingredient.unit : '')}"
+                >250g</span
+              >
               <span th:text="${ingredient.ingredient.name}">Pasta</span>
             </li>
           </ul>
-          <button class="btn w-100 add-to-cart-btn py-2 d-flex justify-content-center align-items-center gap-2" data-bs-toggle="modal" data-bs-target="#shoppingListModal">
+          <button
+            class="btn w-100 add-to-cart-btn py-2 d-flex justify-content-center align-items-center gap-2"
+            data-bs-toggle="modal"
+            data-bs-target="#shoppingListModal"
+          >
             <i class="bi bi-cart-plus"></i> Add to Shopping List
           </button>
         </div>
 
         <div class="col-lg-8 order-1 order-lg-2">
-          <div id="instructionsHeader" class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
+          <div
+            id="instructionsHeader"
+            class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3"
+          >
             <h3 class="section-title m-0">Instructions</h3>
             <div sec:authorize="isAuthenticated()">
-             <a th:href="@{/recipes/{id}/cook(id=${recipeId})}" class="btn px-4 py-2 d-flex align-items-center gap-2 shadow-sm" style="background-color: var(--brand-green); color: white; border-radius: 8px; font-weight: bold; text-decoration: none;">
-               <i class="bi bi-play-fill fs-5"></i> Start Cook Mode
-             </a>
-         </div>
+              <a
+                th:href="@{/recipes/{id}/cook(id=${recipeId})}"
+                class="btn px-4 py-2 d-flex align-items-center gap-2 shadow-sm"
+                style="
+                  background-color: var(--brand-green);
+                  color: white;
+                  border-radius: 8px;
+                  font-weight: bold;
+                  text-decoration: none;
+                "
+              >
+                <i class="bi bi-play-fill fs-5"></i> Start Cook Mode
+              </a>
+            </div>
             <div sec:authorize="isAnonymous()">
-                <a th:href="@{/login(continue=|/recipes/${recipeId}|)}" class="btn btn-outline-dark px-4 py-2 d-flex align-items-center gap-2" style="border-radius: 8px; font-weight: 600;">
-                  <i class="bi bi-lock-fill"></i> Log in for Cook Mode
-                </a>
+              <a
+                th:href="@{/login(continue=|/recipes/${recipeId}|)}"
+                class="btn btn-outline-dark px-4 py-2 d-flex align-items-center gap-2"
+                style="border-radius: 8px; font-weight: 600"
+              >
+                <i class="bi bi-lock-fill"></i> Log in for Cook Mode
+              </a>
             </div>
           </div>
 
           <div class="instruction-steps">
-            <div class="d-flex gap-3 mb-4" th:each="step, stat : ${instructionSteps}">
+            <div
+              class="d-flex gap-3 mb-4"
+              th:each="step, stat : ${instructionSteps}"
+            >
               <div class="step-content">
-                <h5 class="fw-bold mb-2 text-uppercase" style="color: var(--brand-green); font-size: 1rem; letter-spacing: 0.05em;" th:text="${'Step ' + (stat.index + 1)}">Step 1</h5>
-                <p class="m-0 text-dark" style="font-size: 1.15rem; line-height: 1.6;" th:text="${step}">Step Text</p>
+                <h5
+                  class="fw-bold mb-2 text-uppercase"
+                  style="
+                    color: var(--brand-green);
+                    font-size: 1rem;
+                    letter-spacing: 0.05em;
+                  "
+                  th:text="${'Step ' + (stat.index + 1)}"
+                >
+                  Step 1
+                </h5>
+                <p
+                  class="m-0 text-dark"
+                  style="font-size: 1.15rem; line-height: 1.6"
+                  th:text="${step}"
+                >
+                  Step Text
+                </p>
               </div>
             </div>
           </div>
@@ -86,99 +187,227 @@
           <div sec:authorize="isAuthenticated()" class="chefs-notes mt-5 p-4">
             <h5 class="m-0 fw-bold editorial-heading mb-3">Chef's Notes</h5>
             <form th:action="@{/notes/add}" method="post">
-                <input type="hidden" name="recipeId" th:value="${recipeId}">
-                <textarea name="content" class="form-control custom-note-input mb-3" rows="3" placeholder="Jot down your tweaks here..." required th:text="${myNote != null ? myNote.content : ''}"></textarea>
-                <div class="d-flex justify-content-end">
-                    <button type="submit" class="btn btn-sm btn-outline-dark fw-bold px-3">Save Note</button>
-                </div>
+              <input type="hidden" name="recipeId" th:value="${recipeId}" />
+              <textarea
+                name="content"
+                class="form-control custom-note-input mb-3"
+                rows="3"
+                placeholder="Jot down your tweaks here..."
+                required
+                th:text="${myNote != null ? myNote.content : ''}"
+              ></textarea>
+              <div class="d-flex justify-content-end">
+                <button
+                  type="submit"
+                  class="btn btn-sm btn-outline-dark fw-bold px-3"
+                >
+                  Save Note
+                </button>
+              </div>
             </form>
           </div>
         </div>
-      </div> 
-      
+      </div>
+
       <div id="reviewsSection" class="row mt-5 pt-5 mb-5 border-top">
         <div class="col-lg-8">
-          
           <div class="d-flex justify-content-between align-items-end mb-4">
             <h3 class="section-title m-0">Reviews</h3>
             <span class="fw-bold" style="font-size: 1.1rem">
-              <i class="bi bi-star-fill text-warning me-1"></i> <span th:text="${averageRating}">4.9</span>
-              <span class="text-muted fw-normal">(<span th:text="${totalReviews}">0</span>)</span>
+              <i class="bi bi-star-fill text-warning me-1"></i>
+              <span th:text="${averageRating}">4.9</span>
+              <span class="text-muted fw-normal"
+                >(<span th:text="${totalReviews}">0</span>)</span
+              >
             </span>
           </div>
 
-          <div sec:authorize="isAuthenticated()" th:if="${currentUserReview == null}" class="review-input-section mb-5 mt-4">
+          <div
+            sec:authorize="isAuthenticated()"
+            th:if="${currentUserReview == null}"
+            class="review-input-section mb-5 mt-4"
+          >
             <div class="d-flex align-items-center gap-3 mb-4">
-              <img th:src="${#authentication.principal.profileImageUrl}" alt="Your Avatar" class="reviewer-avatar shadow-sm" />
-              <h6 class="fw-bold m-0 editorial-heading" style="font-size: 1.15rem;">Reviewing as <span sec:authentication="principal.displayName"></span></h6>
+              <img
+                th:src="${#authentication.principal.profileImageUrl}"
+                alt="Your Avatar"
+                class="reviewer-avatar shadow-sm"
+              />
+              <h6
+                class="fw-bold m-0 editorial-heading"
+                style="font-size: 1.15rem"
+              >
+                Reviewing as
+                <span sec:authentication="principal.displayName"></span>
+              </h6>
             </div>
-            
-            <form th:action="@{/reviews/add}" method="post" id="reviewForm" class="editorial-review-form">
-                <input type="hidden" name="recipeId" th:value="${recipeId}"> 
-                <input type="hidden" name="rating" id="ratingInput" value="5">
-                <div class="d-flex gap-2 mb-3" id="starContainer">
-                    <i class="bi bi-star-fill fs-4 cursor-pointer text-warning star-btn" data-value="1"></i>
-                    <i class="bi bi-star-fill fs-4 cursor-pointer text-warning star-btn" data-value="2"></i>
-                    <i class="bi bi-star-fill fs-4 cursor-pointer text-warning star-btn" data-value="3"></i>
-                    <i class="bi bi-star-fill fs-4 cursor-pointer text-warning star-btn" data-value="4"></i>
-                    <i class="bi bi-star-fill fs-4 cursor-pointer text-warning star-btn" data-value="5"></i>
-                </div>
-                <textarea name="comment" class="form-control editorial-input mb-4" rows="2" placeholder="Share your thoughts or tweaks on this recipe..."></textarea>
-                <div class="d-flex justify-content-end">
-                  <button type="submit" class="btn editorial-submit-btn px-4 py-2">Publish Review</button>
-                </div>
+
+            <form
+              th:action="@{/reviews/add}"
+              method="post"
+              id="reviewForm"
+              class="editorial-review-form"
+            >
+              <input type="hidden" name="recipeId" th:value="${recipeId}" />
+              <input type="hidden" name="rating" id="ratingInput" value="5" />
+              <div class="d-flex gap-2 mb-3" id="starContainer">
+                <i
+                  class="bi bi-star-fill fs-4 cursor-pointer text-warning star-btn"
+                  data-value="1"
+                ></i>
+                <i
+                  class="bi bi-star-fill fs-4 cursor-pointer text-warning star-btn"
+                  data-value="2"
+                ></i>
+                <i
+                  class="bi bi-star-fill fs-4 cursor-pointer text-warning star-btn"
+                  data-value="3"
+                ></i>
+                <i
+                  class="bi bi-star-fill fs-4 cursor-pointer text-warning star-btn"
+                  data-value="4"
+                ></i>
+                <i
+                  class="bi bi-star-fill fs-4 cursor-pointer text-warning star-btn"
+                  data-value="5"
+                ></i>
+              </div>
+              <textarea
+                name="comment"
+                class="form-control editorial-input mb-4"
+                rows="2"
+                placeholder="Share your thoughts or tweaks on this recipe..."
+              ></textarea>
+              <div class="d-flex justify-content-end">
+                <button
+                  type="submit"
+                  class="btn editorial-submit-btn px-4 py-2"
+                >
+                  Publish Review
+                </button>
+              </div>
             </form>
           </div>
 
-          <div th:if="${currentUserReview != null}" class="mb-5 p-4 rounded" style="background-color: #f8fbf9; border: 1px solid #d1e7dd;">
+          <div
+            th:if="${currentUserReview != null}"
+            class="mb-5 p-4 rounded"
+            style="background-color: #f8fbf9; border: 1px solid #d1e7dd"
+          >
             <div class="d-flex justify-content-between align-items-start mb-2">
               <div class="d-flex align-items-center gap-3">
-                <img th:src="${currentUserReview.user.profileImageUrl}" class="reviewer-avatar" style="width: 40px; height: 40px; border: none; box-shadow: none;" />
-                <div class="fw-bold text-dark" style="font-size: 1.05rem;">Your Review</div>
+                <img
+                  th:src="${currentUserReview.user.profileImageUrl}"
+                  class="reviewer-avatar"
+                  style="
+                    width: 40px;
+                    height: 40px;
+                    border: none;
+                    box-shadow: none;
+                  "
+                />
+                <div class="fw-bold text-dark" style="font-size: 1.05rem">
+                  Your Review
+                </div>
               </div>
-              
+
               <div class="d-flex align-items-center gap-3">
                 <div class="text-warning small mt-1">
-                  <i class="bi bi-star-fill" th:each="i : ${#numbers.sequence(1, currentUserReview.rating)}"></i><i class="bi bi-star" th:if="${currentUserReview.rating < 5}" th:each="i : ${#numbers.sequence(currentUserReview.rating + 1, 5)}"></i>
+                  <i
+                    class="bi bi-star-fill"
+                    th:each="i : ${#numbers.sequence(1, currentUserReview.rating)}"
+                  ></i
+                  ><i
+                    class="bi bi-star"
+                    th:if="${currentUserReview.rating < 5}"
+                    th:each="i : ${#numbers.sequence(currentUserReview.rating + 1, 5)}"
+                  ></i>
                 </div>
                 <form th:action="@{/reviews/delete}" method="post" class="m-0">
-                   <input type="hidden" name="reviewId" th:value="${currentUserReview.id}">
-                   <input type="hidden" name="recipeId" th:value="${recipeId}">
-                   <button type="submit" class="btn btn-sm text-danger p-0 border-0 bg-transparent" title="Delete Review">
-                     <i class="bi bi-trash fs-5"></i>
-                   </button>
+                  <input
+                    type="hidden"
+                    name="reviewId"
+                    th:value="${currentUserReview.id}"
+                  />
+                  <input type="hidden" name="recipeId" th:value="${recipeId}" />
+                  <button
+                    type="submit"
+                    class="btn btn-sm text-danger p-0 border-0 bg-transparent"
+                    title="Delete Review"
+                  >
+                    <i class="bi bi-trash fs-5"></i>
+                  </button>
                 </form>
               </div>
             </div>
-            <p class="review-text m-0 mt-2" th:text="${currentUserReview.comment}"></p>
+            <p
+              class="review-text m-0 mt-2"
+              th:text="${currentUserReview.comment}"
+            ></p>
           </div>
 
-          <div sec:authorize="isAnonymous()" class="review-input-box p-4 mb-5 text-center">
+          <div
+            sec:authorize="isAnonymous()"
+            class="review-input-box p-4 mb-5 text-center"
+          >
             <h6 class="fw-bold mb-3">Want to leave a review?</h6>
-            <p class="text-muted small">Join the Smart Kitchen community to rate recipes, save your favorites, and access Cook Mode.</p>
-            <a th:href="@{/login(continue=|/recipes/${recipeId}|)}" class="btn editorial-submit-btn px-4 mt-2">Log in to Review</a>
+            <p class="text-muted small">
+              Join the Smart Kitchen community to rate recipes, save your
+              favorites, and access Cook Mode.
+            </p>
+            <a
+              th:href="@{/login(continue=|/recipes/${recipeId}|)}"
+              class="btn editorial-submit-btn px-4 mt-2"
+              >Log in to Review</a
+            >
           </div>
 
-          <div class="review-card mb-4 pb-4 border-bottom" th:each="review : ${allReviews}">
+          <div
+            class="review-card mb-4 pb-4 border-bottom"
+            th:each="review : ${allReviews}"
+          >
             <div class="d-flex justify-content-between align-items-start mb-2">
               <div class="d-flex align-items-center gap-3">
-                <img th:src="${review.user.profileImageUrl}" class="reviewer-avatar" style="width: 40px; height: 40px; border: none; box-shadow: none;" />
-                <div class="fw-bold text-dark" th:text="${review.user.username}">User Name</div>
+                <img
+                  th:src="${review.user.profileImageUrl}"
+                  class="reviewer-avatar"
+                  style="
+                    width: 40px;
+                    height: 40px;
+                    border: none;
+                    box-shadow: none;
+                  "
+                />
+                <div
+                  class="fw-bold text-dark"
+                  th:text="${review.user.username}"
+                >
+                  User Name
+                </div>
               </div>
               <div class="text-warning small mt-1">
-                <i class="bi bi-star-fill" th:each="i : ${#numbers.sequence(1, review.rating)}"></i><i class="bi bi-star" th:if="${review.rating < 5}" th:each="i : ${#numbers.sequence(review.rating + 1, 5)}"></i>
+                <i
+                  class="bi bi-star-fill"
+                  th:each="i : ${#numbers.sequence(1, review.rating)}"
+                ></i
+                ><i
+                  class="bi bi-star"
+                  th:if="${review.rating < 5}"
+                  th:each="i : ${#numbers.sequence(review.rating + 1, 5)}"
+                ></i>
               </div>
             </div>
             <p class="review-text m-0 mt-2" th:text="${review.comment}"></p>
           </div>
-          
-          <div th:if="${#lists.isEmpty(allReviews) and currentUserReview == null}" class="text-center text-muted py-4">
-              <p>No reviews yet. Be the first to review this recipe!</p>
-          </div>
 
+          <div
+            th:if="${#lists.isEmpty(allReviews) and currentUserReview == null}"
+            class="text-center text-muted py-4"
+          >
+            <p>No reviews yet. Be the first to review this recipe!</p>
+          </div>
         </div>
       </div>
-
     </div>
 
     <div class="modal fade" id="shoppingListModal" tabindex="-1">
@@ -186,9 +415,15 @@
         <div class="modal-content custom-modal">
           <div class="modal-header border-bottom pb-3">
             <h5 class="modal-title section-title">Add to List</h5>
-            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            <button
+              type="button"
+              class="btn-close"
+              data-bs-dismiss="modal"
+            ></button>
           </div>
-          <div class="modal-body py-4"><p class="text-muted small mb-4">Added to list.</p></div>
+          <div class="modal-body py-4">
+            <p class="text-muted small mb-4">Added to list.</p>
+          </div>
         </div>
       </div>
     </div>
@@ -197,38 +432,61 @@
     <div th:replace="~{fragments/layout :: mobile-offcanvas}"></div>
 
     <script>
-      document.addEventListener('DOMContentLoaded', () => {
+      document.addEventListener("DOMContentLoaded", () => {
         // --- STAR RATING & BOOKMARK ---
-        const stars = document.querySelectorAll('.star-btn');
-        const ratingInput = document.getElementById('ratingInput');
-        stars.forEach(star => {
-          star.addEventListener('click', function() {
-            const ratingValue = this.getAttribute('data-value');
-            if(ratingInput) ratingInput.value = ratingValue;
-            stars.forEach(s => { s.classList.replace(s.getAttribute('data-value') <= ratingValue ? 'bi-star' : 'bi-star-fill', s.getAttribute('data-value') <= ratingValue ? 'bi-star-fill' : 'bi-star'); });
+        const stars = document.querySelectorAll(".star-btn");
+        const ratingInput = document.getElementById("ratingInput");
+        stars.forEach((star) => {
+          star.addEventListener("click", function () {
+            const ratingValue = this.getAttribute("data-value");
+            if (ratingInput) ratingInput.value = ratingValue;
+            stars.forEach((s) => {
+              s.classList.replace(
+                s.getAttribute("data-value") <= ratingValue
+                  ? "bi-star"
+                  : "bi-star-fill",
+                s.getAttribute("data-value") <= ratingValue
+                  ? "bi-star-fill"
+                  : "bi-star",
+              );
+            });
           });
         });
 
-        const bookmarkBtn = document.querySelector('.bookmark-fab');
+        const bookmarkBtn = document.querySelector(".bookmark-fab");
         if (bookmarkBtn) {
-            bookmarkBtn.addEventListener('click', async function() {
-                const icon = this.querySelector('i');
-                const recipeId = document.querySelector('input[name="recipeId"]')?.value || "1"; 
-                try {
-                    const response = await fetch(`/recipes/${recipeId}/save`, { method: 'POST', headers: { 'Content-Type': 'application/json' } });
-                    if (response.ok) { 
-                        const data = await response.json();
-                        if (data.status === 'added') {
-                            this.style.backgroundColor = 'var(--brand-green)'; this.style.color = 'white'; 
-                            icon.classList.replace('bi-bookmark', 'bi-bookmark-check-fill'); 
-                        } else {
-                            this.style.backgroundColor = 'white'; this.style.color = '#111827'; 
-                            icon.classList.replace('bi-bookmark-check-fill', 'bi-bookmark'); 
-                        }
-                    } else if (response.status === 401) { window.location.href = '/login'; }
-                } catch (error) {}
-            });
-        } 
+          bookmarkBtn.addEventListener("click", async function () {
+            const icon = this.querySelector("i");
+            const recipeId =
+              document.querySelector('input[name="recipeId"]')?.value || "1";
+            try {
+              const response = await fetch(`/recipes/${recipeId}/save`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+              });
+              if (response.ok) {
+                const data = await response.json();
+                if (data.status === "added") {
+                  this.style.backgroundColor = "var(--brand-green)";
+                  this.style.color = "white";
+                  icon.classList.replace(
+                    "bi-bookmark",
+                    "bi-bookmark-check-fill",
+                  );
+                } else {
+                  this.style.backgroundColor = "white";
+                  this.style.color = "#111827";
+                  icon.classList.replace(
+                    "bi-bookmark-check-fill",
+                    "bi-bookmark",
+                  );
+                }
+              } else if (response.status === 401) {
+                window.location.href = "/login";
+              }
+            } catch (error) {}
+          });
+        }
       });
     </script>
   </body>

@@ -52,13 +52,18 @@ public class AuthController {
             return "register";
         }
 
+        if (userRepository.findByUsername(user.getUsername()).isPresent()) {
+            model.addAttribute("error", "That Display Name is already taken. Please choose another.");
+            return "register";
+        }
+
         // 2. Encrypt the password before saving!
         String plainPassword = user.getPassword();
         user.setPassword(passwordEncoder.encode(plainPassword));
 
         // 3. Give them a default avatar if they didn't provide one
         if (user.getProfileImageUrl() == null || user.getProfileImageUrl().isEmpty()) {
-            user.setProfileImageUrl("[https://ui-avatars.com/api/?name=](https://ui-avatars.com/api/?name=)" + user.getUsername() + "&background=random");
+            user.setProfileImageUrl("https://ui-avatars.com/api/?name=" + user.getUsername() + "&background=random");
         }
 
         // 4. Save to DB
