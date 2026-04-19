@@ -138,6 +138,17 @@ public class Recipe {
         this.recipeIngredients = recipeIngredients;
     }
 
+    @OneToMany(mappedBy = "recipe", cascade = CascadeType.ALL, orphanRemoval = true)
+    private java.util.List<RecipeIngredient> ingredients = new java.util.ArrayList<>();
 
+    // Getter
+    public java.util.List<RecipeIngredient> getIngredients() {
+        return ingredients;
+    }
+
+    // Setter
+    public void setIngredients(java.util.List<RecipeIngredient> ingredients) {
+        this.ingredients = ingredients;
+    }
 
 }

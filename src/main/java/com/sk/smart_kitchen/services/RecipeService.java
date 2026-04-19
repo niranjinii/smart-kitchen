@@ -102,7 +102,7 @@ public class RecipeService {
         for (RecipeIngredient ingredient : ingredients) {
             IngredientLineForm line = new IngredientLineForm();
             line.setName(ingredient.getIngredient().getName());
-            line.setQuantity(ingredient.getQuantityNeeded() == null ? "" : stripTrailingZero(ingredient.getQuantityNeeded()));
+            line.setQuantity(ingredient.getQuantityNeeded() != null ? stripTrailingZero(ingredient.getQuantityNeeded()) : "0");
             line.setUnit(ingredient.getUnit());
             ingredientLines.add(line);
         }
@@ -358,7 +358,9 @@ public class RecipeService {
             form.setIngredients(new ArrayList<>());
         }
         while (form.getIngredients().size() < DEFAULT_INGREDIENT_ROWS) {
-            form.getIngredients().add(new IngredientLineForm());
+            IngredientLineForm newLine = new IngredientLineForm();
+            newLine.setQuantity("");
+            form.getIngredients().add(newLine);
         }
 
         if (form.getInstructionSteps() == null) {

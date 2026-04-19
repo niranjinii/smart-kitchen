@@ -45,18 +45,48 @@
           <div class="d-flex justify-content-between align-items-end mb-4">
             <h3 class="section-title m-0">Ingredients</h3>
             <div class="yield-adjuster d-flex align-items-center gap-3 px-2 py-1">
-              <i class="bi bi-dash cursor-pointer"></i><span class="fw-bold" style="font-size: 0.9rem">2 Servings</span><i class="bi bi-plus cursor-pointer"></i>
+              <i class="bi bi-dash cursor-pointer" id="scaleDownBtn"></i>
+              <span class="fw-bold" style="font-size: 0.9rem">
+                  <span id="currentServings" th:data-base-servings="${recipe.defaultServings != null ? recipe.defaultServings : 2}" th:text="${recipe.defaultServings != null ? recipe.defaultServings : 2}">2</span> Servings
+              </span>
+              <i class="bi bi-plus cursor-pointer" id="scaleUpBtn"></i>
             </div>
           </div>
+          
           <ul class="ingredient-list list-unstyled mb-4">
-            <li class="ingredient-item" th:each="ingredient : ${ingredients}">
-              <span class="fw-bold me-2" th:text="${ingredient.quantityNeeded + (ingredient.unit != null ? ingredient.unit : '')}">250g</span>
-              <span th:text="${ingredient.ingredient.name}">Pasta</span>
-            </li>
+            <th:block th:if="${not #lists.isEmpty(ingredients)}">
+                <li class="ingredient-item" th:each="ing : ${ingredients}">
+                  <span class="fw-bold me-2">
+                      <span class="scalable-qty" th:data-base-qty="${ing.quantityNeeded}" th:text="${ing.quantityNeeded}">250</span><span th:text="${ing.unit != null ? ing.unit : ''}">g</span>
+                  </span>
+                  <span th:text="${ing.ingredient.name}">Pasta</span>
+                </li>
+            </th:block>
+
+            <th:block th:if="${#lists.isEmpty(ingredients)}">
+                <li class="ingredient-item">
+                  <span class="fw-bold me-2"><span class="scalable-qty" data-base-qty="250">250</span>g</span>
+                  <span>Fettuccine Pasta (Demo)</span>
+                </li>
+                <li class="ingredient-item">
+                  <span class="fw-bold me-2"><span class="scalable-qty" data-base-qty="4">4</span> cloves</span>
+                  <span>Minced Garlic (Demo)</span>
+                </li>
+                <li class="ingredient-item">
+                  <span class="fw-bold me-2"><span class="scalable-qty" data-base-qty="30">30</span>g</span>
+                  <span>Parmesan Cheese (Demo)</span>
+                </li>
+            </th:block>
           </ul>
-          <button class="btn w-100 add-to-cart-btn py-2 d-flex justify-content-center align-items-center gap-2" data-bs-toggle="modal" data-bs-target="#shoppingListModal">
-            <i class="bi bi-cart-plus"></i> Add to Shopping List
-          </button>
+          
+          <div class="d-flex flex-column gap-2">
+              <button class="btn add-to-cart-btn py-2 d-flex justify-content-center align-items-center gap-2" data-bs-toggle="modal" data-bs-target="#shoppingListModal">
+                <i class="bi bi-cart-plus"></i> Add to Shopping List
+              </button>
+              <button class="btn btn-outline-dark py-2 d-flex justify-content-center align-items-center gap-2" data-bs-toggle="modal" data-bs-target="#plannerModal" style="border-radius: 6px; font-weight: 600;">
+                <i class="bi bi-calendar-plus"></i> Add to Meal Planner
+              </button>
+          </div>
         </div>
 
         <div class="col-lg-8 order-1 order-lg-2">
@@ -74,20 +104,17 @@
             </div>
           </div>
 
-          <div class="instruction-steps">
-            <label class="step-card d-flex gap-3 p-4 cursor-pointer" th:each="step, stat : ${instructionSteps}">
-              <input type="checkbox" class="step-checkbox mt-1" />
-              <div class="step-content">
-                <h5 class="step-number mb-2" th:text="${'Step ' + (stat.index + 1)}">Step 1</h5>
-                <p class="step-text m-0" th:text="${step}">Step Text</p>
-              </div>
-            </label>
+          <div id="rawInstructionsText" class="d-none">
+              <th:block th:each="step : ${instructionSteps}" th:text="${step} + ' '"></th:block>
           </div>
+          
+          <div class="instruction-steps" id="formattedStepsContainer">
+              </div>
 
           <div sec:authorize="isAuthenticated()" class="chefs-notes mt-5 p-4">
             <h5 class="m-0 fw-bold editorial-heading mb-3">Chef's Notes</h5>
             <form th:action="@{/notes/add}" method="post">
-                <input type="hidden" name="recipeId" th:value="${recipeId}">
+                <input type="hidden" name="recipeId" th:value="${recipe.id}">
                 <textarea name="content" class="form-control custom-note-input mb-3" rows="3" placeholder="Jot down your tweaks here..." required th:text="${myNote != null ? myNote.content : ''}"></textarea>
                 <div class="d-flex justify-content-end">
                     <button type="submit" class="btn btn-sm btn-outline-dark fw-bold px-3">Save Note</button>
@@ -95,7 +122,9 @@
             </form>
           </div>
         </div>
-      </div> <div id="reviewsSection" class="row mt-5 pt-5 mb-5 border-top">
+      </div> 
+      
+      <div id="reviewsSection" class="row mt-5 pt-5 mb-5 border-top">
         <div class="col-lg-8">
           <div class="d-flex justify-content-between align-items-end mb-4">
             <h3 class="section-title m-0">Reviews</h3>
@@ -105,7 +134,7 @@
           <div sec:authorize="isAuthenticated()" class="review-input-box p-4 mb-5">
             <h6 class="fw-bold mb-3">Leave a review as <span sec:authentication="principal.displayName"></span></h6>
             <form th:action="@{/reviews/add}" method="post" id="reviewForm">
-                <input type="hidden" name="recipeId" th:value="${recipeId}"> 
+                <input type="hidden" name="recipeId" th:value="${recipe.id}"> 
                 <input type="hidden" name="rating" id="ratingInput" value="5">
                 <div class="d-flex gap-2 mb-3" id="starContainer">
                     <i class="bi bi-star-fill fs-5 cursor-pointer text-warning star-btn" data-value="1"></i>
@@ -121,7 +150,7 @@
 
           <div sec:authorize="isAnonymous()" class="review-input-box p-4 mb-5 text-center">
             <h6 class="fw-bold mb-3">Want to leave a review?</h6>
-            <a th:href="@{/login(continue=|/recipes/${recipeId}|)}" class="btn editorial-submit-btn px-4 mt-2">Log in to Review</a>
+            <a th:href="@{/login(continue=|/recipes/${recipe.id}|)}" class="btn editorial-submit-btn px-4 mt-2">Log in to Review</a>
           </div>
 
           <div th:each="review : ${reviews}" class="review-card mb-4 pb-4 border-bottom">
@@ -145,10 +174,93 @@
       <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content custom-modal">
           <div class="modal-header border-bottom pb-3">
-            <h5 class="modal-title section-title">Add to List</h5>
+            <h5 class="modal-title section-title">Add to Shopping List</h5>
             <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
           </div>
-          <div class="modal-body py-4"><p class="text-muted small mb-4">Added to list.</p></div>
+          <form th:action="@{/shopping-list/add}" method="post" onsubmit="return checkShoppingListForm(this);">
+              <input type="hidden" name="recipeId" th:value="${recipe.id}">
+              
+              <div class="modal-body py-4">
+                <p class="text-muted small mb-4">Uncheck items you already have in your pantry.</p>
+                <div class="shopping-modal-list">
+                    
+                    <th:block th:if="${not #lists.isEmpty(ingredients)}">
+                        <label th:each="ing : ${ingredients}" class="d-flex align-items-start gap-3 mb-3 cursor-pointer p-2 rounded hover-bg border" style="background: #f9fafb;">
+                            <input type="checkbox" name="ingredientIds" th:value="${ing.ingredient.id}" class="ingredient-checkbox mt-1" onchange="this.nextElementSibling.disabled = !this.checked;" checked>
+                            <input type="hidden" name="quantities" th:value="${ing.quantityNeeded}" class="modal-qty-input" th:data-base-qty="${ing.quantityNeeded}">
+                            <div>
+                                <span class="fw-bold"><span class="modal-display-qty" th:text="${ing.quantityNeeded}"></span><span th:text="${ing.unit != null ? ing.unit : ''}"></span></span> 
+                                <span th:text="${ing.ingredient.name}">Ingredient Name</span>
+                            </div>
+                        </label>
+                    </th:block>
+
+                    <th:block th:if="${#lists.isEmpty(ingredients)}">
+                        <label class="d-flex align-items-start gap-3 mb-3 cursor-pointer p-2 rounded hover-bg border" style="background: #f9fafb;">
+                            <input type="checkbox" name="ingredientIds" value="1" class="ingredient-checkbox mt-1" onchange="this.nextElementSibling.disabled = !this.checked;" checked>
+                            <input type="hidden" name="quantities" value="250" class="modal-qty-input" data-base-qty="250">
+                            <div>
+                                <span class="fw-bold"><span class="modal-display-qty">250</span>g</span> 
+                                <span>Fettuccine Pasta (Demo)</span>
+                            </div>
+                        </label>
+                        <label class="d-flex align-items-start gap-3 mb-3 cursor-pointer p-2 rounded hover-bg border" style="background: #f9fafb;">
+                            <input type="checkbox" name="ingredientIds" value="2" class="ingredient-checkbox mt-1" onchange="this.nextElementSibling.disabled = !this.checked;" checked>
+                            <input type="hidden" name="quantities" value="4" class="modal-qty-input" data-base-qty="4">
+                            <div>
+                                <span class="fw-bold"><span class="modal-display-qty">4</span> cloves</span> 
+                                <span>Minced Garlic (Demo)</span>
+                            </div>
+                        </label>
+                        <label class="d-flex align-items-start gap-3 mb-3 cursor-pointer p-2 rounded hover-bg border" style="background: #f9fafb;">
+                            <input type="checkbox" name="ingredientIds" value="3" class="ingredient-checkbox mt-1" onchange="this.nextElementSibling.disabled = !this.checked;" checked>
+                            <input type="hidden" name="quantities" value="30" class="modal-qty-input" data-base-qty="30">
+                            <div>
+                                <span class="fw-bold"><span class="modal-display-qty">30</span>g</span> 
+                                <span>Parmesan Cheese (Demo)</span>
+                            </div>
+                        </label>
+                    </th:block>
+                    
+                </div>
+              </div>
+              <div class="modal-footer border-top pt-3">
+                <button type="submit" class="btn w-100 cook-mode-btn py-2">Add Selected Items</button>
+              </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal fade" id="plannerModal" tabindex="-1">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content custom-modal">
+          <div class="modal-header border-bottom pb-3">
+            <h5 class="modal-title section-title">Plan this Meal</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+          </div>
+          <form th:action="@{/planner/add}" method="post">
+              <input type="hidden" name="recipeId" th:value="${recipe.id}">
+              
+              <div class="modal-body py-4">
+                  <div class="mb-4">
+                      <label class="fw-bold mb-2 text-dark">Select Date</label>
+                      <input type="date" name="plannedDate" class="form-control" required style="border-radius: 8px; border: 1px solid #d1d5db; padding: 10px;">
+                  </div>
+                  <div>
+                      <label class="fw-bold mb-2 text-dark">Meal Type</label>
+                      <select name="mealType" class="form-select" style="border-radius: 8px; border: 1px solid #d1d5db; padding: 10px;">
+                          <option value="Breakfast">Breakfast</option>
+                          <option value="Lunch">Lunch</option>
+                          <option value="Dinner">Dinner</option>
+                          <option value="Snack">Snack</option>
+                      </select>
+                  </div>
+              </div>
+              <div class="modal-footer border-top pt-3">
+                <button type="submit" class="btn w-100 btn-dark fw-bold py-2" style="border-radius: 8px;">Schedule Meal</button>
+              </div>
+          </form>
         </div>
       </div>
     </div>
@@ -182,8 +294,53 @@
     </div>
 
     <script>
+      function checkShoppingListForm(form) {
+          const checkedItems = form.querySelectorAll('.ingredient-checkbox:checked');
+          if (checkedItems.length === 0) {
+              alert("Please select at least one ingredient to add to your list.");
+              return false; // Blocks the form from crashing the server!
+          }
+          return true;
+      }
+
       document.addEventListener('DOMContentLoaded', () => {
-        // --- STAR RATING & BOOKMARK ---
+
+        // =========================================
+        // 1. SMART INSTRUCTION PARSER (Fixes the Step Checkboxes!)
+        // =========================================
+        const rawInstructionsEl = document.getElementById('rawInstructionsText');
+        const stepsContainer = document.getElementById('formattedStepsContainer');
+        
+        if (rawInstructionsEl && stepsContainer && rawInstructionsEl.innerText.trim().length > 0) {
+            let text = rawInstructionsEl.innerText.trim();
+            
+            // Splits the text exactly where "Step X:" appears
+            let stepsArray = text.split(/(?=Step \d+:?)/i).filter(s => s.trim().length > 0);
+            
+            // If they didn't use the word "Step", split by sentences instead as a fallback
+            if (stepsArray.length === 1 && !text.toLowerCase().includes('step 1')) {
+                stepsArray = text.split(/(?<=\.)\s+/).filter(s => s.trim().length > 0);
+            }
+
+            let html = '';
+            stepsArray.forEach((stepText, index) => {
+                let cleanText = stepText.trim().replace(/^Step \d+:?\s*/i, '');
+                html += `
+                <label class="step-card d-flex gap-3 p-4 cursor-pointer">
+                  <input type="checkbox" class="step-checkbox mt-1" />
+                  <div class="step-content position-relative w-100">
+                    <h5 class="step-number mb-2">Step ${index + 1}</h5>
+                    <p class="step-text m-0">${cleanText}</p>
+                  </div>
+                </label>
+                `;
+            });
+            stepsContainer.innerHTML = html;
+        }
+
+        // =========================================
+        // 2. STAR RATING & BOOKMARKS
+        // =========================================
         const stars = document.querySelectorAll('.star-btn');
         const ratingInput = document.getElementById('ratingInput');
         stars.forEach(star => {
@@ -215,268 +372,287 @@
             });
         }
 
-        // --- MASTER COOK MODE ENGINE ---
+        // =========================================
+        // 3. MASTER COOK MODE ENGINE
+        // =========================================
         const cookModeBtn = document.getElementById('mainCookModeBtn');
-        if(!cookModeBtn) return; 
+        if(cookModeBtn) { 
 
-        const steps = document.querySelectorAll('.step-card');
-        const synth = window.speechSynthesis;
-        let isCookModeActive = false; let currentStepIndex = -1; 
-        
-        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-        let recognition = null; let isSpeaking = false;
-        
-        const nextCommands = ['next', 'done', 'okay', 'ready', 'move on'];
-        const repeatCommands = ['repeat', 'again', 'what was that'];
-        const timerCommands = ['start timer', 'start', 'begin timer'];
-        const stopTimerCommands = ['stop timer', 'cancel timer', 'stop', 'clear timer'];
+            // Notice we get .step-card AFTER the parser has generated them!
+            const steps = document.querySelectorAll('.step-card');
+            const synth = window.speechSynthesis;
+            let isCookModeActive = false; let currentStepIndex = -1; 
+            
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            let recognition = null; let isSpeaking = false;
+            
+            const nextCommands = ['next', 'done', 'okay', 'ready', 'move on'];
+            const repeatCommands = ['repeat', 'again', 'what was that'];
+            const timerCommands = ['start timer', 'start', 'begin timer'];
+            const stopTimerCommands = ['stop timer', 'cancel timer', 'stop', 'clear timer'];
 
-        const timerWidget = document.getElementById('smartTimerWidget');
-        const timerDisplay = document.getElementById('timerDisplay');
-        const startTimerBtn = document.getElementById('startTimerBtn');
-        const timerSuggestedTime = document.getElementById('timerSuggestedTime');
-        const closeTimerBtn = document.getElementById('closeTimerBtn');
-        
-        const zenVoiceToggle = document.getElementById('zenVoiceToggle');
-        const voiceToggle = document.getElementById('voiceToggle');
-        const micStatusIcon = document.getElementById('micStatusIcon');
-        const exitCookModeBtn = document.getElementById('exitCookModeBtn');
-        let countdownInterval; let suggestedSeconds = 0;
+            const timerWidget = document.getElementById('smartTimerWidget');
+            const timerDisplay = document.getElementById('timerDisplay');
+            const startTimerBtn = document.getElementById('startTimerBtn');
+            const timerSuggestedTime = document.getElementById('timerSuggestedTime');
+            const closeTimerBtn = document.getElementById('closeTimerBtn');
+            
+            const zenVoiceToggle = document.getElementById('zenVoiceToggle');
+            const voiceToggle = document.getElementById('voiceToggle');
+            const micStatusIcon = document.getElementById('micStatusIcon');
+            const exitCookModeBtn = document.getElementById('exitCookModeBtn');
+            let countdownInterval; let suggestedSeconds = 0;
 
-        // INJECT REPEAT ARROWS (Top Right Corner)
-        steps.forEach((step, index) => {
-            const btn = document.createElement('i');
-            btn.className = 'bi bi-arrow-repeat manual-audio-btn'; 
-            btn.title = "Repeat Audio";
-            btn.onclick = (e) => {
-                e.stopPropagation(); // Stops the step from jumping when you click repeat
-                e.preventDefault(); 
-                const text = step.querySelector('.step-text').innerText;
-                speakText("Repeating Step " + (index + 1) + ". " + text);
+            steps.forEach((step, index) => {
+                const btn = document.createElement('i');
+                btn.className = 'bi bi-arrow-repeat manual-audio-btn'; 
+                btn.title = "Repeat Audio";
+                btn.onclick = (e) => {
+                    e.stopPropagation(); 
+                    e.preventDefault(); 
+                    const text = step.querySelector('.step-text').innerText;
+                    speakText("Repeating Step " + (index + 1) + ". " + text);
+                };
+                const contentDiv = step.querySelector('.step-content');
+                if(contentDiv) {
+                    contentDiv.appendChild(btn);
+                }
+            });
+            
+            const checkIngredients = () => {
+                const ingredientItems = document.querySelectorAll('.ingredient-item');
+                
+                if (!isCookModeActive) {
+                    ingredientItems.forEach(item => item.classList.remove('checked-out'));
+                    return; 
+                }
+
+                let remainingStepsText = "";
+                for(let i = currentStepIndex; i < steps.length; i++) {
+                    if (i >= 0) remainingStepsText += steps[i].innerText.toLowerCase() + " ";
+                }
+                
+                ingredientItems.forEach(item => {
+                    let text = item.innerText.toLowerCase();
+                    let words = text.match(/\b[a-z]{4,}\b/g) || [];
+                    words = words.filter(w => !['tbsp', 'teaspoon', 'cups', 'cloves', 'grams', 'with'].includes(w));
+                    let isStillNeeded = words.some(word => remainingStepsText.includes(word)); 
+                    if (!isStillNeeded) { item.classList.add('checked-out'); } 
+                    else { item.classList.remove('checked-out'); }
+                });
             };
-            const contentDiv = step.querySelector('.step-content');
-            if(contentDiv) {
-                contentDiv.classList.add('position-relative', 'w-100');
-                contentDiv.appendChild(btn);
-            }
-        });
-        
-        // SMART INGREDIENT SCRATCH-OFF
-        const checkIngredients = () => {
-            const ingredientItems = document.querySelectorAll('.ingredient-item');
-            
-            // NEW: If Cook Mode is OFF, just un-scratch everything and stop immediately!
-            if (!isCookModeActive) {
-                ingredientItems.forEach(item => item.classList.remove('checked-out'));
-                return; 
-            }
 
-            // Otherwise, run the smart matching logic...
-            let remainingStepsText = "";
-            for(let i = currentStepIndex; i < steps.length; i++) {
-                if (i >= 0) remainingStepsText += steps[i].innerText.toLowerCase() + " ";
-            }
-            
-            ingredientItems.forEach(item => {
-                let text = item.innerText.toLowerCase();
-                let words = text.match(/\b[a-z]{4,}\b/g) || [];
-                words = words.filter(w => !['tbsp', 'teaspoon', 'cups', 'cloves', 'grams', 'with'].includes(w));
+            const updateVisualStep = () => {
+              steps.forEach((step, i) => {
+                step.classList.remove('active-step');
+                const checkbox = step.querySelector('.step-checkbox');
                 
-                let isStillNeeded = words.some(word => remainingStepsText.includes(word)); 
-                
-                if (!isStillNeeded) {
-                    item.classList.add('checked-out');
-                } else { 
-                    item.classList.remove('checked-out'); 
+                if (i < currentStepIndex && checkbox) checkbox.checked = true;
+                else if (i > currentStepIndex && checkbox) checkbox.checked = false;
+
+                if (i === currentStepIndex) {
+                  step.classList.add('active-step');
+                  step.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                  if (checkbox) checkbox.checked = false; 
+                  
+                  const currentText = step.querySelector('.step-text').innerText;
+                  scanForTime(currentText); 
+                  if (voiceToggle.checked) { speakText("Step " + (i + 1) + ". " + currentText); }
                 }
+              });
+              checkIngredients(); 
+            };
+
+            steps.forEach((step, index) => {
+              step.addEventListener('click', (e) => {
+                  if (!isCookModeActive) return;
+                  if (e.target.classList.contains('manual-audio-btn')) return; 
+
+                  const checkbox = step.querySelector('.step-checkbox');
+                  if (e.target === checkbox && index === currentStepIndex) { advanceCookModeStep(); return; }
+
+                  if (index !== currentStepIndex) {
+                      e.preventDefault(); 
+                      currentStepIndex = index;
+                      updateVisualStep();
+                  }
+              });
             });
-        };
 
-        // SPOTIFY LYRICS ENGINE (Handles checkboxes automatically!)
-        const updateVisualStep = () => {
-          steps.forEach((step, i) => {
-            step.classList.remove('active-step');
-            const checkbox = step.querySelector('.step-checkbox');
-            
-            // Auto check/uncheck based on jumping
-            if (i < currentStepIndex && checkbox) checkbox.checked = true;
-            else if (i > currentStepIndex && checkbox) checkbox.checked = false;
+            if (SpeechRecognition) {
+              recognition = new SpeechRecognition();
+              recognition.continuous = true; recognition.interimResults = false; recognition.lang = 'en-US';
 
-            if (i === currentStepIndex) {
-              step.classList.add('active-step');
-              step.scrollIntoView({ behavior: 'smooth', block: 'center' });
-              if (checkbox) checkbox.checked = false; // Active step is open
-              
-              const currentText = step.querySelector('.step-text').innerText;
-              scanForTime(currentText); 
-              if (voiceToggle.checked) { speakText("Step " + (i + 1) + ". " + currentText); }
-            }
-          });
-          checkIngredients(); 
-        };
+              recognition.onresult = (event) => {
+                if (!voiceToggle.checked || isSpeaking) return; 
+                const transcript = event.results[event.results.length - 1][0].transcript.trim().toLowerCase();
 
-        // CLICK TO JUMP LOGIC
-        steps.forEach((step, index) => {
-          step.addEventListener('click', (e) => {
-              if (!isCookModeActive) return;
-              if (e.target.classList.contains('manual-audio-btn')) return; // Ignore if they hit repeat
-
-              const checkbox = step.querySelector('.step-checkbox');
-              
-              // If they click the active step's checkbox, go forward!
-              if (e.target === checkbox && index === currentStepIndex) {
-                  advanceCookModeStep();
-                  return;
-              }
-
-              // JUMP TO CLICKED STEP
-              if (index !== currentStepIndex) {
-                  e.preventDefault(); 
-                  currentStepIndex = index;
-                  updateVisualStep();
-              }
-          });
-        });
-
-        // VOICE RECOGNITION
-        if (SpeechRecognition) {
-          recognition = new SpeechRecognition();
-          recognition.continuous = true; recognition.interimResults = false; recognition.lang = 'en-US';
-
-          recognition.onresult = (event) => {
-            if (!voiceToggle.checked || isSpeaking) return; 
-            const transcript = event.results[event.results.length - 1][0].transcript.trim().toLowerCase();
-
-            if (nextCommands.some(cmd => transcript.includes(cmd))) advanceCookModeStep();
-            else if (repeatCommands.some(cmd => transcript.includes(cmd))) {
-              if (currentStepIndex >= 0 && currentStepIndex < steps.length) {
-                 speakText("Repeating Step " + (currentStepIndex + 1) + ". " + steps[currentStepIndex].querySelector('.step-text').innerText);
-              }
-            }
-            else if (timerCommands.some(cmd => transcript.includes(cmd))) {
-              if (!timerWidget.classList.contains('d-none') && !startTimerBtn.classList.contains('d-none')) {
-                speakText("Starting timer."); startTimerBtn.click();
-              }
-            }
-            else if (stopTimerCommands.some(cmd => transcript.includes(cmd))) {
-              if (!timerWidget.classList.contains('d-none')) { speakText("Timer canceled."); closeTimerBtn.click(); }
-            }
-          };
-
-          recognition.onend = () => { if (isCookModeActive && !isSpeaking && voiceToggle.checked) { try { recognition.start(); } catch(e){} } };
-
-          voiceToggle.addEventListener('change', () => {
-              if (voiceToggle.checked && isCookModeActive) {
-                  micStatusIcon.classList.remove('d-none'); try { recognition.start(); } catch(e){}
-              } else { micStatusIcon.classList.add('d-none'); recognition.stop(); synth.cancel(); }
-          });
-        }
-
-        const speakText = (text) => {
-          synth.cancel();
-          if(recognition) { try { recognition.stop(); } catch(e){} }
-          setTimeout(() => {
-              const utterance = new SpeechSynthesisUtterance(text);
-              utterance.onstart = () => { isSpeaking = true; micStatusIcon.classList.replace('text-danger', 'text-muted'); };
-              utterance.onend = () => {
-                  isSpeaking = false; micStatusIcon.classList.replace('text-muted', 'text-danger');
-                  if(isCookModeActive && voiceToggle.checked && recognition) { try { recognition.start(); } catch(e){} }
+                if (nextCommands.some(cmd => transcript.includes(cmd))) advanceCookModeStep();
+                else if (repeatCommands.some(cmd => transcript.includes(cmd))) {
+                  if (currentStepIndex >= 0 && currentStepIndex < steps.length) {
+                     speakText("Repeating Step " + (currentStepIndex + 1) + ". " + steps[currentStepIndex].querySelector('.step-text').innerText);
+                  }
+                }
+                else if (timerCommands.some(cmd => transcript.includes(cmd))) {
+                  if (!timerWidget.classList.contains('d-none') && !startTimerBtn.classList.contains('d-none')) {
+                    speakText("Starting timer."); startTimerBtn.click();
+                  }
+                }
+                else if (stopTimerCommands.some(cmd => transcript.includes(cmd))) {
+                  if (!timerWidget.classList.contains('d-none')) { speakText("Timer canceled."); closeTimerBtn.click(); }
+                }
               };
-              utterance.onerror = () => { isSpeaking = false; };
-              synth.speak(utterance);
-          }, 100); 
-        };
 
-        const scanForTime = (text) => {
-          let totalSeconds = 0; let labelParts = [];
-          const minMatch = text.match(/(\d+)\s*(?:to|-)?\s*(?:\d+)?\s*(?:min|minute)s?/i);
-          if (minMatch) { totalSeconds += parseInt(minMatch[1]) * 60; labelParts.push(`${parseInt(minMatch[1])} Min`); }
+              recognition.onend = () => { if (isCookModeActive && !isSpeaking && voiceToggle.checked) { try { recognition.start(); } catch(e){} } };
 
-          if (totalSeconds > 0) {
-            suggestedSeconds = totalSeconds; timerSuggestedTime.innerText = labelParts.join(' ');
-            const m = Math.floor(totalSeconds / 60).toString().padStart(2, '0');
-            timerDisplay.innerText = `${m}:00`; timerWidget.classList.remove('d-none'); 
-          }
-        };
-
-        if(startTimerBtn) {
-            startTimerBtn.addEventListener('click', () => {
-              startTimerBtn.classList.add('d-none'); let timeLeft = suggestedSeconds;
-              clearInterval(countdownInterval);
-              countdownInterval = setInterval(() => {
-                timeLeft--;
-                const m = Math.floor(timeLeft / 60).toString().padStart(2, '0');
-                const s = (timeLeft % 60).toString().padStart(2, '0');
-                timerDisplay.innerText = `${m}:${s}`;
-                if (timeLeft <= 0) {
-                  clearInterval(countdownInterval); timerDisplay.innerText = "DONE!"; timerWidget.classList.replace('bg-dark', 'bg-danger');
-                  new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3').play();
-                }
-              }, 1000);
-            });
-        }
-
-        if(closeTimerBtn) {
-            closeTimerBtn.addEventListener('click', () => {
-              timerWidget.classList.add('d-none'); clearInterval(countdownInterval);
-              startTimerBtn.classList.remove('d-none'); timerWidget.classList.replace('bg-danger', 'bg-dark');
-            });
-        }
-
-        const advanceCookModeStep = () => {
-          if (isCookModeActive && currentStepIndex >= 0 && currentStepIndex < steps.length) {
-            const currentCheckbox = steps[currentStepIndex].querySelector('.step-checkbox');
-            if (currentCheckbox) currentCheckbox.checked = true;
-            
-            clearInterval(countdownInterval); timerWidget.classList.add('d-none'); startTimerBtn.classList.remove('d-none');
-            timerWidget.classList.replace('bg-danger', 'bg-dark');
-
-            currentStepIndex++;
-            if (currentStepIndex < steps.length) updateVisualStep();
-            else {
-                if (voiceToggle.checked) speakText("All steps completed. Enjoy your meal!");
-                setTimeout(() => exitCookModeBtn.click(), 4000);
+              voiceToggle.addEventListener('change', () => {
+                  if (voiceToggle.checked && isCookModeActive) {
+                      micStatusIcon.classList.remove('d-none'); try { recognition.start(); } catch(e){}
+                  } else { micStatusIcon.classList.add('d-none'); recognition.stop(); synth.cancel(); }
+              });
             }
-          }
-        };
 
-        document.addEventListener('keydown', (e) => { if (isCookModeActive && e.code === 'Space') { e.preventDefault(); advanceCookModeStep(); } });
+            const speakText = (text) => {
+              synth.cancel();
+              if(recognition) { try { recognition.stop(); } catch(e){} }
+              setTimeout(() => {
+                  const utterance = new SpeechSynthesisUtterance(text);
+                  utterance.onstart = () => { isSpeaking = true; micStatusIcon.classList.replace('text-danger', 'text-muted'); };
+                  utterance.onend = () => {
+                      isSpeaking = false; micStatusIcon.classList.replace('text-muted', 'text-danger');
+                      if(isCookModeActive && voiceToggle.checked && recognition) { try { recognition.start(); } catch(e){} }
+                  };
+                  utterance.onerror = () => { isSpeaking = false; };
+                  synth.speak(utterance);
+              }, 100); 
+            };
 
-        cookModeBtn.addEventListener('click', () => {
-          isCookModeActive = true;
-          document.body.classList.add('cook-mode-view'); 
-          zenVoiceToggle.classList.replace('d-none', 'd-flex');
-          
-          // BRUTEFORCE Hide ghost text
-          const topRow = document.querySelector('.recipe-title-display')?.closest('.row');
-          if (topRow) topRow.classList.add('d-none');
-          const header = document.getElementById('instructionsHeader');
-          if (header) header.classList.add('d-none');
-          const notes = document.querySelector('.chefs-notes');
-          if (notes) notes.classList.add('d-none');
-          
-          steps.forEach(step => { const cb = step.querySelector('.step-checkbox'); if(cb) cb.checked = false; });
-          if(recognition && voiceToggle.checked) { try { recognition.start(); } catch(e) {} }
-          currentStepIndex = 0; updateVisualStep();
-        });
+            const scanForTime = (text) => {
+              let totalSeconds = 0; let labelParts = [];
+              const minMatch = text.match(/(\d+)\s*(?:to|-)?\s*(?:\d+)?\s*(?:min|minute)s?/i);
+              if (minMatch) { totalSeconds += parseInt(minMatch[1]) * 60; labelParts.push(`${parseInt(minMatch[1])} Min`); }
 
-        exitCookModeBtn.addEventListener('click', () => {
-            isCookModeActive = false; document.body.classList.remove('cook-mode-view');
-            zenVoiceToggle.classList.replace('d-flex', 'd-none');
-            
-            // BRUTEFORCE Show ghost text again
-            const topRow = document.querySelector('.recipe-title-display')?.closest('.row');
-            if (topRow) topRow.classList.remove('d-none');
-            const header = document.getElementById('instructionsHeader');
-            if (header) header.classList.remove('d-none');
-            const notes = document.querySelector('.chefs-notes');
-            if (notes) notes.classList.remove('d-none');
+              if (totalSeconds > 0) {
+                suggestedSeconds = totalSeconds; timerSuggestedTime.innerText = labelParts.join(' ');
+                const m = Math.floor(totalSeconds / 60).toString().padStart(2, '0');
+                timerDisplay.innerText = `${m}:00`; timerWidget.classList.remove('d-none'); 
+              }
+            };
 
-            synth.cancel(); if(recognition) recognition.stop();
-            currentStepIndex = -1;
-            clearInterval(countdownInterval); timerWidget.classList.add('d-none'); startTimerBtn.classList.remove('d-none'); timerWidget.classList.replace('bg-danger', 'bg-dark');
-            checkIngredients(); 
-        });
+            if(startTimerBtn) {
+                startTimerBtn.addEventListener('click', () => {
+                  startTimerBtn.classList.add('d-none'); let timeLeft = suggestedSeconds;
+                  clearInterval(countdownInterval);
+                  countdownInterval = setInterval(() => {
+                    timeLeft--;
+                    const m = Math.floor(timeLeft / 60).toString().padStart(2, '0');
+                    const s = (timeLeft % 60).toString().padStart(2, '0');
+                    timerDisplay.innerText = `${m}:${s}`;
+                    if (timeLeft <= 0) {
+                      clearInterval(countdownInterval); timerDisplay.innerText = "DONE!"; timerWidget.classList.replace('bg-dark', 'bg-danger');
+                      new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3').play();
+                    }
+                  }, 1000);
+                });
+            }
+
+            if(closeTimerBtn) {
+                closeTimerBtn.addEventListener('click', () => {
+                  timerWidget.classList.add('d-none'); clearInterval(countdownInterval);
+                  startTimerBtn.classList.remove('d-none'); timerWidget.classList.replace('bg-danger', 'bg-dark');
+                });
+            }
+
+            const advanceCookModeStep = () => {
+              if (isCookModeActive && currentStepIndex >= 0 && currentStepIndex < steps.length) {
+                const currentCheckbox = steps[currentStepIndex].querySelector('.step-checkbox');
+                if (currentCheckbox) currentCheckbox.checked = true;
+                
+                clearInterval(countdownInterval); timerWidget.classList.add('d-none'); startTimerBtn.classList.remove('d-none');
+                timerWidget.classList.replace('bg-danger', 'bg-dark');
+
+                currentStepIndex++;
+                if (currentStepIndex < steps.length) updateVisualStep();
+                else {
+                    if (voiceToggle.checked) speakText("All steps completed. Enjoy your meal!");
+                    setTimeout(() => exitCookModeBtn.click(), 4000);
+                }
+              }
+            };
+
+            document.addEventListener('keydown', (e) => { if (isCookModeActive && e.code === 'Space') { e.preventDefault(); advanceCookModeStep(); } });
+
+            cookModeBtn.addEventListener('click', () => {
+              isCookModeActive = true;
+              document.body.classList.add('cook-mode-view'); 
+              zenVoiceToggle.classList.replace('d-none', 'd-flex');
+              
+              const topRow = document.querySelector('.recipe-title-display')?.closest('.row');
+              if (topRow) topRow.classList.add('d-none');
+              const header = document.getElementById('instructionsHeader');
+              if (header) header.classList.add('d-none');
+              const notes = document.querySelector('.chefs-notes');
+              if (notes) notes.classList.add('d-none');
+              
+              steps.forEach(step => { const cb = step.querySelector('.step-checkbox'); if(cb) cb.checked = false; });
+              if(recognition && voiceToggle.checked) { try { recognition.start(); } catch(e) {} }
+              currentStepIndex = 0; updateVisualStep();
+            });
+
+            exitCookModeBtn.addEventListener('click', () => {
+                isCookModeActive = false; document.body.classList.remove('cook-mode-view');
+                zenVoiceToggle.classList.replace('d-flex', 'd-none');
+                
+                const topRow = document.querySelector('.recipe-title-display')?.closest('.row');
+                if (topRow) topRow.classList.remove('d-none');
+                const header = document.getElementById('instructionsHeader');
+                if (header) header.classList.remove('d-none');
+                const notes = document.querySelector('.chefs-notes');
+                if (notes) notes.classList.remove('d-none');
+
+                synth.cancel(); if(recognition) recognition.stop();
+                currentStepIndex = -1;
+                clearInterval(countdownInterval); timerWidget.classList.add('d-none'); startTimerBtn.classList.remove('d-none'); timerWidget.classList.replace('bg-danger', 'bg-dark');
+                checkIngredients(); 
+            });
+        }
+        
+        // =========================================
+        // 4. DYNAMIC PORTION SCALER
+        // =========================================
+        const scaleDownBtn = document.getElementById('scaleDownBtn');
+        const scaleUpBtn = document.getElementById('scaleUpBtn');
+        const currentServingsEl = document.getElementById('currentServings');
+        
+        if (currentServingsEl) {
+            const baseServings = parseFloat(currentServingsEl.getAttribute('data-base-servings')) || 2;
+            const scalableElements = document.querySelectorAll('.scalable-qty');
+
+            const updateScale = (newServings) => {
+                if (newServings < 1) return;
+                currentServingsEl.innerText = newServings;
+                const ratio = newServings / baseServings;
+
+                scalableElements.forEach(el => {
+                    const baseQty = parseFloat(el.getAttribute('data-base-qty'));
+                    let scaledQty = baseQty * ratio;
+                    el.innerText = Math.round((scaledQty + Number.EPSILON) * 100) / 100;
+                });
+                
+                document.querySelectorAll('.modal-qty-input').forEach(input => {
+                    const baseQty = parseFloat(input.getAttribute('data-base-qty'));
+                    input.value = Math.round((baseQty * ratio + Number.EPSILON) * 100) / 100;
+                });
+                
+                document.querySelectorAll('.modal-display-qty').forEach((el, index) => {
+                    const baseQty = parseFloat(document.querySelectorAll('.modal-qty-input')[index].getAttribute('data-base-qty'));
+                    el.innerText = Math.round((baseQty * ratio + Number.EPSILON) * 100) / 100;
+                });
+            };
+
+            if(scaleDownBtn) scaleDownBtn.addEventListener('click', () => updateScale(parseInt(currentServingsEl.innerText) - 1));
+            if(scaleUpBtn) scaleUpBtn.addEventListener('click', () => updateScale(parseInt(currentServingsEl.innerText) + 1));
+        }
       });
     </script>
   </body>
