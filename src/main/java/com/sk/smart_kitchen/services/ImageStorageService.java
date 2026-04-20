@@ -1,30 +1,36 @@
 package com.sk.smart_kitchen.services;
 
+import com.cloudinary.Cloudinary;
+import com.cloudinary.utils.ObjectUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.nio.file.StandardCopyOption;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Set;
-import java.util.UUID;
 
 @Service
 public class ImageStorageService {
 
+    // PRESERVED: Your original security constraints
     private static final Set<String> ALLOWED_EXTENSIONS = Set.of("jpg", "jpeg", "png", "gif", "webp");
 
-    @Value("${app.upload.dir:uploads}")
-    private String uploadDir;
+    private final Cloudinary cloudinary;
 
-    @Value("${app.upload.url-prefix:/uploads}")
-    private String uploadUrlPrefix;
+    public ImageStorageService(
+            @Value("${cloudinary.cloud-name}") String cloudName,
+            @Value("${cloudinary.api-key}") String apiKey,
+            @Value("${cloudinary.api-secret}") String apiSecret) {
+        this.cloudinary = new Cloudinary(ObjectUtils.asMap(
+                "cloud_name", cloudName,
+                "api_key", apiKey,
+                "api_secret", apiSecret));
+    }
 
     public String storeImage(MultipartFile imageFile) {
+        // PRESERVED: Your original validation logic
         if (imageFile == null || imageFile.isEmpty()) {
             return null;
         }
@@ -39,41 +45,19 @@ public class ImageStorageService {
             throw new IllegalArgumentException("Unsupported image type. Allowed: jpg, jpeg, png, gif, webp.");
         }
 
-        String fileName = UUID.randomUUID() + "." + extension;
-
+        // NEW: Send the validated file directly to Cloudinary instead of the local hard drive
         try {
-            Path uploadPath = Paths.get(uploadDir).toAbsolutePath().normalize();
-            Files.createDirectories(uploadPath);
-
-            Path targetPath = uploadPath.resolve(fileName).normalize();
-            Files.copy(imageFile.getInputStream(), targetPath, StandardCopyOption.REPLACE_EXISTING);
+            Map uploadResult = cloudinary.uploader().upload(
+                imageFile.getBytes(), 
+                ObjectUtils.asMap("folder", "smart_kitchen/recipes")
+            );
+            return uploadResult.get("secure_url").toString();
         } catch (IOException ex) {
-            throw new IllegalArgumentException("Failed to store image file.", ex);
+            throw new IllegalArgumentException("Failed to upload image to Cloudinary.", ex);
         }
-
-        String normalizedPrefix = normalizeUrlPrefix(uploadUrlPrefix);
-        return normalizedPrefix + "/" + fileName;
     }
 
-    private String normalizeUrlPrefix(String prefix) {
-        String value = prefix == null ? "/uploads" : prefix.trim();
-        if (value.isEmpty()) {
-            value = "/uploads";
-        }
-
-        value = value.replace('\\', '/');
-        while (value.contains("//")) {
-            value = value.replace("//", "/");
-        }
-        if (!value.startsWith("/")) {
-            value = "/" + value;
-        }
-        if (value.endsWith("/")) {
-            value = value.substring(0, value.length() - 1);
-        }
-        return value.isEmpty() ? "/uploads" : value;
-    }
-
+    // PRESERVED: Your original helper method
     private String extensionFromOriginalName(String originalFilename) {
         if (originalFilename == null || originalFilename.isBlank()) {
             return null;
