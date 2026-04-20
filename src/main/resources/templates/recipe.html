@@ -101,7 +101,7 @@
       </div>
 
       <div class="row g-5">
-        <div class="col-lg-4 order-2 order-lg-1">
+        <div class="col-lg-4 order-2 order-lg-1" id="ingredientsPanel">
           <div class="d-flex justify-content-between align-items-end mb-3">
             <h3 class="section-title m-0">Ingredients</h3>
             <div class="yield-adjuster d-flex align-items-center gap-3 px-2 py-1">
@@ -113,38 +113,40 @@
             </div>
           </div>
 
-          <div sec:authorize="isAuthenticated()" class="p-3 mb-4 rounded-3 pantry-match-card">
+          <div sec:authorize="isAuthenticated()" class="p-3 mb-4 rounded-3 pantry-match-card" style="transition: all 0.3s ease;">
              <div class="d-flex justify-content-between mb-2">
                  <span class="fw-bold text-dark pantry-match-label">Pantry Match</span>
                  <span class="pantry-match-pct" th:text="${gapResult.matchPercentage + '%'}">100%</span>
              </div>
              <div class="progress pantry-match-progress">
-                 <div class="progress-bar pantry-match-progress-bar" role="progressbar" th:style="'width: ' + ${gapResult.matchPercentage} + '%;'"></div>
+                 <div class="progress-bar pantry-match-progress-bar" role="progressbar" th:style="'width: ' + ${gapResult.matchPercentage} + '%; transition: width 0.5s ease;'"></div>
              </div>
           </div>
           
           <ul class="ingredient-list list-unstyled mb-4">
-            <li sec:authorize="isAuthenticated()" class="ingredient-item" th:each="ingredient : ${gapResult.owned}">
+            <li sec:authorize="isAuthenticated()" class="ingredient-item" th:each="item : ${gapResult.owned}">
               <i class="bi bi-check-circle-fill me-2 icon-owned"></i>
               <span class="fw-bold me-1">
-                  <span class="scalable-qty" th:data-base-qty="${ingredient.quantityNeeded}" th:text="${ingredient.quantityNeeded}"></span><span th:text="${ingredient.unit != null ? ingredient.unit : ''}"></span>
+                  <span th:text="${item.requirement.quantityNeeded}"></span><span th:text="${item.requirement.unit != null ? item.requirement.unit : ''}"></span>
               </span>
-              <span th:text="${ingredient.ingredient.name}"></span>
-              <span th:if="${ingredient.preparationState != null}" class="text-muted small ms-1" th:text="${'(' + ingredient.preparationState + ')'}"></span>
+              <span th:text="${item.requirement.ingredient.name}"></span>
+              <span th:if="${item.requirement.preparationState != null}" class="text-muted small ms-1" th:text="${'(' + item.requirement.preparationState + ')'}"></span>
             </li>
 
-            <li sec:authorize="isAuthenticated()" class="ingredient-item" th:each="ingredient : ${gapResult.missing}">
+            <li sec:authorize="isAuthenticated()" class="ingredient-item" th:each="item : ${gapResult.missing}">
               <i class="bi bi-x-circle text-danger me-2"></i>
               <span class="fw-bold me-1 text-danger">
-                  <span class="scalable-qty" th:data-base-qty="${ingredient.quantityNeeded}" th:text="${ingredient.quantityNeeded}"></span><span th:text="${ingredient.unit != null ? ingredient.unit : ''}"></span>
+                  <span th:text="${item.requirement.quantityNeeded}"></span><span th:text="${item.requirement.unit != null ? item.requirement.unit : ''}"></span>
               </span>
-              <span class="text-danger" th:text="${ingredient.ingredient.name}"></span>
-              <span th:if="${ingredient.preparationState != null}" class="text-danger small ms-1" th:text="${'(' + ingredient.preparationState + ')'}"></span>
+              <span class="text-danger" th:text="${item.requirement.ingredient.name}"></span>
+              <span th:if="${item.requirement.preparationState != null}" class="text-danger small ms-1" th:text="${'(' + item.requirement.preparationState + ')'}"></span>
+              
+              <span th:if="${item.percentOwned > 0}" class="badge bg-warning text-dark ms-2" style="font-size: 0.7rem;">Have Some</span>
             </li>
 
             <li sec:authorize="isAnonymous()" class="ingredient-item" th:each="ingredient : ${ingredients}">
               <span class="fw-bold me-2">
-                  <span class="scalable-qty" th:data-base-qty="${ingredient.quantityNeeded}" th:text="${ingredient.quantityNeeded}">250</span><span th:text="${ingredient.unit != null ? ingredient.unit : ''}">g</span>
+                  <span th:text="${ingredient.quantityNeeded}">250</span><span th:text="${ingredient.unit != null ? ingredient.unit : ''}">g</span>
               </span>
               <span th:text="${ingredient.ingredient.name}">Pasta</span>
               <span th:if="${ingredient.preparationState != null}" class="text-muted small ms-1" th:text="${'(' + ingredient.preparationState + ')'}"></span>
@@ -169,26 +171,12 @@
             <h3 class="section-title m-0">Instructions</h3>
             <div sec:authorize="isAuthenticated()">
               <a
-                th:href="@{/recipes/{id}/cook(id=${recipeId})}"
+                id="cookModeBtn" 
+                th:href="@{/recipes/{id}/cook(id=${recipeId})} + '?servings=' + ${targetServings}"
                 class="btn px-4 py-2 d-flex align-items-center gap-2 shadow-sm"
-                style="
-                  background-color: var(--brand-green);
-                  color: white;
-                  border-radius: 8px;
-                  font-weight: bold;
-                  text-decoration: none;
-                "
+                style="background-color: var(--brand-green); color: white; border-radius: 8px; font-weight: bold; text-decoration: none;"
               >
                 <i class="bi bi-play-fill fs-5"></i> Start Cook Mode
-              </a>
-            </div>
-            <div sec:authorize="isAnonymous()">
-              <a
-                th:href="@{/login(continue=|/recipes/${recipeId}|)}"
-                class="btn btn-outline-dark px-4 py-2 d-flex align-items-center gap-2"
-                style="border-radius: 8px; font-weight: 600"
-              >
-                <i class="bi bi-lock-fill"></i> Log in for Cook Mode
               </a>
             </div>
           </div>
@@ -458,18 +446,34 @@
               <input type="hidden" name="recipeId" th:value="${recipe.id}">
               
               <div class="modal-body py-4">
-                <p class="text-muted small mb-4">Uncheck items you already have in your pantry.</p>
                 <div class="shopping-modal-list">
-                    <th:block th:if="${not #lists.isEmpty(ingredients)}">
-                        <label th:each="ingredient : ${ingredients}" class="d-flex align-items-start gap-3 mb-3 cursor-pointer p-2 rounded hover-bg border" style="background: #f9fafb;">
-                            <input type="checkbox" name="ingredientIds" th:value="${ingredient.ingredient.id}" class="ingredient-checkbox mt-1" onchange="this.nextElementSibling.disabled = !this.checked;" checked>
-                            <input type="hidden" name="quantities" th:value="${ingredient.quantityNeeded}" class="modal-qty-input" th:data-base-qty="${ingredient.quantityNeeded}">
+                    <th:block sec:authorize="isAuthenticated()" th:if="${gapResult != null and not #lists.isEmpty(gapResult.missing)}">
+                        <label th:each="item : ${gapResult.missing}" class="d-flex align-items-start gap-3 mb-3 cursor-pointer p-2 rounded hover-bg border" style="background: #f9fafb;">
+                            <input type="checkbox" name="ingredientIds" th:value="${item.requirement.ingredient.id}" class="ingredient-checkbox mt-1" onchange="this.nextElementSibling.disabled = !this.checked;" checked>
+                            <input type="hidden" name="quantities" th:value="${item.missingQty}">
                             <div>
-                                <span class="fw-bold"><span class="modal-display-qty" th:text="${ingredient.quantityNeeded}"></span><span th:text="${ingredient.unit != null ? ingredient.unit : ''}"></span></span> 
-                                <span th:text="${ingredient.ingredient.name}">Ingredient Name</span>
+                                <span class="fw-bold"><span th:text="${item.missingQty}"></span><span th:text="${item.requirement.unit != null ? item.requirement.unit : ''}"></span></span> 
+                                <span th:text="${item.requirement.ingredient.name}"></span>
+                                <span th:if="${item.percentOwned > 0}" class="badge bg-warning text-dark ms-2" style="font-size: 0.65rem;">Top Up</span>
                             </div>
                         </label>
                     </th:block>
+
+                    <th:block sec:authorize="isAnonymous()" th:if="${not #lists.isEmpty(ingredients)}">
+                        <label th:each="ingredient : ${ingredients}" class="d-flex align-items-start gap-3 mb-3 cursor-pointer p-2 rounded hover-bg border" style="background: #f9fafb;">
+                            <input type="checkbox" name="ingredientIds" th:value="${ingredient.ingredient.id}" class="ingredient-checkbox mt-1" onchange="this.nextElementSibling.disabled = !this.checked;" checked>
+                            <input type="hidden" name="quantities" th:value="${ingredient.quantityNeeded}">
+                            <div>
+                                <span class="fw-bold"><span th:text="${ingredient.quantityNeeded}"></span><span th:text="${ingredient.unit != null ? ingredient.unit : ''}"></span></span> 
+                                <span th:text="${ingredient.ingredient.name}"></span>
+                            </div>
+                        </label>
+                    </th:block>
+
+                    <div sec:authorize="isAuthenticated()" th:if="${gapResult != null and #lists.isEmpty(gapResult.missing)}" class="text-center text-success py-3">
+                        <i class="bi bi-check-circle fs-1"></i>
+                        <p class="mt-2 mb-0 fw-bold">You have everything you need!</p>
+                    </div>
                 </div>
               </div>
               <div class="modal-footer border-top pt-3">
@@ -517,7 +521,7 @@
     <div th:replace="~{fragments/layout :: mobile-bottom-nav}"></div>
     <div th:replace="~{fragments/layout :: mobile-offcanvas}"></div>
 
-    <script>
+   <script>
       document.addEventListener("DOMContentLoaded", () => {
         // --- STAR RATING & BOOKMARK LOGIC ---
         const stars = document.querySelectorAll(".star-btn");
@@ -527,14 +531,7 @@
             const ratingValue = this.getAttribute("data-value");
             if (ratingInput) ratingInput.value = ratingValue;
             stars.forEach((s) => {
-              s.classList.replace(
-                s.getAttribute("data-value") <= ratingValue
-                  ? "bi-star"
-                  : "bi-star-fill",
-                s.getAttribute("data-value") <= ratingValue
-                  ? "bi-star-fill"
-                  : "bi-star",
-              );
+              s.classList.replace(s.getAttribute("data-value") <= ratingValue ? "bi-star" : "bi-star-fill", s.getAttribute("data-value") <= ratingValue ? "bi-star-fill" : "bi-star");
             });
           });
         });
@@ -543,86 +540,88 @@
         if (bookmarkBtn) {
           bookmarkBtn.addEventListener("click", async function () {
             const icon = this.querySelector("i");
-            const recipeId =
-              document.querySelector('input[name="recipeId"]')?.value || "1";
+            const recipeId = document.querySelector('input[name="recipeId"]')?.value || "1";
             try {
-              const response = await fetch(`/recipes/${recipeId}/save`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-              });
+              const response = await fetch(`/recipes/${recipeId}/save`, { method: "POST", headers: { "Content-Type": "application/json" }});
               if (response.ok) {
                 const data = await response.json();
                 if (data.status === "added") {
-                  this.style.backgroundColor = "var(--brand-green)";
-                  this.style.color = "white";
-                  icon.classList.replace(
-                    "bi-bookmark",
-                    "bi-bookmark-check-fill",
-                  );
+                  this.style.backgroundColor = "var(--brand-green)"; this.style.color = "white"; icon.classList.replace("bi-bookmark", "bi-bookmark-check-fill");
                 } else {
-                  this.style.backgroundColor = "white";
-                  this.style.color = "#111827";
-                  icon.classList.replace(
-                    "bi-bookmark-check-fill",
-                    "bi-bookmark",
-                  );
+                  this.style.backgroundColor = "white"; this.style.color = "#111827"; icon.classList.replace("bi-bookmark-check-fill", "bi-bookmark");
                 }
-              } else if (response.status === 401) {
-                window.location.href = "/login";
-              }
+              } else if (response.status === 401) { window.location.href = "/login"; }
             } catch (error) {}
           });
         }
 
-        // --- YIELD ADJUSTER LOGIC (Server-Side Recalculation) ---
-        const scaleDownBtn = document.getElementById('scaleDownBtn');
-        const scaleUpBtn = document.getElementById('scaleUpBtn');
-        const currentServingsEl = document.getElementById('currentServings');
-        
-        if (scaleDownBtn && scaleUpBtn && currentServingsEl) {
-            scaleDownBtn.addEventListener('click', () => {
-                let current = parseInt(currentServingsEl.textContent);
-                if (current > 1) {
-                    // Reloads the page and tells Java to recalculate!
-                    window.location.href = window.location.pathname + '?servings=' + (current - 1);
-                }
-            });
+        // --- 🌟 THE NEW SOFT-RELOAD YIELD ADJUSTER ---
+        function attachYieldListeners() {
+            const scaleDownBtn = document.getElementById('scaleDownBtn');
+            const scaleUpBtn = document.getElementById('scaleUpBtn');
+            const currentServingsEl = document.getElementById('currentServings');
+            
+            if (scaleDownBtn && scaleUpBtn && currentServingsEl) {
+                scaleDownBtn.addEventListener('click', () => {
+                    let current = parseInt(currentServingsEl.textContent);
+                    if (current > 1) fetchNewServings(current - 1);
+                });
 
-            scaleUpBtn.addEventListener('click', () => {
-                let current = parseInt(currentServingsEl.textContent);
-                if (current < 50) {
-                    window.location.href = window.location.pathname + '?servings=' + (current + 1);
-                }
-            });
-        }
-            scaleDownBtn.addEventListener('click', () => {
-                let current = parseInt(currentServingsEl.textContent);
-                if (current > 1) {
-                    current--;
-                    currentServingsEl.textContent = current;
-                    updateQuantities(current);
-                }
-            });
-
-            scaleUpBtn.addEventListener('click', () => {
-                let current = parseInt(currentServingsEl.textContent);
-                if (current < 50) {
-                    current++;
-                    currentServingsEl.textContent = current;
-                    updateQuantities(current);
-                }
-            });
+                scaleUpBtn.addEventListener('click', () => {
+                    let current = parseInt(currentServingsEl.textContent);
+                    if (current < 50) fetchNewServings(current + 1);
+                });
+            }
         }
 
-      // --- TEAMMATE'S SHOPPING LIST VALIDATION ---
-      window.checkShoppingListForm = function(form) {
-          const checkboxes = form.querySelectorAll('.ingredient-checkbox:checked');
-          if (checkboxes.length === 0) {
-              alert("Please select at least one ingredient to add.");
-              return false;
-          }
-          return true;
-      };
+        async function fetchNewServings(newServings) {
+            // Put a little loading spinner so it feels fast
+            document.getElementById('currentServings').innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
+            
+            try {
+                const url = window.location.pathname + '?servings=' + newServings;
+                const response = await fetch(url);
+                const html = await response.text();
+                
+                // Parse the new HTML in the background
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(html, 'text/html');
+                
+                // Swap out the Ingredients Panel and Shopping Modal
+                document.getElementById('ingredientsPanel').innerHTML = doc.getElementById('ingredientsPanel').innerHTML;
+                document.getElementById('shoppingListModal').innerHTML = doc.getElementById('shoppingListModal').innerHTML;
+                
+                // 🌟 FIX: Update the Cook Mode button's link!
+                const cookBtn = document.getElementById('cookModeBtn');
+                const newCookBtn = doc.getElementById('cookModeBtn');
+                if (cookBtn && newCookBtn) {
+                    cookBtn.href = newCookBtn.href;
+                }
+                
+                // Update the browser URL bar silently
+                window.history.pushState({ path: url }, '', url);
+                
+                // Re-attach the listeners to the newly injected buttons
+                attachYieldListeners();
+            } catch (e) {
+                console.error("Soft reload failed, falling back to hard reload", e);
+                window.location.href = window.location.pathname + '?servings=' + newServings;
+            }
+        }
+
+        // Initialize the buttons on first load
+        attachYieldListeners();
+
+        // --- SHOPPING LIST VALIDATION ---
+        window.checkShoppingListForm = function(form) {
+            const checkboxes = form.querySelectorAll('.ingredient-checkbox:checked');
+            if (checkboxes.length === 0) {
+                alert("Please select at least one ingredient to add.");
+                return false;
+            }
+            return true;
+        };
+      });
     </script>
   </body>
 </html>

@@ -64,6 +64,9 @@ public class RecipeController {
     private GapAnalysisEngine gapEngine;
 
     @Autowired
+    private com.sk.smart_kitchen.services.UnitConversionService unitConverter;
+
+    @Autowired
     private com.sk.smart_kitchen.repositories.PantryItemRepository pantryRepository;
 
 
@@ -101,13 +104,13 @@ public class RecipeController {
         model.addAttribute("recipe", recipe);
         model.addAttribute("recipeId", id);
 
-        // 🌟 2. Calculate the scaling ratio
+        // 2. Calculate the scaling ratio
         int baseServings = recipe.getDefaultServings() != null ? recipe.getDefaultServings() : 2;
         int targetServings = (customServings != null && customServings > 0) ? customServings : baseServings;
         double ratio = (double) targetServings / baseServings;
         model.addAttribute("targetServings", targetServings); // Pass to HTML
 
-        // 🌟 3. Create a temporary list of scaled ingredients for the math
+        // 3. Create a temporary list of scaled ingredients for the math
         List<RecipeIngredient> scaledIngredients = new ArrayList<>();
         for (RecipeIngredient ri : recipeService.findRecipeIngredients(id)) {
             RecipeIngredient temp = new RecipeIngredient();
@@ -171,7 +174,7 @@ public class RecipeController {
             User user = userRepository.findByEmail(principal.getName()).orElseThrow();
             List<com.sk.smart_kitchen.entities.PantryItem> pantry = pantryRepository.findByUserOrderByIdDesc(user);
             
-            // 🌟 4. Pass the scaled list into the engine!
+            // 4. Pass the scaled list into the engine!
             GapAnalysisEngine.GapResult gapResult = gapEngine.analyze(scaledIngredients, pantry);
             model.addAttribute("gapResult", gapResult);
     }
@@ -180,7 +183,8 @@ public class RecipeController {
     }
 
     @GetMapping("/{id}/cook")
-    public String showCookMode(@PathVariable Long id, Model model, java.security.Principal principal) {
+    public String showCookMode(@PathVariable Long id, Model model, java.security.Principal principal,
+                               @RequestParam(value = "servings", required = false) Integer customServings) {
         // Must be logged in to use Cook Mode!
         if (principal == null) {
             return "redirect:/login?continue=/recipes/" + id + "/cook";
@@ -188,10 +192,73 @@ public class RecipeController {
         
         Recipe recipe = getRecipeOr404(id);
         model.addAttribute("recipe", recipe);
-        model.addAttribute("ingredients", recipeService.findRecipeIngredients(id));
+        model.addAttribute("recipeId", id);
+
+        // 1. Calculate the scaling ratio
+        int baseServings = recipe.getDefaultServings() != null ? recipe.getDefaultServings() : 2;
+        int targetServings = (customServings != null && customServings > 0) ? customServings : baseServings;
+        double ratio = (double) targetServings / baseServings;
+        model.addAttribute("targetServings", targetServings); // Pass to HTML so the Exit button knows!
+
+        // 2. Create the scaled ingredients
+        List<RecipeIngredient> scaledIngredients = new ArrayList<>();
+        for (RecipeIngredient ri : recipeService.findRecipeIngredients(id)) {
+            RecipeIngredient temp = new RecipeIngredient();
+            temp.setIngredient(ri.getIngredient()); 
+            temp.setUnit(ri.getUnit());
+            temp.setPreparationState(ri.getPreparationState());
+            temp.setQuantityNeeded(ri.getQuantityNeeded() * ratio);
+            scaledIngredients.add(temp);
+        }
+        
+        model.addAttribute("ingredients", scaledIngredients);
         model.addAttribute("instructionSteps", recipeService.toInstructionSteps(recipe));
         
-        return "cook-mode"; // Points to our brand new HTML file!
+        return "cook-mode"; 
+    }
+
+    @PostMapping("/{id}/cook/finish")
+    public String finishCooking(@PathVariable Long id, Principal principal, @RequestParam("servings") Integer servings) {
+        if (principal == null) return "redirect:/login";
+
+        User user = userRepository.findByEmail(principal.getName()).orElseThrow();
+        Recipe recipe = getRecipeOr404(id);
+
+        // 1. Get scaling ratio
+        int baseServings = recipe.getDefaultServings() != null ? recipe.getDefaultServings() : 2;
+        double ratio = (double) servings / baseServings;
+
+        // 2. Fetch User's Pantry
+        List<com.sk.smart_kitchen.entities.PantryItem> pantry = pantryRepository.findByUserOrderByIdDesc(user);
+        java.util.Map<Long, com.sk.smart_kitchen.entities.PantryItem> pantryMap = pantry.stream()
+                .collect(java.util.stream.Collectors.toMap(item -> item.getIngredient().getId(), item -> item, (e, r) -> e));
+
+        // 3. Loop and Deduct using existing Math Engine
+        for (RecipeIngredient req : recipeService.findRecipeIngredients(id)) {
+            if (pantryMap.containsKey(req.getIngredient().getId())) {
+                com.sk.smart_kitchen.entities.PantryItem pItem = pantryMap.get(req.getIngredient().getId());
+                
+                // Scale the recipe amount
+                double scaledReqQty = req.getQuantityNeeded() * ratio;
+                
+                // FIX 1: Use unitConverter directly!
+                double reqBase = unitConverter.convertToBase(scaledReqQty, req.getUnit());
+                
+                // FIX 2: Use unitConverter directly!
+                double deductionAmount = unitConverter.convertFromBase(reqBase, pItem.getUnit());
+                
+                // Deduct and Save!
+                double newQty = pItem.getQuantity() - deductionAmount;
+                if (newQty <= 0) {
+                    pantryRepository.delete(pItem); // Used it all up!
+                } else {
+                    pItem.setQuantity(Math.round(newQty * 100.0) / 100.0); // Keep it clean to 2 decimals
+                    pantryRepository.save(pItem);
+                }
+            }
+        }
+        
+        return "redirect:/recipes/" + id + "?cooked=true";
     }
 
     // UPDATED: Now grabs the existing ingredients and sends them to the form!
