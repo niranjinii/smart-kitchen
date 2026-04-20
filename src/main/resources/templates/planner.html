@@ -1,0 +1,63 @@
+<!doctype html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <th:block th:replace="~{fragments/layout :: head}"></th:block>
+    <link rel="stylesheet" th:href="@{/css/planner.css}" />
+</head>
+<body>
+    <div th:replace="~{fragments/layout :: navbar}"></div>
+
+    <div class="container-fluid px-4 mt-4 mb-5 pb-5">
+        <h2 class="fw-bold mb-4">Weekly Planner</h2>
+
+        <div class="planner-grid">
+            
+            <div class="day-column" th:each="date : ${weekDays}" 
+                 th:style="${date.equals(today)} ? 'border-color: var(--brand-green); background: #f8fbf9;' : ''">
+                
+                <div class="day-header" th:classappend="${date.equals(today)} ? 'text-dark' : ''">
+                    <span th:text="${date.dayOfWeek}">Monday</span>
+                    <span th:text="${date.dayOfMonth} + ' ' + ${date.month}">24 APR</span>
+                    <span th:if="${date.equals(today)}" class="badge bg-dark ms-1">Today</span>
+                </div>
+                
+                <div th:if="${plansByDate.get(date) == null or plansByDate.get(date).isEmpty()}" class="text-muted small text-center mt-4">
+                    No meals planned
+                </div>
+
+                <div th:if="${plansByDate.get(date) != null}">
+                    
+                    <div th:each="plan : ${plansByDate.get(date)}" class="position-relative">
+                        
+                        <form th:action="@{/planner/{id}/delete(id=${plan.id})}" method="post" class="position-absolute top-0 end-0 m-1" style="z-index: 10;">
+                            <button type="submit" class="btn btn-sm text-danger p-0" title="Remove from planner" style="background:none; border:none; box-shadow:none;">
+                                <i class="bi bi-x-circle-fill fs-6 bg-white rounded-circle"></i>
+                            </button>
+                        </form>
+                        
+                        <a th:href="@{/recipes/{id}(id=${plan.recipe.id})}" style="text-decoration: none;">
+                            <div class="card border-0 shadow-sm mb-2 hover-card" style="border-left: 4px solid var(--brand-green) !important; transition: transform 0.2s;">
+                                <div class="card-body p-2 d-flex align-items-center gap-2">
+                                    <img th:if="${plan.recipe.imageUrl != null}" th:src="${((plan.recipe.imageUrl.startsWith('http://') || plan.recipe.imageUrl.startsWith('https://') || plan.recipe.imageUrl.startsWith('/')) ? plan.recipe.imageUrl : '/' + plan.recipe.imageUrl)}" style="width: 40px; height: 40px; object-fit: cover; border-radius: 6px;">
+                                    <div>
+                                        <div class="fw-bold text-dark" style="font-size: 0.9rem;" th:text="${plan.recipe.title}">Spicy Pasta</div>
+                                        <div class="text-muted" style="font-size: 0.75rem;" th:text="${plan.mealType}">Dinner</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </a>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div th:replace="~{fragments/layout :: mobile-bottom-nav}"></div>
+    <div th:replace="~{fragments/layout :: mobile-offcanvas}"></div>
+    
+    <style>
+        .hover-card:hover { transform: translateY(-2px); }
+    </style>
+</body>
+</html>

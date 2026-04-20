@@ -1,0 +1,48 @@
+.list-container {
+    background: white;
+    border-radius: 12px;
+    border: 1px solid #e5e7eb;
+}
+
+.shopping-item-row {
+    transition: all 0.2s ease;
+    border-bottom: 1px solid #f3f4f6;
+}
+.shopping-item-row:last-child { border-bottom: none; }
+
+.huge-checkbox {
+    width: 26px;
+    height: 26px;
+    accent-color: var(--brand-green);
+    cursor: pointer;
+}
+
+.item-checked .item-name, .item-checked .item-qty {
+    text-decoration: line-through;
+    color: #9ca3af !important;
+}
+
+.swipe-delete-btn {
+    background: #ef4444;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    padding: 8px 14px;
+    transition: background 0.2s;
+}
+.swipe-delete-btn:hover { background: #dc2626; }
+
+/* DESKTOP: Multi-column Print Layout */
+@media (min-width: 992px) {
+    .list-columns { column-count: 2; column-gap: 2rem; }
+    .shopping-item-row { break-inside: avoid; padding: 14px 20px !important; }
+}
+
+/* MOBILE: In-Store Execution Mode */
+@media (max-width: 767px) {
+    .shopping-item-row {
+        padding: 22px 15px !important; /* Massive tap targets */
+        font-size: 1.1rem;
+    }
+    .huge-checkbox { width: 32px; height: 32px; }
+}

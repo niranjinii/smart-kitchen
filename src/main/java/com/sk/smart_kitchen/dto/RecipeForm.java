@@ -2,6 +2,7 @@ package com.sk.smart_kitchen.dto;
 
 import java.util.ArrayList;
 import java.util.List;
+import org.springframework.web.multipart.MultipartFile;
 
 public class RecipeForm {
     private String title;
@@ -10,6 +11,7 @@ public class RecipeForm {
     private Integer prepTimeMins;
     private Integer defaultServings;
     private String mealType;
+    private MultipartFile imageFile;
     private String tagInput;
     private List<IngredientLineForm> ingredients = new ArrayList<>();
     private List<String> instructionSteps = new ArrayList<>();
@@ -84,5 +86,13 @@ public class RecipeForm {
 
     public void setInstructionSteps(List<String> instructionSteps) {
         this.instructionSteps = instructionSteps;
+    }
+
+    public MultipartFile getImageFile() {
+    return imageFile;
+    }
+
+    public void setImageFile(MultipartFile imageFile) {
+    this.imageFile = imageFile;
     }
 }

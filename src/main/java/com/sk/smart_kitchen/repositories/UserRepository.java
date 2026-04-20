@@ -11,5 +11,6 @@ public interface UserRepository extends JpaRepository<User, Long> {
     
     // Spring Data JPA automatically writes the SQL query for this just by reading the method name!
     Optional<User> findByEmail(String email);
+    Optional<User> findByUsername(String username);
     
 }

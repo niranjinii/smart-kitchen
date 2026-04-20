@@ -102,7 +102,7 @@ public class RecipeService {
         for (RecipeIngredient ingredient : ingredients) {
             IngredientLineForm line = new IngredientLineForm();
             line.setName(ingredient.getIngredient().getName());
-            line.setQuantity(ingredient.getQuantityNeeded() == null ? "" : stripTrailingZero(ingredient.getQuantityNeeded()));
+            line.setQuantity(ingredient.getQuantityNeeded() != null ? stripTrailingZero(ingredient.getQuantityNeeded()) : "0");
             line.setUnit(ingredient.getUnit());
             ingredientLines.add(line);
         }
@@ -131,11 +131,21 @@ public class RecipeService {
     public Recipe updateRecipe(Long recipeId, RecipeForm form) {
         validateRequiredFields(form);
         Recipe recipe = findRecipeOrThrow(recipeId);
+        
+        // 1. Save the OLD URL before we apply the new form values
+        String oldImageUrl = recipe.getImageUrl(); 
+        
         applyFormValues(recipe, form);
         Recipe savedRecipe = recipeRepository.save(recipe);
 
         recipeIngredientRepository.deleteByRecipe(savedRecipe);
         upsertIngredients(savedRecipe, form);
+
+        // 2. CLEANUP: If the URL changed, scrub the old image from the cloud!
+        if (oldImageUrl != null && !oldImageUrl.equals(savedRecipe.getImageUrl())) {
+            imageStorageService.deleteImageFromCloudinary(oldImageUrl);
+        }
+
         return savedRecipe;
     }
 
@@ -147,8 +157,17 @@ public class RecipeService {
                 || !recipe.getAuthor().getId().equals(currentUser.getId())) {
             throw new SecurityException("You can only delete your own recipes.");
         }
+        
+        // 1. Save the URL before the recipe goes poof
+        String oldImageUrl = recipe.getImageUrl();
+        
         recipeIngredientRepository.deleteByRecipe(recipe);
         recipeRepository.delete(recipe);
+        
+        // 2. CLEANUP: Delete the actual file from the cloud!
+        if (oldImageUrl != null) {
+            imageStorageService.deleteImageFromCloudinary(oldImageUrl);
+        }
     }
 
     public String storeRecipeImage(MultipartFile imageFile) {
@@ -173,7 +192,6 @@ public class RecipeService {
         recipe.setDefaultServings(form.getDefaultServings());
         recipe.setMealType(trimToNull(form.getMealType()));
         recipe.setInstructions(joinInstructionSteps(form.getInstructionSteps()));
-
         recipe.setTags(parseTags(form.getTagInput()));
     }
 
@@ -221,7 +239,7 @@ public class RecipeService {
                 continue;
             }
 
-            if (name == null || unit == null || quantity == null) {
+            if (name == null || quantity == null) {
                 throw new IllegalArgumentException("Ingredient row " + row + " is incomplete. Add name, unit, and quantity.");
             }
 
@@ -358,7 +376,9 @@ public class RecipeService {
             form.setIngredients(new ArrayList<>());
         }
         while (form.getIngredients().size() < DEFAULT_INGREDIENT_ROWS) {
-            form.getIngredients().add(new IngredientLineForm());
+            IngredientLineForm newLine = new IngredientLineForm();
+            newLine.setQuantity("");
+            form.getIngredients().add(newLine);
         }
 
         if (form.getInstructionSteps() == null) {
@@ -389,13 +409,19 @@ public class RecipeService {
         }
     }
 
-    private String normalizeTag(String rawTag) {
-        String tag = trimToNull(rawTag);
-        if (tag == null) {
-            return null;
-        }
-        return tag.toLowerCase(Locale.ROOT).substring(0, 1).toUpperCase(Locale.ROOT) + tag.toLowerCase(Locale.ROOT).substring(1);
+   private String normalizeTag(String rawTag) {
+    String tag = trimToNull(rawTag);
+    if (tag == null) {
+        return null;
     }
+
+    // Scrunches any accidental double/triple spaces inside the text into a single space
+    tag = tag.replaceAll("\\s+", " ");
+
+    // Existing logic
+    return tag.toLowerCase(Locale.ROOT).substring(0, 1).toUpperCase(Locale.ROOT) + 
+           tag.toLowerCase(Locale.ROOT).substring(1);
+}
 
     private String stripTrailingZero(Double value) {
         if (value == null) {
