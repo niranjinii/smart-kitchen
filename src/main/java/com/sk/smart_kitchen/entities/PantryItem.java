@@ -24,6 +24,10 @@ public class PantryItem {
 
     private LocalDate expirationDate; // Optional: good for smart alerts
 
+    private String unit;
+
+    private String category;
+
     public Long getId() {
         return id;
     }
@@ -63,5 +67,22 @@ public class PantryItem {
     public void setExpirationDate(LocalDate expirationDate) {
         this.expirationDate = expirationDate;
     }
+
+    public String getUnit() {
+        return unit;
+    }
+
+    public void setUnit(String unit) {
+        this.unit = unit;
+    }
+
+    public String getCategory() {
+        return category;
+    }
+
+    public void setCategory(String category) {
+        this.category = category;
+    }
+
 
 }

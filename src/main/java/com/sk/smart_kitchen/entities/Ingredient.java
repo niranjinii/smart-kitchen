@@ -13,9 +13,10 @@ public class Ingredient {
     @Column(nullable = false, unique = true)
     private String name;
 
-    private String category; // e.g., "Produce", "Dairy", "Meat"
+    // private String category; // e.g., "Produce", "Dairy", "Meat"
+    
 
-    private String measurementUnit; // e.g., "grams", "pieces", "ml"
+    // private String measurementUnit; // e.g., "grams", "pieces", "ml"
 
     public Long getId() {
         return id;
@@ -33,7 +34,7 @@ public class Ingredient {
         this.name = name;
     }
 
-    public String getCategory() {
+    /* public String getCategory() {
         return category;
     }
 
@@ -47,6 +48,6 @@ public class Ingredient {
 
     public void setMeasurementUnit(String measurementUnit) {
         this.measurementUnit = measurementUnit;
-    }
+    } */
 
 }

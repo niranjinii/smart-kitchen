@@ -104,6 +104,7 @@ public class RecipeService {
             line.setName(ingredient.getIngredient().getName());
             line.setQuantity(ingredient.getQuantityNeeded() != null ? stripTrailingZero(ingredient.getQuantityNeeded()) : "0");
             line.setUnit(ingredient.getUnit());
+            line.setPreparation(ingredient.getPreparationState()); // Correctly mapped
             ingredientLines.add(line);
         }
         form.setIngredients(ingredientLines);
@@ -306,24 +307,22 @@ public class RecipeService {
                 continue;
             }
 
+            // 1. Get or create the dumb master ingredient (Name ONLY)
             Ingredient ingredient = ingredientRepository.findByNameIgnoreCase(ingredientName)
                     .orElseGet(() -> {
                         Ingredient newIngredient = new Ingredient();
                         newIngredient.setName(ingredientName);
-                        newIngredient.setMeasurementUnit(trimToNull(line.getUnit()));
+                        // Measurement unit and Category are completely removed here.
                         return ingredientRepository.save(newIngredient);
                     });
 
-            if (ingredient.getMeasurementUnit() == null && trimToNull(line.getUnit()) != null) {
-                ingredient.setMeasurementUnit(trimToNull(line.getUnit()));
-                ingredientRepository.save(ingredient);
-            }
-
+            // 2. Save all the specifics to the connecting table (RecipeIngredient)
             RecipeIngredient recipeIngredient = new RecipeIngredient();
             recipeIngredient.setRecipe(recipe);
             recipeIngredient.setIngredient(ingredient);
             recipeIngredient.setQuantityNeeded(parseQuantity(line.getQuantity()));
             recipeIngredient.setUnit(trimToNull(line.getUnit()));
+            recipeIngredient.setPreparationState(trimToNull(line.getPreparation())); // Correctly mapped
             recipeIngredientRepository.save(recipeIngredient);
         }
     }

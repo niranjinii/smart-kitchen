@@ -233,19 +233,32 @@
                   >
                     <option value="">Unit</option>
                     <option value="g">g</option>
+                    <option value="kg">kg</option>
                     <option value="ml">ml</option>
+                    <option value="l">l</option>
                     <option value="oz">oz</option>
                     <option value="tbsp">tbsp</option>
                     <option value="tsp">tsp</option>
                     <option value="cup">cup</option>
-                    <option value="unit">unit</option>
+                    <option value="count">count</option>
+                    <option value="bunch">bunch</option>
+                    <option value="head">head</option>
                   </select>
                   <input
                     type="text"
                     class="form-control custom-input flex-grow-1 ingredient-name"
-                    placeholder="Ingredient name (e.g., Unsalted butter)"
+                    placeholder="Ingredient (e.g., Garlic)"
                     th:field="*{ingredients[__${stat.index}__].name}"
                   />
+                  
+                  <input
+                    type="text"
+                    class="form-control custom-input ingredient-prep"
+                    style="width: 130px;"
+                    placeholder="Prep (optional)"
+                    th:field="*{ingredients[__${stat.index}__].preparation}"
+                  />
+
                   <button
                     type="button"
                     class="btn btn-sm remove-row-btn ingredient-remove-btn"
@@ -280,18 +293,30 @@
                 >
                   <option value="">Unit</option>
                   <option value="g">g</option>
+                  <option value="kg">kg</option>
                   <option value="ml">ml</option>
+                  <option value="l">l</option>
                   <option value="oz">oz</option>
                   <option value="tbsp">tbsp</option>
                   <option value="tsp">tsp</option>
                   <option value="cup">cup</option>
-                  <option value="unit">unit</option>
+                  <option value="count">count</option>
+                  <option value="bunch">bunch</option>
+                  <option value="head">head</option>
                 </select>
                 <input
                   type="text"
                   class="form-control custom-input flex-grow-1 ingredient-name"
-                  placeholder="Ingredient name (e.g., Unsalted butter)"
+                  placeholder="Ingredient (e.g., Garlic)"
                 />
+                
+                <input
+                  type="text"
+                  class="form-control custom-input ingredient-prep"
+                  style="width: 130px;"
+                  placeholder="Prep (optional)"
+                />
+
                 <button
                   type="button"
                   class="btn btn-sm remove-row-btn ingredient-remove-btn"
@@ -493,6 +518,8 @@
             if (row.querySelector('.ingredient-quantity')) row.querySelector('.ingredient-quantity').name = `ingredients[${index}].quantity`;
             if (row.querySelector('.ingredient-unit')) row.querySelector('.ingredient-unit').name = `ingredients[${index}].unit`;
             if (row.querySelector('.ingredient-name')) row.querySelector('.ingredient-name').name = `ingredients[${index}].name`;
+            if (row.querySelector('.ingredient-prep')) row.querySelector('.ingredient-prep').name = `ingredients[${index}].preparation`;
+            
             const btn = row.querySelector('.ingredient-remove-btn');
             if(btn) { btn.disabled = ingredientRows.length <= MIN_DYNAMIC_ROWS; btn.classList.toggle('d-none', ingredientRows.length <= MIN_DYNAMIC_ROWS); }
         });
