@@ -1,7 +1,9 @@
 package com.sk.smart_kitchen.controller;
 
 import com.sk.smart_kitchen.dto.RecipeForm;
+import com.sk.smart_kitchen.entities.Ingredient;
 import com.sk.smart_kitchen.entities.Recipe;
+import com.sk.smart_kitchen.entities.RecipeIngredient;
 import com.sk.smart_kitchen.entities.SavedRecipe;
 import com.sk.smart_kitchen.entities.User;
 import com.sk.smart_kitchen.services.RecipeService;
@@ -20,7 +22,9 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.security.Principal; 
 import java.util.List;
+import java.util.ArrayList;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Optional;
@@ -43,16 +47,29 @@ public class RecipeController {
     @Autowired
     private com.sk.smart_kitchen.repositories.ChefsNoteRepository chefsNoteRepository;
 
+    @Autowired
+    private com.sk.smart_kitchen.repositories.RecipeRepository recipeRepository;
+
+    @Autowired
+    private com.sk.smart_kitchen.repositories.IngredientRepository ingredientRepository;
+
+    // ADDED: Needed to handle editing and replacing old ingredients
+    @Autowired
+    private com.sk.smart_kitchen.repositories.RecipeIngredientRepository recipeIngredientRepository;
+
     public RecipeController(RecipeService recipeService) {
         this.recipeService = recipeService;
     }
 
+    // 1. Handles http://localhost:8080/recipes/new
     @GetMapping("/new")
     public String showPublishPage(Model model) {
         model.addAttribute("recipeForm", recipeService.emptyForm());
         model.addAttribute("isEdit", false);
+        model.addAttribute("recipeId", 0L); // Safe default for new recipes
         return "publish";
     }
+
 
     @PostMapping
     public String createRecipe(@ModelAttribute("recipeForm") RecipeForm recipeForm) {
@@ -67,12 +84,11 @@ public class RecipeController {
     }
 
     @GetMapping("/{id}")
-    public String showRecipeView(@PathVariable Long id, java.security.Principal principal, Model model) {
+    public String showRecipeView(@PathVariable Long id, Principal principal, Model model) {
         Recipe recipe = getRecipeOr404(id);
         model.addAttribute("recipe", recipe);
         model.addAttribute("recipeId", id);
         
-        // Load Ingredients & Instructions
         model.addAttribute("ingredients", recipeService.findRecipeIngredients(id));
         model.addAttribute("instructionSteps", recipeService.toInstructionSteps(recipe));
 
@@ -112,7 +128,6 @@ public class RecipeController {
         }
         model.addAttribute("isSaved", isSaved);
         
-        // Load the user's Chef Note
         com.sk.smart_kitchen.entities.ChefsNote myNote = null;
         if (principal != null) {
             User user = userRepository.findByEmail(principal.getName()).orElse(null);
@@ -140,26 +155,64 @@ public class RecipeController {
         return "cook-mode"; // Points to our brand new HTML file!
     }
 
+    // UPDATED: Now grabs the existing ingredients and sends them to the form!
     @GetMapping("/{id}/edit")
     public String showEditPage(@PathVariable Long id, Model model) {
         Recipe recipe = getRecipeOr404(id);
         model.addAttribute("recipeForm", recipeService.toForm(recipe));
         model.addAttribute("isEdit", true);
         model.addAttribute("recipeId", id);
+        
+        // Pass existing ingredients so the UI can draw the rows!
+        model.addAttribute("existingIngredients", recipeService.findRecipeIngredients(id));
+        
         return "publish";
     }
 
     @PostMapping("/{id}")
-    public String updateRecipe(@PathVariable Long id, @ModelAttribute("recipeForm") RecipeForm recipeForm) {
+    public String updateRecipe(
+            @PathVariable Long id, 
+            @ModelAttribute("recipeForm") RecipeForm recipeForm,
+            @RequestParam(value = "ingredientNames", required = false) java.util.List<String> ingredientNames,
+            @RequestParam(value = "ingredientQuantities", required = false) java.util.List<Double> ingredientQuantities,
+            @RequestParam(value = "ingredientUnits", required = false) java.util.List<String> ingredientUnits,
+            @RequestParam(value = "instructions", required = false) String instructionsText) {
         try {
+            // 1. Catch the HTML ingredient arrays and pack them into the form
+            java.util.List<com.sk.smart_kitchen.dto.IngredientLineForm> ingForms = new java.util.ArrayList<>();
+            if (ingredientNames != null) {
+                for (int i = 0; i < ingredientNames.size(); i++) {
+                    String name = ingredientNames.get(i);
+                    if (name != null && !name.trim().isEmpty()) {
+                        com.sk.smart_kitchen.dto.IngredientLineForm line = new com.sk.smart_kitchen.dto.IngredientLineForm();
+                        line.setName(name.trim());
+                        line.setQuantity((ingredientQuantities != null && ingredientQuantities.size() > i) ? String.valueOf(ingredientQuantities.get(i)) : "1");
+                        line.setUnit((ingredientUnits != null && ingredientUnits.size() > i) ? ingredientUnits.get(i) : "");
+                        ingForms.add(line);
+                    }
+                }
+            }
+            recipeForm.setIngredients(ingForms);
+
+            // 2. Catch the instructions text box and pack it into the form
+            if (instructionsText != null) {
+                java.util.List<String> steps = java.util.Arrays.stream(instructionsText.split("\\r?\\n"))
+                        .map(String::trim)
+                        .filter(s -> !s.isEmpty())
+                        .collect(java.util.stream.Collectors.toList());
+                recipeForm.setInstructionSteps(steps);
+            }
+
+            // 3. Save the recipe with the newly packed data!
             Recipe updated = recipeService.updateRecipe(id, recipeForm);
             return "redirect:/recipes/" + updated.getId();
-        } catch (NoSuchElementException ex) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Recipe not found", ex);
+            
+        } catch (java.util.NoSuchElementException ex) {
+            throw new org.springframework.web.server.ResponseStatusException(org.springframework.http.HttpStatus.NOT_FOUND, "Recipe not found", ex);
         } catch (IllegalArgumentException ex) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, ex.getMessage(), ex);
+            throw new org.springframework.web.server.ResponseStatusException(org.springframework.http.HttpStatus.BAD_REQUEST, ex.getMessage(), ex);
         } catch (SecurityException ex) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, ex.getMessage(), ex);
+            throw new org.springframework.web.server.ResponseStatusException(org.springframework.http.HttpStatus.FORBIDDEN, ex.getMessage(), ex);
         }
     }
 
@@ -198,16 +251,14 @@ public class RecipeController {
 
     @PostMapping("/{id}/save")
     @ResponseBody
-    public ResponseEntity<?> toggleBookmark(@PathVariable Long id, java.security.Principal principal) {
+    public ResponseEntity<?> toggleBookmark(@PathVariable Long id, Principal principal) {
         if (principal == null) return ResponseEntity.status(401).build();
 
         User user = userRepository.findByEmail(principal.getName()).orElseThrow();
-        // FIXED: Replaced recipeRepository with your existing getRecipeOr404 method
         Recipe recipe = getRecipeOr404(id);
 
         Optional<SavedRecipe> existing = savedRecipeRepository.findByUserAndRecipe(user, recipe);
         
-        // TOGGLE LOGIC: If it exists, delete it. If not, save it.
         if (existing.isPresent()) {
             savedRecipeRepository.delete(existing.get());
             return ResponseEntity.ok(Map.of("status", "removed"));
@@ -223,5 +274,42 @@ public class RecipeController {
     @ModelAttribute("mealTypeOptions")
     public List<String> mealTypeOptions() {
         return List.of("Breakfast", "Lunch", "Dinner", "Snack", "Beverage");
+    }
+
+    @PostMapping("/publish")
+    public String publishRecipe(
+            Recipe recipe,
+            @RequestParam("ingredientNames") List<String> ingredientNames,
+            @RequestParam("ingredientQuantities") List<Double> ingredientQuantities,
+            @RequestParam("ingredientUnits") List<String> ingredientUnits,
+            Principal principal) {
+
+        if (principal != null) {
+            User author = userRepository.findByEmail(principal.getName()).orElse(null);
+            recipe.setAuthor(author);
+        }
+
+        List<RecipeIngredient> recipeIngredients = new ArrayList<>();
+
+        for (int i = 0; i < ingredientNames.size(); i++) {
+            String name = ingredientNames.get(i);
+            if (name == null || name.trim().isEmpty()) continue;
+
+            Ingredient ingredient = new Ingredient();
+            ingredient.setName(name);
+            ingredient = ingredientRepository.save(ingredient);
+
+            RecipeIngredient ri = new RecipeIngredient();
+            ri.setRecipe(recipe);
+            ri.setIngredient(ingredient);
+            ri.setQuantityNeeded(ingredientQuantities.get(i));
+            ri.setUnit(ingredientUnits.get(i));
+            
+            recipeIngredients.add(ri);
+        }
+
+        recipe.setIngredients(recipeIngredients);
+        Recipe savedRecipe = recipeRepository.save(recipe);
+        return "redirect:/recipes/" + savedRecipe.getId();
     }
 }
