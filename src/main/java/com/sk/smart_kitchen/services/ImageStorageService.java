@@ -70,4 +70,24 @@ public class ImageStorageService {
 
         return originalFilename.substring(dotIndex + 1).toLowerCase(Locale.ROOT);
     }
+
+    // Deletes the ghost images from Cloudinary
+    public void deleteImageFromCloudinary(String imageUrl) {
+        // Ignore empty URLs or the default Unsplash placeholders
+        if (imageUrl == null || !imageUrl.contains("res.cloudinary.com")) {
+            return; 
+        }
+        try {
+            // Extract the public ID from the URL (e.g., "smart_kitchen/recipes/xyz123")
+            int startIndex = imageUrl.indexOf("smart_kitchen/recipes/");
+            int endIndex = imageUrl.lastIndexOf('.');
+            if (startIndex != -1 && endIndex > startIndex) {
+                String publicId = imageUrl.substring(startIndex, endIndex);
+                cloudinary.uploader().destroy(publicId, ObjectUtils.emptyMap());
+                System.out.println("Successfully cleaned up Cloudinary image: " + publicId);
+            }
+        } catch (Exception e) {
+            System.err.println("Failed to delete image from Cloudinary: " + e.getMessage());
+        }
+    }
 }

@@ -131,11 +131,21 @@ public class RecipeService {
     public Recipe updateRecipe(Long recipeId, RecipeForm form) {
         validateRequiredFields(form);
         Recipe recipe = findRecipeOrThrow(recipeId);
+        
+        // 1. Save the OLD URL before we apply the new form values
+        String oldImageUrl = recipe.getImageUrl(); 
+        
         applyFormValues(recipe, form);
         Recipe savedRecipe = recipeRepository.save(recipe);
 
         recipeIngredientRepository.deleteByRecipe(savedRecipe);
         upsertIngredients(savedRecipe, form);
+
+        // 2. CLEANUP: If the URL changed, scrub the old image from the cloud!
+        if (oldImageUrl != null && !oldImageUrl.equals(savedRecipe.getImageUrl())) {
+            imageStorageService.deleteImageFromCloudinary(oldImageUrl);
+        }
+
         return savedRecipe;
     }
 
@@ -147,8 +157,17 @@ public class RecipeService {
                 || !recipe.getAuthor().getId().equals(currentUser.getId())) {
             throw new SecurityException("You can only delete your own recipes.");
         }
+        
+        // 1. Save the URL before the recipe goes poof
+        String oldImageUrl = recipe.getImageUrl();
+        
         recipeIngredientRepository.deleteByRecipe(recipe);
         recipeRepository.delete(recipe);
+        
+        // 2. CLEANUP: Delete the actual file from the cloud!
+        if (oldImageUrl != null) {
+            imageStorageService.deleteImageFromCloudinary(oldImageUrl);
+        }
     }
 
     public String storeRecipeImage(MultipartFile imageFile) {

@@ -31,12 +31,24 @@
       <div class="row mb-5">
         <div class="col-12">
           <div class="mb-4">
-            <span class="badge category-badge mb-3" th:text="${recipe.mealType}"
-              >Dinner</span
-            >
-            <h1 class="recipe-title-display m-0" th:text="${recipe.title}">
-              Spicy Garlic Pasta
-            </h1>
+            
+            <div class="d-flex justify-content-between align-items-start flex-wrap gap-3">
+              <div>
+                <span class="badge category-badge mb-3" th:text="${recipe.mealType}">Dinner</span>
+                <h1 class="recipe-title-display m-0" th:text="${recipe.title}">Spicy Garlic Pasta</h1>
+              </div>
+
+              <div sec:authorize="isAuthenticated()" th:if="${recipe.author != null and #authentication.name == recipe.author.email}" class="d-flex gap-2 mt-2">
+                <a th:href="@{/recipes/{id}/edit(id=${recipe.id})}" class="btn btn-outline-dark btn-sm fw-bold px-3">
+                  <i class="bi bi-pencil-square"></i> Edit
+                </a>
+                <form th:action="@{/recipes/{id}/delete(id=${recipe.id})}" method="post" class="m-0" onsubmit="return confirm('Are you sure you want to delete this recipe? This cannot be undone.');">
+                  <button type="submit" class="btn btn-outline-danger btn-sm fw-bold px-3">
+                    <i class="bi bi-trash3"></i> Delete
+                  </button>
+                </form>
+              </div>
+            </div>
 
             <div class="d-flex align-items-center mt-3 mb-4">
               <img
@@ -59,6 +71,7 @@
                 reviews)
               </div>
             </div>
+            
             <p class="recipe-description" th:text="${recipe.description}">
               Description
             </p>
