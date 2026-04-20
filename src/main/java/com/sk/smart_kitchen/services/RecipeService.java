@@ -42,6 +42,7 @@ public class RecipeService {
     private final TagRepository tagRepository;
     private final UserRepository userRepository;
     private final ImageStorageService imageStorageService;
+    private final IngredientNormalizer normalizer;
 
     public RecipeService(
             RecipeRepository recipeRepository,
@@ -49,7 +50,8 @@ public class RecipeService {
             RecipeIngredientRepository recipeIngredientRepository,
             TagRepository tagRepository,
             UserRepository userRepository,
-            ImageStorageService imageStorageService
+            ImageStorageService imageStorageService,
+            IngredientNormalizer normalizer
     ) {
         this.recipeRepository = recipeRepository;
         this.ingredientRepository = ingredientRepository;
@@ -57,6 +59,7 @@ public class RecipeService {
         this.tagRepository = tagRepository;
         this.userRepository = userRepository;
         this.imageStorageService = imageStorageService;
+        this.normalizer = normalizer;
     }
 
     public List<Recipe> findAllRecipes() {
@@ -302,17 +305,18 @@ public class RecipeService {
         }
 
         for (IngredientLineForm line : form.getIngredients()) {
-            String ingredientName = trimToNull(line.getName());
-            if (ingredientName == null) {
-                continue;
-            }
+            String rawIngredientName = trimToNull(line.getName());
+            if (rawIngredientName == null) continue;
 
-            // 1. Get or create the dumb master ingredient (Name ONLY)
-            Ingredient ingredient = ingredientRepository.findByNameIgnoreCase(ingredientName)
+            // 🌟 PASS IT THROUGH THE NORMALIZER
+            String cleanIngredientName = normalizer.normalize(rawIngredientName);
+            if (cleanIngredientName == null) continue;
+
+            // 1. Get or create the dumb master ingredient using the CLEAN name
+            Ingredient ingredient = ingredientRepository.findByNameIgnoreCase(cleanIngredientName)
                     .orElseGet(() -> {
                         Ingredient newIngredient = new Ingredient();
-                        newIngredient.setName(ingredientName);
-                        // Measurement unit and Category are completely removed here.
+                        newIngredient.setName(cleanIngredientName);
                         return ingredientRepository.save(newIngredient);
                     });
 
@@ -322,11 +326,11 @@ public class RecipeService {
             recipeIngredient.setIngredient(ingredient);
             recipeIngredient.setQuantityNeeded(parseQuantity(line.getQuantity()));
             recipeIngredient.setUnit(trimToNull(line.getUnit()));
-            recipeIngredient.setPreparationState(trimToNull(line.getPreparation())); // Correctly mapped
+            recipeIngredient.setPreparationState(trimToNull(line.getPreparation())); 
             recipeIngredientRepository.save(recipeIngredient);
         }
     }
-
+    
     private Set<Tag> parseTags(String tagInput) {
         if (tagInput == null || tagInput.isBlank()) {
             return new LinkedHashSet<>();

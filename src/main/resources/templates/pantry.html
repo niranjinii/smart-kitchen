@@ -43,13 +43,13 @@
               <td class="fw-bold" th:text="${item.ingredient.name}">Ingredient Name</td>
               <td>
                 <span class="badge bg-light text-dark border custom-badge" 
-                      th:text="${item.ingredient.category != null ? item.ingredient.category : 'General'}">Category</span>
+                      th:text="${item.category != null ? item.category : 'General'}">Category</span>
               </td>
               <td>
                 <div class="d-flex align-items-center gap-2">
                   <input type="number" class="spreadsheet-input qty-input" 
                          th:data-id="${item.id}" th:value="${item.quantity}" step="0.5" />
-                  <span class="text-muted fw-bold" th:text="${item.ingredient.measurementUnit}">kg</span>
+                  <span class="text-muted fw-bold" th:text="${item.unit}">kg</span>
                 </div>
               </td>
               <td class="text-muted" th:text="${item.expirationDate != null ? item.expirationDate : '-'}">-</td>
@@ -70,7 +70,7 @@
               <h6 class="fw-bold m-0 text-dark-custom" th:text="${item.ingredient.name}">Ingredient Name</h6>
               <div class="d-flex flex-wrap gap-2 mt-2">
                 <span class="badge bg-light text-dark border rounded-pill custom-badge" 
-                      th:text="${item.ingredient.category != null ? item.ingredient.category : 'General'}">Category</span>
+                      th:text="${item.category != null ? item.category : 'General'}">Category</span>
                 <span class="badge border rounded-pill custom-badge" 
                       th:classappend="${item.expirationDate != null} ? 'bg-danger bg-opacity-10 text-danger border-danger' : 'bg-light text-muted'">
                   Exp: <span th:text="${item.expirationDate != null ? item.expirationDate : 'None'}">None</span>
@@ -83,7 +83,7 @@
           </div>
           
           <div class="d-flex align-items-center justify-content-between mt-3 pt-3 border-top">
-            <span class="text-muted small fw-bold text-uppercase" th:text="${item.ingredient.measurementUnit}">UNIT</span>
+            <span class="text-muted small fw-bold text-uppercase" th:text="${item.unit}">UNIT</span>
             <div class="stepper-control flex-shrink-0">
               <button class="stepper-btn minus-btn" th:data-id="${item.id}">-</button>
               <input type="number" class="stepper-value qty-input" th:data-id="${item.id}" th:value="${item.quantity}" readonly />

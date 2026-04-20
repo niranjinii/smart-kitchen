@@ -6,6 +6,7 @@ import com.sk.smart_kitchen.entities.Recipe;
 import com.sk.smart_kitchen.entities.RecipeIngredient;
 import com.sk.smart_kitchen.entities.SavedRecipe;
 import com.sk.smart_kitchen.entities.User;
+import com.sk.smart_kitchen.services.GapAnalysisEngine;
 import com.sk.smart_kitchen.services.RecipeService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
@@ -28,6 +29,8 @@ import java.util.ArrayList;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Optional;
+
+
 
 @Controller
 @RequestMapping("/recipes")
@@ -57,6 +60,13 @@ public class RecipeController {
     @Autowired
     private com.sk.smart_kitchen.repositories.RecipeIngredientRepository recipeIngredientRepository;
 
+    @Autowired
+    private GapAnalysisEngine gapEngine;
+
+    @Autowired
+    private com.sk.smart_kitchen.repositories.PantryItemRepository pantryRepository;
+
+
     public RecipeController(RecipeService recipeService) {
         this.recipeService = recipeService;
     }
@@ -84,12 +94,32 @@ public class RecipeController {
     }
 
     @GetMapping("/{id}")
-    public String showRecipeView(@PathVariable Long id, Principal principal, Model model) {
+    public String showRecipeView(@PathVariable Long id, Principal principal, Model model, 
+                                 @RequestParam(value = "servings", required = false) Integer customServings) {
+
         Recipe recipe = getRecipeOr404(id);
         model.addAttribute("recipe", recipe);
         model.addAttribute("recipeId", id);
+
+        // 🌟 2. Calculate the scaling ratio
+        int baseServings = recipe.getDefaultServings() != null ? recipe.getDefaultServings() : 2;
+        int targetServings = (customServings != null && customServings > 0) ? customServings : baseServings;
+        double ratio = (double) targetServings / baseServings;
+        model.addAttribute("targetServings", targetServings); // Pass to HTML
+
+        // 🌟 3. Create a temporary list of scaled ingredients for the math
+        List<RecipeIngredient> scaledIngredients = new ArrayList<>();
+        for (RecipeIngredient ri : recipeService.findRecipeIngredients(id)) {
+            RecipeIngredient temp = new RecipeIngredient();
+            temp.setIngredient(ri.getIngredient()); // ID is preserved!
+            temp.setUnit(ri.getUnit());
+            temp.setPreparationState(ri.getPreparationState());
+            temp.setQuantityNeeded(ri.getQuantityNeeded() * ratio);
+            scaledIngredients.add(temp);
+        }
         
-        model.addAttribute("ingredients", recipeService.findRecipeIngredients(id));
+        // Pass the scaled ingredients to the UI instead of the base ones
+        model.addAttribute("ingredients", scaledIngredients);
         model.addAttribute("instructionSteps", recipeService.toInstructionSteps(recipe));
 
         // --- NEW REVIEW MATH LOGIC ---
@@ -136,6 +166,15 @@ public class RecipeController {
             }
         }
         model.addAttribute("myNote", myNote);
+
+        if (principal != null) {
+            User user = userRepository.findByEmail(principal.getName()).orElseThrow();
+            List<com.sk.smart_kitchen.entities.PantryItem> pantry = pantryRepository.findByUserOrderByIdDesc(user);
+            
+            // 🌟 4. Pass the scaled list into the engine!
+            GapAnalysisEngine.GapResult gapResult = gapEngine.analyze(scaledIngredients, pantry);
+            model.addAttribute("gapResult", gapResult);
+    }
 
         return "recipe";
     }

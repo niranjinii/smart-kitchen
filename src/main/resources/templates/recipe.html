@@ -102,23 +102,52 @@
 
       <div class="row g-5">
         <div class="col-lg-4 order-2 order-lg-1">
-          <div class="d-flex justify-content-between align-items-end mb-4">
+          <div class="d-flex justify-content-between align-items-end mb-3">
             <h3 class="section-title m-0">Ingredients</h3>
             <div class="yield-adjuster d-flex align-items-center gap-3 px-2 py-1">
               <i class="bi bi-dash cursor-pointer" id="scaleDownBtn"></i>
-              <span class="fw-bold" style="font-size: 0.9rem">
-                  <span id="currentServings" th:data-base-servings="${recipe.defaultServings != null ? recipe.defaultServings : 2}" th:text="${recipe.defaultServings != null ? recipe.defaultServings : 2}">2</span> Servings
+              <span class="fw-bold servings-text">
+                  <span id="currentServings" th:text="${targetServings}">2</span> Servings
               </span>
               <i class="bi bi-plus cursor-pointer" id="scaleUpBtn"></i>
             </div>
           </div>
+
+          <div sec:authorize="isAuthenticated()" class="p-3 mb-4 rounded-3 pantry-match-card">
+             <div class="d-flex justify-content-between mb-2">
+                 <span class="fw-bold text-dark pantry-match-label">Pantry Match</span>
+                 <span class="pantry-match-pct" th:text="${gapResult.matchPercentage + '%'}">100%</span>
+             </div>
+             <div class="progress pantry-match-progress">
+                 <div class="progress-bar pantry-match-progress-bar" role="progressbar" th:style="'width: ' + ${gapResult.matchPercentage} + '%;'"></div>
+             </div>
+          </div>
           
           <ul class="ingredient-list list-unstyled mb-4">
-            <li class="ingredient-item" th:each="ingredient : ${ingredients}">
+            <li sec:authorize="isAuthenticated()" class="ingredient-item" th:each="ingredient : ${gapResult.owned}">
+              <i class="bi bi-check-circle-fill me-2 icon-owned"></i>
+              <span class="fw-bold me-1">
+                  <span class="scalable-qty" th:data-base-qty="${ingredient.quantityNeeded}" th:text="${ingredient.quantityNeeded}"></span><span th:text="${ingredient.unit != null ? ingredient.unit : ''}"></span>
+              </span>
+              <span th:text="${ingredient.ingredient.name}"></span>
+              <span th:if="${ingredient.preparationState != null}" class="text-muted small ms-1" th:text="${'(' + ingredient.preparationState + ')'}"></span>
+            </li>
+
+            <li sec:authorize="isAuthenticated()" class="ingredient-item" th:each="ingredient : ${gapResult.missing}">
+              <i class="bi bi-x-circle text-danger me-2"></i>
+              <span class="fw-bold me-1 text-danger">
+                  <span class="scalable-qty" th:data-base-qty="${ingredient.quantityNeeded}" th:text="${ingredient.quantityNeeded}"></span><span th:text="${ingredient.unit != null ? ingredient.unit : ''}"></span>
+              </span>
+              <span class="text-danger" th:text="${ingredient.ingredient.name}"></span>
+              <span th:if="${ingredient.preparationState != null}" class="text-danger small ms-1" th:text="${'(' + ingredient.preparationState + ')'}"></span>
+            </li>
+
+            <li sec:authorize="isAnonymous()" class="ingredient-item" th:each="ingredient : ${ingredients}">
               <span class="fw-bold me-2">
                   <span class="scalable-qty" th:data-base-qty="${ingredient.quantityNeeded}" th:text="${ingredient.quantityNeeded}">250</span><span th:text="${ingredient.unit != null ? ingredient.unit : ''}">g</span>
               </span>
               <span th:text="${ingredient.ingredient.name}">Pasta</span>
+              <span th:if="${ingredient.preparationState != null}" class="text-muted small ms-1" th:text="${'(' + ingredient.preparationState + ')'}"></span>
             </li>
           </ul>
           
@@ -545,40 +574,27 @@
           });
         }
 
-        // --- TEAMMATE'S YIELD ADJUSTER LOGIC ---
+        // --- YIELD ADJUSTER LOGIC (Server-Side Recalculation) ---
         const scaleDownBtn = document.getElementById('scaleDownBtn');
         const scaleUpBtn = document.getElementById('scaleUpBtn');
         const currentServingsEl = document.getElementById('currentServings');
         
         if (scaleDownBtn && scaleUpBtn && currentServingsEl) {
-            const baseServings = parseFloat(currentServingsEl.getAttribute('data-base-servings')) || 2;
-            
-            const updateQuantities = (newServings) => {
-                const ratio = newServings / baseServings;
-                
-                // Update main ingredient list
-                document.querySelectorAll('.scalable-qty').forEach(el => {
-                    const baseQty = parseFloat(el.getAttribute('data-base-qty'));
-                    if(!isNaN(baseQty)) {
-                        let newQty = baseQty * ratio;
-                        el.textContent = Number.isInteger(newQty) ? newQty : newQty.toFixed(1);
-                    }
-                });
+            scaleDownBtn.addEventListener('click', () => {
+                let current = parseInt(currentServingsEl.textContent);
+                if (current > 1) {
+                    // Reloads the page and tells Java to recalculate!
+                    window.location.href = window.location.pathname + '?servings=' + (current - 1);
+                }
+            });
 
-                // Update modal quantities
-                document.querySelectorAll('.modal-qty-input').forEach(el => {
-                    const baseQty = parseFloat(el.getAttribute('data-base-qty'));
-                    if(!isNaN(baseQty)) {
-                        let newQty = baseQty * ratio;
-                        el.value = newQty; 
-                        const displaySpan = el.parentElement.querySelector('.modal-display-qty');
-                        if (displaySpan) {
-                            displaySpan.textContent = Number.isInteger(newQty) ? newQty : newQty.toFixed(1);
-                        }
-                    }
-                });
-            };
-
+            scaleUpBtn.addEventListener('click', () => {
+                let current = parseInt(currentServingsEl.textContent);
+                if (current < 50) {
+                    window.location.href = window.location.pathname + '?servings=' + (current + 1);
+                }
+            });
+        }
             scaleDownBtn.addEventListener('click', () => {
                 let current = parseInt(currentServingsEl.textContent);
                 if (current > 1) {
@@ -597,7 +613,6 @@
                 }
             });
         }
-      });
 
       // --- TEAMMATE'S SHOPPING LIST VALIDATION ---
       window.checkShoppingListForm = function(form) {
