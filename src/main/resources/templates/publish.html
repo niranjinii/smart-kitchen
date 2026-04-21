@@ -291,6 +291,7 @@
             <div class="mb-4">
               <label class="form-label section-title mb-2">Author Suggested Swaps <span class="text-muted fw-normal" style="font-size: 0.9rem;">(Optional)</span></label>
               <p class="text-muted small mb-3">Add explicit ingredient substitutions for your readers.</p>
+              <p class="text-muted small mb-3">Selected originals stay linked to ingredient rows and auto-update if you rename an ingredient.</p>
               
               <div id="substitutionRows">
                 <div class="d-flex gap-3 mb-3 align-items-center sub-row" th:each="sub, stat : *{explicitSubs}">
@@ -588,37 +589,45 @@
 
     // 🌟 NEW: This function watches what ingredients you type and builds the dropdown options!
     function updateSubDropdowns() {
-        const ingredientInputs = document.querySelectorAll('.ingredient-name');
-        const ingredientNames = [];
-        ingredientInputs.forEach(input => {
-            const val = input.value.trim();
-            if (val) ingredientNames.push(val);
+      const ingredientInputs = document.querySelectorAll('.ingredient-name');
+      const ingredientEntries = [];
+      ingredientInputs.forEach((input, index) => {
+        const val = input.value.trim();
+        if (val) ingredientEntries.push({ index, name: val });
+      });
+
+      const selects = document.querySelectorAll('.sub-original');
+      selects.forEach(select => {
+        const previousIndex = select.getAttribute('data-source-index');
+        const currentVal = select.value || select.getAttribute('data-existing-val') || '';
+
+        let selectedIndex = previousIndex;
+        if (selectedIndex === null || selectedIndex === '') {
+          const matched = ingredientEntries.find(entry => entry.name === currentVal);
+          if (matched) selectedIndex = String(matched.index);
+        }
+
+        select.innerHTML = '<option value="">Select ingredient...</option>';
+
+        ingredientEntries.forEach(entry => {
+          const opt = document.createElement('option');
+          opt.value = entry.name;
+          opt.textContent = entry.name;
+          opt.setAttribute('data-source-index', String(entry.index));
+          if (selectedIndex !== null && selectedIndex !== '' && String(entry.index) === String(selectedIndex)) {
+            opt.selected = true;
+          }
+          select.appendChild(opt);
         });
 
-        const selects = document.querySelectorAll('.sub-original');
-        selects.forEach(select => {
-            const currentVal = select.value || select.getAttribute('data-existing-val');
-            select.innerHTML = '<option value="">Select ingredient...</option>';
-            
-            ingredientNames.forEach(name => {
-                const opt = document.createElement('option');
-                opt.value = name;
-                opt.textContent = name;
-                if (name === currentVal) opt.selected = true;
-                select.appendChild(opt);
-            });
-
-            // Keeps track of the value so it isn't erased before the user types something
-            if(currentVal && !ingredientNames.includes(currentVal)) {
-                const opt = document.createElement('option');
-                opt.value = currentVal;
-                opt.textContent = currentVal;
-                opt.selected = true;
-                opt.style.display = 'none'; 
-                select.appendChild(opt);
-            }
-            select.setAttribute('data-existing-val', select.value);
-        });
+        const selectedOption = select.options[select.selectedIndex];
+        if (selectedOption && selectedOption.value) {
+          select.setAttribute('data-source-index', selectedOption.getAttribute('data-source-index') || '');
+        } else {
+          select.setAttribute('data-source-index', '');
+        }
+        select.setAttribute('data-existing-val', select.value);
+      });
     }
 
     // Calls it whenever you type an ingredient!
@@ -626,6 +635,18 @@
         if (e.target.classList.contains('ingredient-name')) {
             updateSubDropdowns();
         }
+    });
+
+    document.addEventListener('change', (e) => {
+      if (e.target.classList.contains('sub-original')) {
+        const selectedOption = e.target.options[e.target.selectedIndex];
+        if (selectedOption && selectedOption.value) {
+          e.target.setAttribute('data-source-index', selectedOption.getAttribute('data-source-index') || '');
+        } else {
+          e.target.setAttribute('data-source-index', '');
+        }
+        e.target.setAttribute('data-existing-val', e.target.value || '');
+      }
     });
 
       function populateIngredients(ingredients) {

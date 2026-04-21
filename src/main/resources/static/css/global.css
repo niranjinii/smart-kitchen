@@ -246,3 +246,70 @@ a.nav-icon-link:hover i {
   border-radius: 50%;
   object-fit: cover;
 }
+
+/* =========================================
+   RECOMMENDATION ENGINE UI
+   ========================================= */
+.reco-card {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  overflow: hidden;
+  text-decoration: none;
+  color: inherit;
+  display: flex;
+  background: white;
+}
+.reco-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+  color: inherit;
+}
+.reco-img {
+  width: 100px;
+  height: 100px;
+  object-fit: cover;
+}
+
+/* Desktop Horizontal Progress */
+.reco-progress-container {
+  height: 6px;
+  background: #e5e7eb;
+  border-radius: 10px;
+  overflow: hidden;
+  margin-top: 8px;
+}
+.reco-progress-bar {
+  height: 100%;
+  background: var(--brand-green);
+  border-radius: 10px;
+  transition: width 1s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Mobile Circular Progress (Pure CSS Conic Gradient!) */
+.reco-ring-wrapper {
+  position: relative;
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.reco-ring-wrapper::before {
+  content: "";
+  position: absolute;
+  width: 40px;
+  height: 40px;
+  background: white;
+  border-radius: 50%;
+  z-index: 1;
+}
+.reco-ring-text {
+  position: relative;
+  z-index: 2;
+  font-weight: 800;
+  font-size: 0.75rem;
+  color: var(--brand-green);
+}

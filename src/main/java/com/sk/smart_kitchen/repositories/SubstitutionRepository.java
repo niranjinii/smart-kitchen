@@ -9,6 +9,7 @@ import org.springframework.stereotype.Repository;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.Collection;
 
 @Repository
 public interface SubstitutionRepository extends JpaRepository<Substitution, Long> {
@@ -30,4 +31,7 @@ public interface SubstitutionRepository extends JpaRepository<Substitution, Long
 
     // 6. Needed by the Pantry to show Permanent Dietary Rules
     List<Substitution> findByUserAndRecipeIsNull(User user);
+
+    // 7. Needed by RecommendationEngine to avoid per-ingredient query loops
+    List<Substitution> findByUserAndOriginalIngredientIn(User user, Collection<Ingredient> originals);
 }
