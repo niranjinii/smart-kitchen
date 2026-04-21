@@ -42,6 +42,7 @@ public class GapAnalysisEngine {
         // 🌟 NEW: Remember what we swapped from, and the actual ID we are using!
         public String originalName = null; 
         public Long actualIngredientId = null; 
+        public boolean isRecipeScopedSwap = false;
 
         public List<String> possibleSubstitutes = new ArrayList<>();
     }
@@ -86,6 +87,9 @@ public class GapAnalysisEngine {
                 gapItem.isSubstituted = true;
                 gapItem.originalName = req.getIngredient().getName();
                 gapItem.substituteName = targetIngredient.getName();
+                
+                gapItem.isRecipeScopedSwap = (activePref.getRecipe() != null); // 🌟 ADD THIS LINE
+                
                 reqBase = reqBase * (activePref.getConversionMultiplier() != null ? activePref.getConversionMultiplier() : 1.0);
             }
 

@@ -6,6 +6,8 @@ import com.sk.smart_kitchen.entities.Ingredient;
 import com.sk.smart_kitchen.repositories.IngredientRepository;
 import com.sk.smart_kitchen.repositories.PantryItemRepository;
 import com.sk.smart_kitchen.repositories.UserRepository;
+
+
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
@@ -19,9 +21,16 @@ import java.time.LocalDate;
 @RequestMapping("/pantry")
 public class PantryController {
 
+    @org.springframework.beans.factory.annotation.Autowired 
+    private com.sk.smart_kitchen.repositories.SubstitutionRepository subRepository;
+    
+    @org.springframework.beans.factory.annotation.Autowired 
+    private com.sk.smart_kitchen.services.IngredientNormalizer normalizer;
+
     private final PantryItemRepository pantryRepository;
     private final UserRepository userRepository;
     private final IngredientRepository ingredientRepository; // Add this!
+    
 
     // Update the constructor to inject the IngredientRepository
     public PantryController(PantryItemRepository pantryRepository, UserRepository userRepository,
@@ -40,6 +49,13 @@ public class PantryController {
         List<PantryItem> pantryItems = pantryRepository.findByUserOrderByIdDesc(user);
 
         model.addAttribute("pantryItems", pantryItems);
+
+        // Pass today's date for the expiration check
+        model.addAttribute("today", java.time.LocalDate.now());
+        
+        // Pass the user's permanent dietary rules
+        model.addAttribute("dietaryRules", subRepository.findByUserAndRecipeIsNull(user));
+
         return "pantry";
     }
 
@@ -100,6 +116,59 @@ public class PantryController {
         
         pantryRepository.save(pantryItem);
 
+        return "redirect:/pantry";
+    }
+
+    @PostMapping("/rules/add")
+    public String addDietaryRule(java.security.Principal principal, 
+                                 @org.springframework.web.bind.annotation.RequestParam("originalName") String originalName, 
+                                 @org.springframework.web.bind.annotation.RequestParam("substituteName") String substituteName) {
+        if (principal == null) return "redirect:/login";
+        com.sk.smart_kitchen.entities.User user = userRepository.findByEmail(principal.getName()).orElseThrow();
+
+        String cleanOriginal = normalizer.normalize(originalName);
+        String cleanSubstitute = normalizer.normalize(substituteName);
+
+        if (cleanOriginal == null || cleanSubstitute == null) return "redirect:/pantry";
+
+        com.sk.smart_kitchen.entities.Ingredient original = ingredientRepository.findByNameIgnoreCase(cleanOriginal)
+                .orElseGet(() -> {
+                    com.sk.smart_kitchen.entities.Ingredient newIng = new com.sk.smart_kitchen.entities.Ingredient();
+                    newIng.setName(cleanOriginal);
+                    return ingredientRepository.save(newIng);
+                });
+
+        com.sk.smart_kitchen.entities.Ingredient substitute = ingredientRepository.findByNameIgnoreCase(cleanSubstitute)
+                .orElseGet(() -> {
+                    com.sk.smart_kitchen.entities.Ingredient newIng = new com.sk.smart_kitchen.entities.Ingredient();
+                    newIng.setName(cleanSubstitute);
+                    return ingredientRepository.save(newIng);
+                });
+
+        com.sk.smart_kitchen.entities.Substitution rule = subRepository.findByOriginalIngredientAndUser(original, user)
+                .stream().filter(s -> s.getRecipe() == null).findFirst().orElse(new com.sk.smart_kitchen.entities.Substitution());
+
+        rule.setOriginalIngredient(original);
+        rule.setSubstituteIngredient(substitute);
+        rule.setUser(user);
+        rule.setRecipe(null); // Explicitly null for GLOBAL scope
+        rule.setConversionMultiplier(1.0);
+        rule.setNotes("Permanent Dietary Preference");
+        
+        subRepository.save(rule);
+        return "redirect:/pantry";
+    }
+
+    @PostMapping("/rules/remove")
+    public String removeDietaryRule(java.security.Principal principal, @org.springframework.web.bind.annotation.RequestParam("ruleId") Long ruleId) {
+        if (principal == null) return "redirect:/login";
+        com.sk.smart_kitchen.entities.User user = userRepository.findByEmail(principal.getName()).orElseThrow();
+        
+        subRepository.findById(ruleId).ifPresent(rule -> {
+            if (rule.getUser() != null && rule.getUser().getId().equals(user.getId())) {
+                subRepository.delete(rule);
+            }
+        });
         return "redirect:/pantry";
     }
 }

@@ -27,4 +27,7 @@ public interface SubstitutionRepository extends JpaRepository<Substitution, Long
 
     // 5. Needed by RecipeService to clean up old suggestions when editing a recipe
     void deleteByRecipe(Recipe recipe);
+
+    // 6. Needed by the Pantry to show Permanent Dietary Rules
+    List<Substitution> findByUserAndRecipeIsNull(User user);
 }

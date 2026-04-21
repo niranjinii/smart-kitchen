@@ -178,3 +178,40 @@
     color: white;
     box-shadow: 0 4px 12px rgba(43, 76, 59, 0.15);
 }
+
+/* =========================================
+   DIETARY PREFERENCES SECTION
+   ========================================= */
+.dietary-prefs-title {
+    color: var(--brand-green);
+}
+
+.dietary-rule-form {
+    transition: all 0.3s ease;
+}
+
+/* Adds a nice subtle hover effect to the list items */
+.dietary-rule-item {
+    transition: background-color 0.2s ease;
+    border-color: #f3f4f6; /* Soft border between rules */
+}
+
+.dietary-rule-item:hover {
+    background-color: #f9fafb;
+    border-radius: 6px;
+    padding-left: 8px !important;
+    padding-right: 8px !important;
+    margin-left: -8px;
+    margin-right: -8px;
+}
+
+.dietary-rule-delete-btn {
+    font-size: 0.75rem;
+    font-weight: 600;
+    transition: all 0.2s ease;
+}
+
+.dietary-rule-delete-btn:hover {
+    background-color: #dc3545;
+    color: white;
+}

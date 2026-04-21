@@ -126,6 +126,7 @@ public class RecipeController {
             temp.setUnit(ri.getUnit());
             temp.setPreparationState(ri.getPreparationState());
             temp.setQuantityNeeded(ri.getQuantityNeeded() * ratio);
+            temp.setRecipe(recipe);
             scaledIngredients.add(temp);
         }
         
@@ -233,6 +234,26 @@ public class RecipeController {
         return "redirect:/recipes/" + id; 
     }
 
+    // 🌟 NEW: The Undo Swap Endpoint
+    @PostMapping("/{id}/swap/remove")
+    public String removeSubstitute(@PathVariable Long id, Principal principal, 
+                                   @RequestParam("originalId") Long originalId,
+                                   @RequestParam("recipeScope") boolean recipeScope) {
+        if (principal == null) return "redirect:/login";
+        
+        User user = userRepository.findByEmail(principal.getName()).orElseThrow();
+        Ingredient original = ingredientRepository.findById(originalId).orElseThrow();
+
+        // Find the specific preference and delete it!
+        subRepository.findByOriginalIngredientAndUser(original, user)
+                .stream()
+                .filter(s -> recipeScope ? (s.getRecipe() != null && s.getRecipe().getId().equals(id)) : s.getRecipe() == null)
+                .findFirst()
+                .ifPresent(sub -> subRepository.delete(sub));
+
+        return "redirect:/recipes/" + id; 
+    }
+
     @GetMapping("/{id}/cook")
     public String showCookMode(@PathVariable Long id, Model model, java.security.Principal principal,
                                @RequestParam(value = "servings", required = false) Integer customServings) {
@@ -253,6 +274,7 @@ public class RecipeController {
             temp.setUnit(ri.getUnit());
             temp.setPreparationState(ri.getPreparationState());
             temp.setQuantityNeeded(ri.getQuantityNeeded() * ratio);
+            temp.setRecipe(recipe);
             scaledIngredients.add(temp);
         }
         
@@ -282,6 +304,7 @@ public class RecipeController {
             temp.setIngredient(ri.getIngredient()); 
             temp.setUnit(ri.getUnit());
             temp.setQuantityNeeded(ri.getQuantityNeeded() * ratio);
+            temp.setRecipe(recipe);
             scaledIngredients.add(temp);
         }
 

@@ -44,16 +44,34 @@
         <h3 class="fw-bold mb-4" style="color: var(--brand-green)">
           Ingredients
         </h3>
-        <div class="ingredient-item" th:each="ingredient : ${ingredients}">
-          <span
-            class="fw-bold"
-            th:text="${ingredient.quantityNeeded + (ingredient.unit != null ? ingredient.unit : '')}"
-          ></span>
-          <span
-            class="ingredient-name"
-            th:text="${ingredient.ingredient.name}"
-          ></span>
-        </div>
+        
+        <ul class="ingredient-list list-unstyled mb-0">
+          <li class="ingredient-item flex-column align-items-start" th:each="item : ${gapResult.owned}">
+            <div class="d-flex align-items-center w-100">
+                <span class="fw-bold me-2">
+                    <span th:text="${item.isSubstituted ? item.substituteQtyUsed : item.requirement.quantityNeeded}"></span><span th:text="${item.isSubstituted ? item.substituteUnit : (item.requirement.unit != null ? item.requirement.unit : '')}"></span>
+                </span>
+                <span class="ingredient-name" th:text="${item.isSubstituted ? item.substituteName : item.requirement.ingredient.name}"></span>
+                <span th:if="${item.requirement.preparationState != null}" class="text-muted small ms-1" th:text="${'(' + item.requirement.preparationState + ')'}"></span>
+            </div>
+            <div th:if="${item.isSubstituted}" class="mt-1" style="font-size: 0.75rem;">
+                <span class="badge bg-secondary bg-opacity-10 text-secondary border">Swap for <span th:text="${item.originalName}"></span></span>
+            </div>
+          </li>
+          
+          <li class="ingredient-item flex-column align-items-start" th:each="item : ${gapResult.missing}">
+            <div class="d-flex align-items-center w-100">
+                <span class="fw-bold me-2 text-danger">
+                    <span th:text="${item.missingQty}"></span><span th:text="${item.requirement.unit != null ? item.requirement.unit : ''}"></span>
+                </span>
+                <span class="ingredient-name text-danger" th:text="${item.isSubstituted ? item.substituteName : item.requirement.ingredient.name}"></span>
+                <span th:if="${item.requirement.preparationState != null}" class="text-danger small ms-1" th:text="${'(' + item.requirement.preparationState + ')'}"></span>
+            </div>
+            <div th:if="${item.isSubstituted}" class="mt-1" style="font-size: 0.75rem;">
+                <span class="badge bg-secondary bg-opacity-10 text-secondary border">Swap for <span th:text="${item.originalName}"></span></span>
+            </div>
+          </li>
+        </ul>
       </div>
 
       <div class="steps-panel" id="stepsContainer">
