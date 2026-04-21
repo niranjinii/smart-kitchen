@@ -39,6 +39,7 @@ public class GapAnalysisEngine {
         public String substituteUnit = null;
         
         public String originalName = null; 
+        public Long substituteIngredientId = null;
         public Long actualIngredientId = null; 
         
         public boolean isRecipeScopedSwap = false; 
@@ -82,7 +83,13 @@ public class GapAnalysisEngine {
                 gapItem.isSubstituted = true;
                 gapItem.originalName = req.getIngredient().getName();
                 gapItem.substituteName = targetIngredient.getName();
+                gapItem.substituteIngredientId = targetIngredient.getId();
                 gapItem.isRecipeScopedSwap = (activePref.getRecipe() != null);
+                double multiplier = (activePref.getConversionMultiplier() != null ? activePref.getConversionMultiplier() : 1.0);
+                double adjustedQty = req.getQuantityNeeded() * multiplier;
+                
+                gapItem.substituteQtyUsed = Math.round(adjustedQty * 10.0) / 10.0;
+                gapItem.substituteUnit = req.getUnit();
                 reqBase = reqBase * (activePref.getConversionMultiplier() != null ? activePref.getConversionMultiplier() : 1.0);
             }
 

@@ -60,6 +60,7 @@ public class ShoppingListController {
     public String addToList(
             @RequestParam(value = "ingredientIds", required = false) List<Long> ingredientIds,
             @RequestParam(value = "quantities", required = false) List<Double> quantities,
+            @RequestParam(value = "units", required = false) List<String> units,
             Principal principal,
             @RequestParam("recipeId") Long recipeId) {
 
@@ -73,11 +74,14 @@ public class ShoppingListController {
 
         for (int i = 0; i < ingredientIds.size(); i++) {
             Double qty = (quantities != null && quantities.size() > i) ? quantities.get(i) : 1.0;
+            String unit = (units != null && units.size() > i) ? units.get(i) : "";
             Ingredient ingredient = ingredientRepository.findById(ingredientIds.get(i)).orElse(null);
 
             if (ingredient != null) {
                 // FIXED: We now pass the entire Ingredient object to the service!
-                aggregationService.addOrUpdateIngredient(user, ingredient, qty, "");
+                aggregationService.addOrUpdateIngredient(user, ingredient, qty, unit);
+                // FIXED: We now pass the entire Ingredient object to the service!
+                aggregationService.addOrUpdateIngredient(user, ingredient, qty, unit);
             }
         }
 

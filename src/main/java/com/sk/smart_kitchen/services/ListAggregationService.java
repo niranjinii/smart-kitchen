@@ -13,9 +13,12 @@ import java.util.Optional;
 public class ListAggregationService {
 
     private final ShoppingListItemRepository repository;
+    private final UnitConversionService unitService; // Added service
 
-    public ListAggregationService(ShoppingListItemRepository repository) {
+    // Updated constructor to include UnitConversionService
+    public ListAggregationService(ShoppingListItemRepository repository, UnitConversionService unitService) {
         this.repository = repository;
+        this.unitService = unitService;
     }
 
     @Transactional
@@ -26,12 +29,30 @@ public class ListAggregationService {
 
         if (existingItem.isPresent()) {
             ShoppingListItem item = existingItem.get();
-            item.setQuantityNeeded(item.getQuantityNeeded() + quantity);
+            
+            // If existing unit is empty, use the new unit
+            String targetUnit = (item.getUnit() == null || item.getUnit().isEmpty()) ? unit : item.getUnit();
+            
+            // Logic for unit conversion and aggregation
+            // 1. Convert existing quantity in DB to base metric
+            double existingInBase = unitService.convertToBase(item.getQuantityNeeded(), item.getUnit());
+            
+            // 2. Convert incoming quantity to base metric
+            double newInBase = unitService.convertToBase(quantity, unit);
+            
+            // 3. Sum them up in the base metric
+            double totalInBase = existingInBase + newInBase;
+            
+            // 4. Convert the total back to the target unit
+            double finalQty = unitService.convertFromBase(totalInBase, targetUnit);
+            
+            item.setQuantityNeeded(finalQty);
+            item.setUnit(targetUnit);
             repository.save(item);
         } else {
+            // New item logic remains the same
             ShoppingListItem newItem = new ShoppingListItem();
             newItem.setUser(user);
-            // FIXED: Saves the object so PostgreSQL gets the ingredient_id
             newItem.setIngredient(ingredient); 
             newItem.setQuantityNeeded(quantity);
             newItem.setUnit(unit != null ? unit : "");
