@@ -9,6 +9,8 @@ import com.sk.smart_kitchen.repositories.PantryItemRepository;
 import com.sk.smart_kitchen.repositories.RecipeRepository;
 import com.sk.smart_kitchen.repositories.SubstitutionRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.annotation.Order;
+import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
@@ -21,9 +23,27 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.time.LocalDate;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
 @Service
 public class RecommendationEngine {
+
+    private static final long CACHE_TTL_MILLIS = 45_000;
+
+    private static final class CacheEntry {
+        private final String pantrySignature;
+        private final long createdAtMillis;
+        private final List<RecipeMatchDTO> results;
+
+        private CacheEntry(String pantrySignature, long createdAtMillis, List<RecipeMatchDTO> results) {
+            this.pantrySignature = pantrySignature;
+            this.createdAtMillis = createdAtMillis;
+            this.results = results;
+        }
+    }
+
+    private final ConcurrentMap<Long, CacheEntry> recommendationCache = new ConcurrentHashMap<>();
 
     @Autowired
     private RecipeRepository recipeRepository;
@@ -32,10 +52,11 @@ public class RecommendationEngine {
     private PantryItemRepository pantryItemRepository;
     
     @Autowired
-    private UnitConversionService converter;
-
-    @Autowired
     private SubstitutionRepository substitutionRepository;
+
+    // 🌟 TRUE OCP: Spring automatically injects any class implementing RecommendationStep!
+    @Autowired
+    private List<RecommendationStep> pipeline;
 
     // --- 1. THE DTO ---
     public static class RecipeMatchDTO {
@@ -58,15 +79,19 @@ public class RecommendationEngine {
         public List<RecipeMatchDTO> results = new ArrayList<>();
     }
 
-    // --- 3. COR INTERFACE (Open/Closed Principle) ---
+    // --- 3. COR INTERFACE ---
     public interface RecommendationStep {
         void process(RecommendationContext context);
     }
 
-    // --- 4. CONCRETE COR STEPS ---
+    // --- 4. CONCRETE COR STEPS (Now true Spring Components!) ---
 
-    // STEP A: Heavy-duty concurrent math
-    private class CalculateMatchStep implements RecommendationStep {
+    @Component
+    @Order(1) // Runs First
+    public static class CalculateMatchStep implements RecommendationStep {
+        @Autowired
+        private UnitConversionService converter;
+
         @Override
         public void process(RecommendationContext context) {
             List<RecipeMatchDTO> matches = context.allRecipes.parallelStream().map(recipe -> {
@@ -127,10 +152,26 @@ public class RecommendationEngine {
             
             context.results.addAll(matches);
         }
+
+        private Substitution resolveActivePreference(List<Substitution> subs, Long recipeId) {
+            if (subs == null || subs.isEmpty()) return null;
+            Substitution global = null;
+            for (Substitution sub : subs) {
+                if (sub == null) continue;
+                if (sub.getRecipe() != null && sub.getRecipe().getId() != null && sub.getRecipe().getId().equals(recipeId)) {
+                    return sub;
+                }
+                if (sub.getRecipe() == null && global == null) {
+                    global = sub;
+                }
+            }
+            return global;
+        }
     }
 
-    // STEP B: Filter and Sort
-    private class FilterAndSortStep implements RecommendationStep {
+    @Component
+    @Order(2) // Runs Second
+    public static class FilterAndSortStep implements RecommendationStep {
         @Override
         public void process(RecommendationContext context) {
             context.results = context.results.stream()
@@ -155,6 +196,15 @@ public class RecommendationEngine {
             context.pantryByIngredientId.putIfAbsent(item.getIngredient().getId(), item);
         }
 
+        String pantrySignature = buildPantrySignature(context.pantryByIngredientId);
+        CacheEntry existing = recommendationCache.get(user.getId());
+        long now = System.currentTimeMillis();
+        if (existing != null
+                && existing.pantrySignature.equals(pantrySignature)
+                && (now - existing.createdAtMillis) <= CACHE_TTL_MILLIS) {
+            return cloneResults(existing.results);
+        }
+
         context.allRecipes = recipeRepository.findAllWithIngredients();
         if (context.allRecipes.isEmpty()) return new ArrayList<>();
 
@@ -174,27 +224,46 @@ public class RecommendationEngine {
                     .collect(Collectors.groupingBy(sub -> sub.getOriginalIngredient().getId()));
         }
 
-        List<RecommendationStep> pipeline = List.of(new CalculateMatchStep(), new FilterAndSortStep());
+        // 🌟 Execute the dynamically injected Chain!
         for (RecommendationStep step : pipeline) {
             step.process(context);
         }
 
+        recommendationCache.put(user.getId(), new CacheEntry(pantrySignature, now, cloneResults(context.results)));
+
         return context.results;
     }
 
-    private Substitution resolveActivePreference(List<Substitution> subs, Long recipeId) {
-        if (subs == null || subs.isEmpty()) return null;
+    private String buildPantrySignature(Map<Long, PantryItem> pantryByIngredientId) {
+        if (pantryByIngredientId == null || pantryByIngredientId.isEmpty()) return "EMPTY";
 
-        Substitution global = null;
-        for (Substitution sub : subs) {
-            if (sub == null) continue;
-            if (sub.getRecipe() != null && sub.getRecipe().getId() != null && sub.getRecipe().getId().equals(recipeId)) {
-                return sub;
-            }
-            if (sub.getRecipe() == null && global == null) {
-                global = sub;
-            }
+        return pantryByIngredientId.entrySet().stream()
+                .sorted(Map.Entry.comparingByKey())
+                .map(entry -> {
+                    PantryItem item = entry.getValue();
+                    String qty = item.getQuantity() == null ? "" : String.valueOf(item.getQuantity());
+                    String unit = item.getUnit() == null ? "" : item.getUnit().trim().toLowerCase();
+                    String expiry = item.getExpirationDate() == null ? "" : item.getExpirationDate().toString();
+                    return entry.getKey() + ":" + qty + ":" + unit + ":" + expiry;
+                })
+                .collect(Collectors.joining("|"));
+    }
+
+    private List<RecipeMatchDTO> cloneResults(List<RecipeMatchDTO> source) {
+        if (source == null || source.isEmpty()) return new ArrayList<>();
+
+        List<RecipeMatchDTO> copy = new ArrayList<>(source.size());
+        for (RecipeMatchDTO item : source) {
+            RecipeMatchDTO dto = new RecipeMatchDTO();
+            dto.recipeId = item.recipeId;
+            dto.title = item.title;
+            dto.imageUrl = item.imageUrl;
+            dto.prepTime = item.prepTime;
+            dto.matchPercentage = item.matchPercentage;
+            dto.missingCount = item.missingCount;
+            dto.mealType = item.mealType;
+            copy.add(dto);
         }
-        return global;
+        return copy;
     }
 }

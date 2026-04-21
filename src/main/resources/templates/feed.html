@@ -185,12 +185,14 @@
         window.fetchRecommendations = async function() {
             const container = document.getElementById('recoContainer');
             const loader = document.getElementById('recoLoading');
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 15000);
             
             container.innerHTML = '';
             loader.style.display = 'block';
 
             try {
-                const response = await fetch('/api/recommendations');
+            const response = await fetch('/api/recommendations', { signal: controller.signal });
                 if (!response.ok) throw new Error("Failed to fetch");
                 
                 const recipes = await response.json();
@@ -255,9 +257,16 @@
                 });
             } catch (err) {
                 loader.style.display = 'none';
+              if (err && err.name === 'AbortError') {
+                container.innerHTML = `<div class="alert alert-warning">Pantry analysis is taking too long right now. Please try again.</div>`;
+              } else {
                 container.innerHTML = `<div class="alert alert-danger">Error analyzing pantry. Please try again.</div>`;
+              }
+            } finally {
+              clearTimeout(timeoutId);
             }
         };
+          });
     </script>
   </body>
 </html>
