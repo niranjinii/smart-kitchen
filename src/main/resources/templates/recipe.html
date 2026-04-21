@@ -138,6 +138,7 @@
           </div>
           
           <ul class="ingredient-list list-unstyled mb-4">
+            
             <li sec:authorize="isAuthenticated()" class="ingredient-item flex-column align-items-start" th:each="item : ${gapResult.owned}">
               <div class="d-flex align-items-center w-100">
                   <i class="bi bi-check-circle-fill me-2 icon-owned"></i>
@@ -148,11 +149,23 @@
                   <span th:if="${item.requirement.preparationState != null}" class="text-muted small ms-1" th:text="${'(' + item.requirement.preparationState + ')'}"></span>
               </div>
               
-              <div th:if="${item.isSubstituted}" class="ms-4 mt-1 d-flex align-items-center gap-2">
-                  <span class="badge bg-success bg-opacity-10 text-success border border-success" style="font-size: 0.75rem;">
-                      <i class="bi bi-arrow-left-right me-1"></i> 
-                      Used <span th:text="${item.substituteQtyUsed}"></span><span th:text="${item.substituteUnit}"></span> <span th:text="${item.substituteName}"></span>
+              <div th:if="${item.isSubstituted}" class="ms-4 mt-1 d-flex align-items-center flex-wrap gap-2">
+                  
+                  <span th:if="${item.isRecipeScopedSwap and #lists.contains(item.possibleSubstitutes, item.substituteName)}" class="badge bg-warning bg-opacity-10 text-dark border border-warning" style="font-size: 0.75rem;">
+                      <i class="bi bi-lightbulb text-warning me-1"></i> 
+                      Used <span th:text="${item.substituteQtyUsed}"></span><span th:text="${item.substituteUnit}"></span> <span th:text="${item.substituteName}"></span> instead of <span class="fw-bold">[[${item.originalName}]]</span>
                   </span>
+
+                  <span th:if="${item.isRecipeScopedSwap and not #lists.contains(item.possibleSubstitutes, item.substituteName)}" class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary" style="font-size: 0.75rem;">
+                      <i class="bi bi-arrow-left-right me-1"></i> 
+                      Used <span th:text="${item.substituteQtyUsed}"></span><span th:text="${item.substituteUnit}"></span> <span th:text="${item.substituteName}"></span> instead of <span class="fw-bold">[[${item.originalName}]]</span>
+                  </span>
+
+                  <span th:if="${not item.isRecipeScopedSwap}" class="badge bg-success bg-opacity-10 text-success border border-success" style="font-size: 0.75rem;">
+                      <i class="bi bi-check2-circle me-1"></i> 
+                      Used <span th:text="${item.substituteQtyUsed}"></span><span th:text="${item.substituteUnit}"></span> <span th:text="${item.substituteName}"></span> (Dietary Rule)
+                  </span>
+
                   <form th:action="@{/recipes/{id}/swap/remove(id=${recipe.id})}" method="post" class="m-0">
                       <input type="hidden" name="originalId" th:value="${item.requirement.ingredient.id}">
                       <input type="hidden" name="recipeScope" th:value="${item.isRecipeScopedSwap}">
@@ -178,8 +191,25 @@
                   </button>
               </div>
 
-              <div th:if="${item.isSubstituted}" class="ms-4 mt-1 text-muted" style="font-size: 0.8rem;">
-                  <i class="bi bi-arrow-left-right text-secondary"></i> Swapped instead of <span th:text="${item.originalName}"></span>
+              <div th:if="${item.isSubstituted}" class="ms-4 mt-1 d-flex align-items-center flex-wrap gap-2" style="font-size: 0.8rem;">
+                  
+                  <span th:if="${item.isRecipeScopedSwap and #lists.contains(item.possibleSubstitutes, item.substituteName)}" class="text-warning fw-bold">
+                      <i class="bi bi-lightbulb text-warning me-1"></i> Author suggestion instead of [[${item.originalName}]]
+                  </span>
+
+                  <span th:if="${item.isRecipeScopedSwap and not #lists.contains(item.possibleSubstitutes, item.substituteName)}" class="text-secondary">
+                      <i class="bi bi-arrow-left-right me-1"></i> Swapped instead of [[${item.originalName}]]
+                  </span>
+
+                  <span th:if="${not item.isRecipeScopedSwap}" class="text-success fw-bold">
+                      <i class="bi bi-check2-circle me-1"></i> Dietary Rule applied for [[${item.originalName}]]
+                  </span>
+
+                  <form th:action="@{/recipes/{id}/swap/remove(id=${recipe.id})}" method="post" class="m-0">
+                      <input type="hidden" name="originalId" th:value="${item.requirement.ingredient.id}">
+                      <input type="hidden" name="recipeScope" th:value="${item.isRecipeScopedSwap}">
+                      <button type="submit" class="btn btn-link p-0 text-danger text-decoration-none" style="font-size: 0.8rem;"><i class="bi bi-arrow-counterclockwise"></i> Undo</button>
+                  </form>
               </div>
 
               <div th:if="${not item.isSubstituted and not #lists.isEmpty(item.possibleSubstitutes)}" class="ms-4 mt-2 text-muted d-flex align-items-center flex-wrap gap-2" style="font-size: 0.85rem;">
@@ -187,7 +217,8 @@
                   <form th:each="sub : ${item.possibleSubstitutes}" th:action="@{/recipes/{id}/swap(id=${recipe.id})}" method="post" class="m-0">
                       <input type="hidden" name="originalId" th:value="${item.requirement.ingredient.id}">
                       <input type="hidden" name="customIngredientName" th:value="${sub}">
-                      <input type="hidden" name="recipeScope" value="true"> <button type="submit" class="badge bg-light text-dark border cursor-pointer hover-bg" style="font-weight: 600;" th:text="${sub}"></button>
+                      <input type="hidden" name="recipeScope" value="true">
+                      <button type="submit" class="badge bg-light text-dark border cursor-pointer hover-bg" style="font-weight: 600;" th:text="${sub}"></button>
                   </form>
               </div>
             </li>

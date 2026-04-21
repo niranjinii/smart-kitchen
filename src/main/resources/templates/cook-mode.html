@@ -32,27 +32,25 @@
         >
       </div>
       <div style="width: 1px; height: 20px; background: #e5e7eb"></div>
-      <a
-        th:href="@{/recipes/{id}(id=${recipe.id})}"
+      
+      <button
         class="btn btn-sm btn-danger fw-bold rounded-pill px-3"
-        >Exit</a
-      >
+        data-bs-toggle="modal"
+        data-bs-target="#finishCookModal"
+      >Exit</button>
     </div>
 
     <div class="cook-layout">
       <div class="ingredients-panel">
-        <h3 class="fw-bold mb-4" style="color: var(--brand-green)">
-          Ingredients
-        </h3>
-        
+        <h3 class="fw-bold mb-4" style="color: var(--brand-green)">Ingredients</h3>
         <ul class="ingredient-list list-unstyled mb-0">
+          
           <li class="ingredient-item flex-column align-items-start" th:each="item : ${gapResult.owned}">
             <div class="d-flex align-items-center w-100">
                 <span class="fw-bold me-2">
                     <span th:text="${item.isSubstituted ? item.substituteQtyUsed : item.requirement.quantityNeeded}"></span><span th:text="${item.isSubstituted ? item.substituteUnit : (item.requirement.unit != null ? item.requirement.unit : '')}"></span>
                 </span>
                 <span class="ingredient-name" th:text="${item.isSubstituted ? item.substituteName : item.requirement.ingredient.name}"></span>
-                <span th:if="${item.requirement.preparationState != null}" class="text-muted small ms-1" th:text="${'(' + item.requirement.preparationState + ')'}"></span>
             </div>
             <div th:if="${item.isSubstituted}" class="mt-1" style="font-size: 0.75rem;">
                 <span class="badge bg-secondary bg-opacity-10 text-secondary border">Swap for <span th:text="${item.originalName}"></span></span>
@@ -65,7 +63,6 @@
                     <span th:text="${item.missingQty}"></span><span th:text="${item.requirement.unit != null ? item.requirement.unit : ''}"></span>
                 </span>
                 <span class="ingredient-name text-danger" th:text="${item.isSubstituted ? item.substituteName : item.requirement.ingredient.name}"></span>
-                <span th:if="${item.requirement.preparationState != null}" class="text-danger small ms-1" th:text="${'(' + item.requirement.preparationState + ')'}"></span>
             </div>
             <div th:if="${item.isSubstituted}" class="mt-1" style="font-size: 0.75rem;">
                 <span class="badge bg-secondary bg-opacity-10 text-secondary border">Swap for <span th:text="${item.originalName}"></span></span>
@@ -125,6 +122,7 @@
         </button>
       </div>
     </div>
+    
     <script>
       document.addEventListener("DOMContentLoaded", () => {
         const steps = document.querySelectorAll(".step-card");
@@ -139,17 +137,15 @@
         const voiceToggle = document.getElementById("voiceToggle");
         const micStatusIcon = document.getElementById("micStatusIcon");
 
-        // Timer Elements
         const timerWidget = document.getElementById("smartTimerWidget");
         const timerDisplay = document.getElementById("timerDisplay");
         const startTimerBtn = document.getElementById("startTimerBtn");
         const closeTimerBtn = document.getElementById("closeTimerBtn");
-        const timerSuggestedTime =
-          document.getElementById("timerSuggestedTime");
+        const timerSuggestedTime = document.getElementById("timerSuggestedTime");
         let countdownInterval;
         let suggestedSeconds = 0;
 
-        // 1. SMART INGREDIENT SCRATCH-OFF
+        // 🌟 FIXED: Bypasses swapped items so it stops doing weird detection!
         const updateIngredients = () => {
           let remainingText = "";
           for (let i = currentStepIndex; i < steps.length; i++) {
@@ -157,17 +153,18 @@
           }
 
           document.querySelectorAll(".ingredient-item").forEach((item) => {
-            let name = item
-              .querySelector(".ingredient-name")
-              .innerText.toLowerCase();
-            let words = name.match(/\b[a-z]{4,}\b/g) || [];
+            if (item.querySelector('.badge')) {
+                item.classList.remove("checked-out");
+                return;
+            }
 
+            let name = item.querySelector(".ingredient-name").innerText.toLowerCase();
+            let words = name.match(/\b[a-z]{4,}\b/g) || [];
             let isNeeded = words.some((word) => remainingText.includes(word));
             item.classList.toggle("checked-out", !isNeeded);
           });
         };
 
-        // 2. UI UPDATER
         const updateVisualStep = (skipSpeech = false) => {
           steps.forEach((step, i) => {
             step.classList.remove("active-step");
@@ -189,10 +186,8 @@
           updateIngredients();
         };
 
-        // 3. ADVANCE LOGIC
         const advanceStep = () => {
           if (currentStepIndex < steps.length) {
-            // Kill old timer
             clearInterval(countdownInterval);
             timerWidget.classList.add("d-none");
             timerWidget.classList.remove("ringing");
@@ -208,7 +203,6 @@
           }
         };
 
-        // 4. CLICK EVENTS
         steps.forEach((step, index) => {
           step.addEventListener("click", (e) => {
             if (e.target.classList.contains("manual-audio-btn")) {
@@ -242,7 +236,6 @@
           }
         });
 
-        // 5. TIMER LOGIC
         const scanForTime = (text) => {
           const minMatch = text.match(
             /(\d+)\s*(?:to|-)?\s*(?:\d+)?\s*(?:min|minute)s?/i,
@@ -289,7 +282,6 @@
           startTimerBtn.classList.remove("d-none");
         });
 
-        // 6. VOICE LOGIC
         const speakText = (text) => {
           synth.cancel();
           if (recognition) {
@@ -356,8 +348,7 @@
                 recognition.start();
               } catch (e) {}
 
-              // Welcome Message logic!
-              updateVisualStep(true); // Don't speak step 1 immediately
+              updateVisualStep(true); 
               speakText(
                 "Welcome to Cook Mode. Say 'Next' to advance, or 'Repeat' to hear the step again.",
               );
@@ -376,58 +367,29 @@
           });
         }
 
-        // Init
         updateVisualStep(true);
       });
     </script>
 
-    <button
-      class="btn btn-sm btn-danger fw-bold rounded-pill px-3"
-      data-bs-toggle="modal"
-      data-bs-target="#finishCookModal"
-    >
-      Exit
-    </button>
-
     <div class="modal fade" id="finishCookModal" tabindex="-1">
       <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content finish-cook-modal-content">
+        <div class="modal-content finish-cook-modal-content border-0 rounded-4 shadow">
           <div class="modal-body text-center p-4">
-            <i
-              class="bi bi-check-circle-fill text-success finish-cook-icon"
-            ></i>
+            <i class="bi bi-check-circle-fill text-success" style="font-size: 3rem;"></i>
             <h4 class="fw-bold mt-3">Finished Cooking?</h4>
-            <p class="text-muted">
-              Would you like us to automatically deduct the used ingredients
-              from your Virtual Pantry?
-            </p>
+            <p class="text-muted">Would you like us to automatically deduct the used ingredients (including your swaps) from your Virtual Pantry?</p>
 
             <div class="d-flex flex-column gap-2 mt-4">
-              <form
-                th:action="@{/recipes/{id}/cook/finish(id=${recipe.id})}"
-                method="post"
-              >
-                <input
-                  type="hidden"
-                  name="servings"
-                  th:value="${targetServings}"
-                />
-                <button
-                  type="submit"
-                  class="btn btn-dark w-100 fw-bold py-2 rounded-3"
-                >
-                  Yes, update my pantry
-                </button>
+              <form th:action="@{/recipes/{id}/cook/finish(id=${recipeId})}" method="post">
+                <input type="hidden" name="servings" th:value="${targetServings}">
+                <button type="submit" class="btn btn-dark w-100 fw-bold py-2 rounded-3">Yes, update my pantry</button>
               </form>
-              <a
-                th:href="@{/recipes/{id}(id=${recipe.id})}"
-                class="btn btn-light w-100 fw-bold py-2 rounded-3"
-                >No, just exit</a
-              >
+              <a th:href="@{/recipes/{id}(id=${recipeId})}" class="btn btn-light w-100 fw-bold py-2 rounded-3">No, just exit</a>
             </div>
           </div>
         </div>
       </div>
     </div>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
   </body>
 </html>
