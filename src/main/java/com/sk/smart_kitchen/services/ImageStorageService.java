@@ -30,6 +30,14 @@ public class ImageStorageService {
     }
 
     public String storeImage(MultipartFile imageFile) {
+        return storeImage(imageFile, "smart_kitchen/recipes");
+    }
+
+    public String storeProfileImage(MultipartFile imageFile) {
+        return storeImage(imageFile, "smart_kitchen/profiles");
+    }
+
+    private String storeImage(MultipartFile imageFile, String folder) {
         // PRESERVED: Your original validation logic
         if (imageFile == null || imageFile.isEmpty()) {
             return null;
@@ -47,9 +55,9 @@ public class ImageStorageService {
 
         // NEW: Send the validated file directly to Cloudinary instead of the local hard drive
         try {
-            Map uploadResult = cloudinary.uploader().upload(
+            Map<String, Object> uploadResult = cloudinary.uploader().upload(
                 imageFile.getBytes(), 
-                ObjectUtils.asMap("folder", "smart_kitchen/recipes")
+                ObjectUtils.asMap("folder", folder)
             );
             return uploadResult.get("secure_url").toString();
         } catch (IOException ex) {

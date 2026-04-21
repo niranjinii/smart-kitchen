@@ -49,24 +49,4 @@ public class HomeController {
         return "feed";
     }
 
-    @GetMapping("/saved")
-    public String showSavedRecipes(java.security.Principal principal, Model model) {
-        if (principal == null) return "redirect:/login";
-        
-        com.sk.smart_kitchen.entities.User user = userRepository.findByEmail(principal.getName()).get();
-        
-        List<com.sk.smart_kitchen.entities.SavedRecipe> savedList = savedRecipeRepository.findByUser(user);
-        
-        List<Recipe> savedRecipes = savedList.stream()
-                .map(com.sk.smart_kitchen.entities.SavedRecipe::getRecipe)
-                .collect(Collectors.toList());
-        model.addAttribute("recipes", savedRecipes);
-        model.addAttribute("categories", List.of("My Bookmarks")); 
-
-        // Tell the feed that ALL of these are saved (so they light up green)
-        java.util.List<Long> savedRecipeIds = savedRecipes.stream().map(Recipe::getId).collect(Collectors.toList());
-        model.addAttribute("savedRecipeIds", savedRecipeIds);
-
-        return "feed"; 
-    }
 }
