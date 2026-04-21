@@ -194,15 +194,15 @@ public class RecipeController {
     public String manualSubstitute(@PathVariable Long id, Principal principal, 
                                    @RequestParam("originalId") Long originalId, 
                                    @RequestParam(value = "pantryItemId", required = false) Long pantryItemId,
-                                   @RequestParam(value = "customIngredientName", required = false) String customName) {
+                                   @RequestParam(value = "customIngredientName", required = false) String customName,
+                                   @RequestParam(value = "recipeScope", defaultValue = "false") boolean recipeScope) {
         if (principal == null) return "redirect:/login";
         User user = userRepository.findByEmail(principal.getName()).orElseThrow();
         Ingredient original = ingredientRepository.findById(originalId).orElseThrow();
         Ingredient substitute;
 
-        if (pantryItemId != null) {
-            substitute = pantryRepository.findById(pantryItemId).orElseThrow().getIngredient();
-        } else if (customName != null && !customName.trim().isEmpty()) {
+        if (pantryItemId != null) substitute = pantryRepository.findById(pantryItemId).orElseThrow().getIngredient();
+        else if (customName != null && !customName.trim().isEmpty()) {
             String cleanName = gapEngine.normalizer.normalize(customName);
             substitute = ingredientRepository.findByNameIgnoreCase(cleanName)
                     .orElseGet(() -> {
@@ -210,40 +210,42 @@ public class RecipeController {
                         newIng.setName(cleanName);
                         return ingredientRepository.save(newIng);
                     });
-        } else {
-            return "redirect:/recipes/" + id;
-        }
+        } else return "redirect:/recipes/" + id;
 
-        // Save as a PERSONAL USER PREFERENCE!
-        Substitution newSub = subRepository.findByOriginalIngredientAndUser(original, user).orElse(new Substitution());
+        // Find existing preference matching the scope
+        Substitution newSub = subRepository.findByOriginalIngredientAndUser(original, user)
+                .stream().filter(s -> recipeScope ? (s.getRecipe() != null && s.getRecipe().getId().equals(id)) : s.getRecipe() == null)
+                .findFirst().orElse(new Substitution());
+
         newSub.setOriginalIngredient(original);
         newSub.setSubstituteIngredient(substitute);
-        newSub.setUser(user); // 🌟 Locks it to this user!
+        newSub.setUser(user);
+        
+        if (recipeScope) {
+            newSub.setRecipe(recipeService.findRecipeOrThrow(id));
+            newSub.setNotes("Author suggestion explicitly accepted for this recipe");
+        } else {
+            newSub.setNotes("Manual permanent user preference");
+        }
+        
         newSub.setConversionMultiplier(1.0);
         subRepository.save(newSub);
-
         return "redirect:/recipes/" + id; 
     }
 
     @GetMapping("/{id}/cook")
     public String showCookMode(@PathVariable Long id, Model model, java.security.Principal principal,
                                @RequestParam(value = "servings", required = false) Integer customServings) {
-        // Must be logged in to use Cook Mode!
-        if (principal == null) {
-            return "redirect:/login?continue=/recipes/" + id + "/cook";
-        }
-        
+        if (principal == null) return "redirect:/login?continue=/recipes/" + id + "/cook";
         Recipe recipe = getRecipeOr404(id);
         model.addAttribute("recipe", recipe);
         model.addAttribute("recipeId", id);
 
-        // 1. Calculate the scaling ratio
         int baseServings = recipe.getDefaultServings() != null ? recipe.getDefaultServings() : 2;
         int targetServings = (customServings != null && customServings > 0) ? customServings : baseServings;
         double ratio = (double) targetServings / baseServings;
-        model.addAttribute("targetServings", targetServings); // Pass to HTML so the Exit button knows!
+        model.addAttribute("targetServings", targetServings); 
 
-        // 2. Create the scaled ingredients
         List<RecipeIngredient> scaledIngredients = new ArrayList<>();
         for (RecipeIngredient ri : recipeService.findRecipeIngredients(id)) {
             RecipeIngredient temp = new RecipeIngredient();
@@ -254,42 +256,59 @@ public class RecipeController {
             scaledIngredients.add(temp);
         }
         
-        model.addAttribute("ingredients", scaledIngredients);
-        model.addAttribute("instructionSteps", recipeService.toInstructionSteps(recipe));
+        User user = userRepository.findByEmail(principal.getName()).orElseThrow();
+        List<com.sk.smart_kitchen.entities.PantryItem> pantry = pantryRepository.findByUserOrderByIdDesc(user);
         
+        // Pass the ENGINE result to Cook Mode so it knows what was swapped!
+        GapAnalysisEngine.GapResult gapResult = gapEngine.analyze(scaledIngredients, pantry, user);
+        model.addAttribute("gapResult", gapResult);
+        
+        model.addAttribute("instructionSteps", recipeService.toInstructionSteps(recipe));
         return "cook-mode"; 
     }
 
     @PostMapping("/{id}/cook/finish")
     public String finishCooking(@PathVariable Long id, Principal principal, @RequestParam("servings") Integer servings) {
         if (principal == null) return "redirect:/login";
-
         User user = userRepository.findByEmail(principal.getName()).orElseThrow();
         Recipe recipe = getRecipeOr404(id);
 
-        // 1. Get scaling ratio
         int baseServings = recipe.getDefaultServings() != null ? recipe.getDefaultServings() : 2;
         double ratio = (double) servings / baseServings;
 
-        // 2. Fetch User's Pantry
+        List<RecipeIngredient> scaledIngredients = new ArrayList<>();
+        for (RecipeIngredient ri : recipeService.findRecipeIngredients(id)) {
+            RecipeIngredient temp = new RecipeIngredient();
+            temp.setIngredient(ri.getIngredient()); 
+            temp.setUnit(ri.getUnit());
+            temp.setQuantityNeeded(ri.getQuantityNeeded() * ratio);
+            scaledIngredients.add(temp);
+        }
+
         List<com.sk.smart_kitchen.entities.PantryItem> pantry = pantryRepository.findByUserOrderByIdDesc(user);
         java.util.Map<Long, com.sk.smart_kitchen.entities.PantryItem> pantryMap = pantry.stream()
                 .collect(java.util.stream.Collectors.toMap(item -> item.getIngredient().getId(), item -> item, (e, r) -> e));
 
-        // 3. Loop and Deduct using existing Math Engine
-        for (RecipeIngredient req : recipeService.findRecipeIngredients(id)) {
-            if (pantryMap.containsKey(req.getIngredient().getId())) {
-                com.sk.smart_kitchen.entities.PantryItem pItem = pantryMap.get(req.getIngredient().getId());
+        // Use the engine so we know exactly what to deduct!
+        GapAnalysisEngine.GapResult gapResult = gapEngine.analyze(scaledIngredients, pantry, user);
+
+        for (GapAnalysisEngine.GapItem item : gapResult.owned) {
+            if (pantryMap.containsKey(item.actualIngredientId)) {
+                com.sk.smart_kitchen.entities.PantryItem pItem = pantryMap.get(item.actualIngredientId);
                 
-                double scaledReqQty = req.getQuantityNeeded() * ratio;
-                double reqBase = unitConverter.convertToBase(scaledReqQty, req.getUnit());
-                double deductionAmount = unitConverter.convertFromBase(reqBase, pItem.getUnit());
-                
-                double newQty = pItem.getQuantity() - deductionAmount;
-                if (newQty <= 0) {
-                    pantryRepository.delete(pItem);
+                double deductionBase = 0;
+                if (item.isSubstituted) {
+                    deductionBase = gapEngine.converter.convertToBase(item.substituteQtyUsed, item.substituteUnit);
                 } else {
-                    pItem.setQuantity(Math.round(newQty * 100.0) / 100.0);
+                    deductionBase = gapEngine.converter.convertToBase(item.requirement.getQuantityNeeded(), item.requirement.getUnit());
+                }
+                
+                double deductionAmount = gapEngine.converter.convertFromBase(deductionBase, pItem.getUnit());
+                double newQty = pItem.getQuantity() - deductionAmount;
+                
+                if (newQty <= 0) pantryRepository.delete(pItem);
+                else {
+                    pItem.setQuantity(Math.round(newQty * 100.0) / 100.0); 
                     pantryRepository.save(pItem);
                 }
             }

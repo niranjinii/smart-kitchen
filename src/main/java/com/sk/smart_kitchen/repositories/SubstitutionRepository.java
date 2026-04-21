@@ -20,7 +20,7 @@ public interface SubstitutionRepository extends JpaRepository<Substitution, Long
     List<Substitution> findByOriginalIngredient(Ingredient original);
 
     // 3. Needed by the GapAnalysisEngine (User-scoped personal swaps)
-    Optional<Substitution> findByOriginalIngredientAndUser(Ingredient original, User user);
+    List<Substitution> findByOriginalIngredientAndUser(Ingredient original, User user);
 
     // 4. Needed by the GapAnalysisEngine (Recipe-scoped author suggestions)
     List<Substitution> findByOriginalIngredientAndRecipe(Ingredient original, Recipe recipe);

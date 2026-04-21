@@ -38,10 +38,14 @@ public class GapAnalysisEngine {
         public String substituteName = null;
         public double substituteQtyUsed = 0.0;
         public String substituteUnit = null;
+        
+        // 🌟 NEW: Remember what we swapped from, and the actual ID we are using!
+        public String originalName = null; 
+        public Long actualIngredientId = null; 
 
-        // Holds author suggestions to show in the UI
         public List<String> possibleSubstitutes = new ArrayList<>();
     }
+    
     public static class GapResult {
         public int matchPercentage;
         public List<GapItem> owned = new ArrayList<>();
@@ -61,30 +65,50 @@ public class GapAnalysisEngine {
             GapItem gapItem = new GapItem();
             gapItem.requirement = req;
             double reqBase = converter.convertToBase(req.getQuantityNeeded(), req.getUnit());
-
-            // 1. USER PREFERENCE OVERRIDE
-            Ingredient targetIngredient = req.getIngredient();
-            var userPref = substitutionRepository.findByOriginalIngredientAndUser(targetIngredient, user);
             
-            if (userPref.isPresent()) {
-                targetIngredient = userPref.get().getSubstituteIngredient();
-                gapItem.isSubstituted = true;
-                gapItem.substituteName = targetIngredient.getName();
-                gapItem.substituteQtyUsed = req.getQuantityNeeded(); // Assuming 1:1 for UI simplicity
-                gapItem.substituteUnit = req.getUnit();
+            Ingredient targetIngredient = req.getIngredient();
+            gapItem.actualIngredientId = targetIngredient.getId();
+
+            // 1. USER PREFERENCE OVERRIDE (Recipe-scoped first, then Global)
+            List<Substitution> userPrefs = substitutionRepository.findByOriginalIngredientAndUser(targetIngredient, user);
+            Substitution activePref = null;
+            for (Substitution sub : userPrefs) {
+                if (sub.getRecipe() != null && sub.getRecipe().getId().equals(req.getRecipe().getId())) {
+                    activePref = sub; break; // Temporary/Recipe specific!
+                } else if (sub.getRecipe() == null) {
+                    activePref = sub; // Permanent/Global!
+                }
             }
 
-            // 2. CHECK PANTRY FOR THE TARGET
+            if (activePref != null) {
+                targetIngredient = activePref.getSubstituteIngredient();
+                gapItem.actualIngredientId = targetIngredient.getId();
+                gapItem.isSubstituted = true;
+                gapItem.originalName = req.getIngredient().getName();
+                gapItem.substituteName = targetIngredient.getName();
+                reqBase = reqBase * (activePref.getConversionMultiplier() != null ? activePref.getConversionMultiplier() : 1.0);
+            }
+
+            // 2. PANTRY CHECK FOR TARGET
             if (checkAndApplyPantryItem(pantryMap, targetIngredient.getId(), reqBase, gapItem, req)) {
+                if (activePref != null) {
+                    PantryItem pItem = pantryMap.get(targetIngredient.getId());
+                    gapItem.substituteQtyUsed = Math.round(converter.convertFromBase(reqBase, pItem.getUnit()) * 10.0) / 10.0;
+                    gapItem.substituteUnit = pItem.getUnit();
+                }
                 result.owned.add(gapItem);
             } 
             else {
-                // 3. IF MISSING AND NO PERSONAL OVERRIDE, CHECK AUTHOR SUGGESTIONS
-                boolean foundAuthorSub = false;
-                if (userPref.isEmpty()) {
+                // 3. MISSING LOGIC
+                if (activePref != null) {
+                    // Swapped, but missing! Add to missing list with target quantities
+                    gapItem.missingQty = Math.round(converter.convertFromBase(reqBase, req.getUnit()) * 10.0) / 10.0; 
+                } else {
+                    // Not explicitly swapped. Check Author Suggestions dynamically!
+                    boolean foundAuthorSub = false;
                     List<Substitution> authorSubs = substitutionRepository.findByOriginalIngredientAndRecipe(req.getIngredient(), req.getRecipe());
                     for (Substitution sub : authorSubs) {
-                        gapItem.possibleSubstitutes.add(sub.getSubstituteIngredient().getName()); // Save lightbulb
+                        gapItem.possibleSubstitutes.add(sub.getSubstituteIngredient().getName()); 
                         
                         if (pantryMap.containsKey(sub.getSubstituteIngredient().getId())) {
                             PantryItem pItem = pantryMap.get(sub.getSubstituteIngredient().getId());
@@ -95,7 +119,9 @@ public class GapAnalysisEngine {
                                 gapItem.percentOwned = 1.0;
                                 gapItem.missingQty = 0.0;
                                 gapItem.isSubstituted = true;
+                                gapItem.originalName = req.getIngredient().getName();
                                 gapItem.substituteName = sub.getSubstituteIngredient().getName();
+                                gapItem.actualIngredientId = sub.getSubstituteIngredient().getId();
                                 gapItem.substituteQtyUsed = Math.round(converter.convertFromBase(requiredSubBase, pItem.getUnit()) * 10.0) / 10.0;
                                 gapItem.substituteUnit = pItem.getUnit();
                                 result.owned.add(gapItem);
@@ -104,8 +130,11 @@ public class GapAnalysisEngine {
                             }
                         }
                     }
+                    if (!foundAuthorSub) result.missing.add(gapItem);
+                    totalPercent += gapItem.percentOwned;
+                    continue; 
                 }
-                if (!foundAuthorSub) result.missing.add(gapItem);
+                result.missing.add(gapItem);
             }
             totalPercent += gapItem.percentOwned;
         }

@@ -58,6 +58,18 @@ public class Substitution {
     public void setNotes(String notes) {
         this.notes = notes;
     }
+    public User getUser() {
+        return user;
+    }
+    public void setUser(User user) {
+        this.user = user;
+    }
+    public Recipe getRecipe() {
+        return recipe;
+    }
+    public void setRecipe(Recipe recipe) {
+        this.recipe = recipe;
+    }
 
     
     
