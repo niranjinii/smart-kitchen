@@ -70,6 +70,28 @@
   max-width: 800px;
 }
 
+.recipe-tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 10px;
+  border-radius: 999px;
+  border: 1px solid #e5e7eb;
+  background: var(--brand-green);
+  color: #ffffff;
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+.recipe-import-source {
+  color: #6b7280;
+  font-size: 0.92rem;
+}
+
+.recipe-import-source a {
+  color: #111827;
+  word-break: break-all;
+}
+
 /* =========================================
    META DATA & INGREDIENTS
    ========================================= */

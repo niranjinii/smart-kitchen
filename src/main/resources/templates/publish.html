@@ -17,6 +17,14 @@
             >
               Create Recipe
             </h2>
+            <button
+              type="button"
+              id="importFromUrlBtn"
+              class="btn import-btn import-header-btn d-inline-flex align-items-center gap-2 px-3 py-2"
+              th:if="${!isEdit}"
+            >
+              <i class="bi bi-link-45deg"></i> Import from URL
+            </button>
           </div>
 
           <div
@@ -74,6 +82,7 @@
                 class="visually-hidden"
               />
               <input id="imageUrlInput" type="hidden" th:field="*{imageUrl}" />
+              <input id="importSourceInput" type="hidden" th:field="*{importSourceUrl}" />
               <div id="error-image" class="error-msg mt-3">
                 Please select an image for your recipe.
               </div>
@@ -404,6 +413,32 @@
       </div>
     </div>
 
+    <div class="modal fade" id="importModal" tabindex="-1" aria-hidden="true" th:if="${!isEdit}">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content custom-modal">
+          <div class="modal-header">
+            <h5 class="modal-title">Import Recipe from URL</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <p class="modal-desc mb-3">Paste a public recipe URL and we will prefill this form for you.</p>
+            <label for="importUrlInput" class="form-label">Recipe URL</label>
+            <input
+              type="url"
+              id="importUrlInput"
+              class="form-control custom-input"
+              placeholder="https://example.com/recipe"
+            />
+            <div id="importUrlError" class="error-msg mt-2">Please enter a valid recipe URL.</div>
+          </div>
+          <div class="modal-footer import-modal-footer">
+            <button type="button" class="btn cancel-btn" data-bs-dismiss="modal">Cancel</button>
+            <button type="button" id="confirmImportBtn" class="btn publish-submit-btn import-confirm-btn px-3 py-2">Import</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <div th:replace="~{fragments/layout :: mobile-bottom-nav}"></div>
     <div th:replace="~{fragments/layout :: mobile-offcanvas}"></div>
 
@@ -417,6 +452,16 @@
     const imagePreview = document.getElementById('imagePreview');
     const removeImageBtn = document.getElementById('removeImageBtn');
     const imageUrlInput = document.getElementById('imageUrlInput');
+    const importSourceInput = document.getElementById('importSourceInput');
+    const importFromUrlBtn = document.getElementById('importFromUrlBtn');
+    const importUrlInput = document.getElementById('importUrlInput');
+    const importUrlError = document.getElementById('importUrlError');
+    const confirmImportBtn = document.getElementById('confirmImportBtn');
+
+    const importModalElement = document.getElementById('importModal');
+    const importModal = importModalElement && typeof bootstrap !== 'undefined'
+      ? new bootstrap.Modal(importModalElement)
+      : null;
 
     // --- 1. IMAGE DRAG & DROP + CLICK ---
     imageDropzone.addEventListener('click', (e) => {
@@ -533,6 +578,45 @@
         });
     }
 
+      function populateIngredients(ingredients) {
+        const rowsContainer = document.getElementById('ingredientsRows');
+        rowsContainer.innerHTML = '';
+
+        const safeIngredients = Array.isArray(ingredients) ? ingredients.filter(item => item && item.name) : [];
+        const fallbackCount = Math.max(safeIngredients.length, MIN_DYNAMIC_ROWS);
+
+        for (let i = 0; i < fallbackCount; i++) {
+          rowsContainer.appendChild(document.getElementById('ingredientRowTemplate').content.cloneNode(true));
+        }
+
+        const rows = rowsContainer.querySelectorAll('.ingredient-row');
+        safeIngredients.forEach((line, index) => {
+          if (!rows[index]) return;
+          rows[index].querySelector('.ingredient-quantity').value = line.quantity || '';
+          rows[index].querySelector('.ingredient-unit').value = line.unit || '';
+          rows[index].querySelector('.ingredient-name').value = line.name || '';
+          rows[index].querySelector('.ingredient-prep').value = line.preparation || '';
+        });
+      }
+
+      function populateInstructions(steps) {
+        const rowsContainer = document.getElementById('instructionRows');
+        rowsContainer.innerHTML = '';
+
+        const safeSteps = Array.isArray(steps) ? steps.filter(step => step && step.trim()) : [];
+        const fallbackCount = Math.max(safeSteps.length, MIN_DYNAMIC_ROWS);
+
+        for (let i = 0; i < fallbackCount; i++) {
+          rowsContainer.appendChild(document.getElementById('instructionRowTemplate').content.cloneNode(true));
+        }
+
+        const rows = rowsContainer.querySelectorAll('.step-row');
+        safeSteps.forEach((step, index) => {
+          if (!rows[index]) return;
+          rows[index].querySelector('.instruction-text').value = step;
+        });
+      }
+
     const addIngBtn = document.getElementById('addIngredientBtn');
     if(addIngBtn) {
         addIngBtn.addEventListener('click', () => {
@@ -559,6 +643,85 @@
     });
     
     normalizeRows();
+
+    if (importFromUrlBtn && importModal) {
+      importFromUrlBtn.addEventListener('click', () => {
+        importUrlError.style.display = 'none';
+        importUrlInput.value = '';
+        importModal.show();
+      });
+    }
+
+    if (confirmImportBtn) {
+      confirmImportBtn.addEventListener('click', async () => {
+        if (!importUrlInput) return;
+
+        const rawUrl = importUrlInput.value.trim();
+        if (!rawUrl || !/^https?:\/\//i.test(rawUrl)) {
+          importUrlError.textContent = 'Please enter a valid http/https recipe URL.';
+          importUrlError.style.display = 'block';
+          return;
+        }
+
+        const originalText = confirmImportBtn.innerHTML;
+        confirmImportBtn.disabled = true;
+        confirmImportBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2" aria-hidden="true"></span>Importing...';
+
+        try {
+          const body = new URLSearchParams();
+          body.append('url', rawUrl);
+
+          const response = await fetch('/recipes/import-url', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' },
+            body: body.toString()
+          });
+
+          if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(errorText || 'Import failed');
+          }
+
+          const data = await response.json();
+
+          document.getElementById('titleInput').value = data.title || '';
+          document.getElementById('descInput').value = data.description || '';
+          document.getElementById('timeInput').value = data.prepTimeMins || '';
+          document.getElementById('yieldInput').value = data.defaultServings || '';
+
+          if (data.mealType) {
+            const categoryInput = document.querySelector(`input[name="mealType"][value="${data.mealType}"]`);
+            if (categoryInput) categoryInput.checked = true;
+          }
+
+          if (data.imageUrl) {
+            imageUrlInput.value = data.imageUrl;
+            imagePreview.src = data.imageUrl;
+            dropzoneUI.style.display = 'none';
+            previewUI.style.display = 'block';
+            imageDropzone.classList.add('has-image');
+            fileInput.value = '';
+          }
+
+          if (importSourceInput) {
+            importSourceInput.value = data.sourceUrl || rawUrl;
+          }
+
+          populateIngredients(data.ingredients);
+          populateInstructions(data.instructionSteps);
+          normalizeRows();
+
+          if (importModal) importModal.hide();
+          importUrlError.style.display = 'none';
+        } catch (err) {
+          importUrlError.textContent = 'Import failed. Please try another recipe URL.';
+          importUrlError.style.display = 'block';
+        } finally {
+          confirmImportBtn.disabled = false;
+          confirmImportBtn.innerHTML = originalText;
+        }
+      });
+    }
 
     // --- 4. VALIDATION & TWO-STEP SUBMIT ---
     formElement.addEventListener('submit', async function (event) {

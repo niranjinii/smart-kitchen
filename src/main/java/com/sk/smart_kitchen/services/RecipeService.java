@@ -86,6 +86,7 @@ public class RecipeService {
         form.setTitle(recipe.getTitle());
         form.setDescription(recipe.getDescription());
         form.setImageUrl(recipe.getImageUrl());
+        form.setImportSourceUrl(recipe.getImportSourceUrl());
         form.setPrepTimeMins(recipe.getPrepTimeMins());
         form.setDefaultServings(recipe.getDefaultServings());
         form.setMealType(recipe.getMealType());
@@ -192,6 +193,7 @@ public class RecipeService {
         recipe.setTitle(trimToNull(form.getTitle()));
         recipe.setDescription(trimToNull(form.getDescription()));
         recipe.setImageUrl(normalizeImageUrl(form.getImageUrl()));
+        recipe.setImportSourceUrl(normalizeImportSourceUrl(form.getImportSourceUrl()));
         recipe.setPrepTimeMins(form.getPrepTimeMins());
         recipe.setDefaultServings(form.getDefaultServings());
         recipe.setMealType(trimToNull(form.getMealType()));
@@ -460,5 +462,15 @@ public class RecipeService {
             normalized = "/" + normalized;
         }
         return normalized;
+    }
+
+    private String normalizeImportSourceUrl(String importSourceUrl) {
+        String cleaned = trimToNull(importSourceUrl);
+        if (cleaned == null) {
+            return null;
+        }
+
+        String normalized = cleaned.replace('\\', '/');
+        return ABSOLUTE_HTTP_URL_PATTERN.matcher(normalized).matches() ? normalized : null;
     }
 }

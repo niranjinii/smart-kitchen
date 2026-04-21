@@ -75,6 +75,20 @@
             <p class="recipe-description" th:text="${recipe.description}">
               Description
             </p>
+
+            <div class="d-flex flex-wrap gap-2 mt-3" th:if="${recipe.tags != null and !#sets.isEmpty(recipe.tags)}">
+              <span class="recipe-tag" th:each="tag : ${recipe.tags}" th:text="${'#' + tag.name}">#Vegan</span>
+            </div>
+
+            <p class="recipe-import-source mt-3 mb-0" th:if="${recipe.importSourceUrl != null}">
+              Recipe imported from:
+              <a
+                th:href="${recipe.importSourceUrl}"
+                th:text="${recipe.importSourceUrl}"
+                target="_blank"
+                rel="noopener noreferrer"
+              >https://example.com</a>
+            </p>
           </div>
 
           <div

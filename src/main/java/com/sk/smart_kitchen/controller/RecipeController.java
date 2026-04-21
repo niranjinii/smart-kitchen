@@ -8,6 +8,7 @@ import com.sk.smart_kitchen.entities.SavedRecipe;
 import com.sk.smart_kitchen.entities.User;
 import com.sk.smart_kitchen.services.GapAnalysisEngine;
 import com.sk.smart_kitchen.services.RecipeService;
+import com.sk.smart_kitchen.services.ScraperService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -37,6 +38,7 @@ import java.util.Optional;
 public class RecipeController {
 
     private final RecipeService recipeService;
+    private final ScraperService scraperService;
 
     @Autowired
     private com.sk.smart_kitchen.repositories.ReviewRepository reviewRepository;
@@ -70,8 +72,9 @@ public class RecipeController {
     private com.sk.smart_kitchen.repositories.PantryItemRepository pantryRepository;
 
 
-    public RecipeController(RecipeService recipeService) {
+    public RecipeController(RecipeService recipeService, ScraperService scraperService) {
         this.recipeService = recipeService;
+        this.scraperService = scraperService;
     }
 
     // 1. Handles http://localhost:8080/recipes/new
@@ -330,6 +333,28 @@ public class RecipeController {
         try {
             String imageUrl = recipeService.storeRecipeImage(imageFile);
             return Map.of("imageUrl", imageUrl);
+        } catch (IllegalArgumentException ex) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, ex.getMessage(), ex);
+        }
+    }
+
+    @PostMapping("/import-url")
+    @ResponseBody
+    public Map<String, Object> importRecipeFromUrl(@RequestParam("url") String url) {
+        try {
+            com.sk.smart_kitchen.dto.ScrapedRecipeData scraped = scraperService.scrapeRecipeFromUrl(url);
+            String sourceUrl = url != null ? url.trim() : "";
+            return Map.of(
+                    "title", scraped.getTitle() != null ? scraped.getTitle() : "",
+                    "description", scraped.getDescription() != null ? scraped.getDescription() : "",
+                    "imageUrl", scraped.getImageUrl() != null ? scraped.getImageUrl() : "",
+                    "sourceUrl", sourceUrl,
+                    "prepTimeMins", scraped.getPrepTimeMins() != null ? scraped.getPrepTimeMins() : 30,
+                    "defaultServings", scraped.getDefaultServings() != null ? scraped.getDefaultServings() : 2,
+                    "mealType", scraped.getMealType() != null ? scraped.getMealType() : "Dinner",
+                    "ingredients", scraped.getIngredients(),
+                    "instructionSteps", scraped.getInstructionSteps()
+            );
         } catch (IllegalArgumentException ex) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, ex.getMessage(), ex);
         }

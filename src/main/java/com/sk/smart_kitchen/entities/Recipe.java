@@ -26,6 +26,9 @@ public class Recipe {
     @Column(length = 1000) // URLs can be long
     private String imageUrl;
 
+    @Column(length = 1000)
+    private String importSourceUrl;
+
     private Integer prepTimeMins;
     
     private String mealType; // "Breakfast", "Lunch", "Dinner", "Snack"
@@ -88,6 +91,14 @@ public class Recipe {
 
     public void setImageUrl(String imageUrl) {
         this.imageUrl = imageUrl;
+    }
+
+    public String getImportSourceUrl() {
+        return importSourceUrl;
+    }
+
+    public void setImportSourceUrl(String importSourceUrl) {
+        this.importSourceUrl = importSourceUrl;
     }
 
     public Integer getPrepTimeMins() {
