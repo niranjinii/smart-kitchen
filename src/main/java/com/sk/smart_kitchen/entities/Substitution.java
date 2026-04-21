@@ -19,6 +19,15 @@ public class Substitution {
 
     private Double conversionMultiplier; // e.g., 1.5x the amount
     private String notes; // e.g., "Mix with 1 tsp lemon juice"
+
+    @ManyToOne
+    @JoinColumn(name = "user_id")
+    private User user; // If set, this is a personal user preference!
+
+    @ManyToOne
+    @JoinColumn(name = "recipe_id")
+    private Recipe recipe;
+
     public Long getId() {
         return id;
     }
@@ -50,5 +59,6 @@ public class Substitution {
         this.notes = notes;
     }
 
+    
     
 }

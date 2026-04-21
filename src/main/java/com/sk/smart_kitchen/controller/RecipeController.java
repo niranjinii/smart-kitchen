@@ -5,6 +5,7 @@ import com.sk.smart_kitchen.entities.Ingredient;
 import com.sk.smart_kitchen.entities.Recipe;
 import com.sk.smart_kitchen.entities.RecipeIngredient;
 import com.sk.smart_kitchen.entities.SavedRecipe;
+import com.sk.smart_kitchen.entities.Substitution;
 import com.sk.smart_kitchen.entities.User;
 import com.sk.smart_kitchen.services.GapAnalysisEngine;
 import com.sk.smart_kitchen.services.RecipeService;
@@ -70,6 +71,10 @@ public class RecipeController {
 
     @Autowired
     private com.sk.smart_kitchen.repositories.PantryItemRepository pantryRepository;
+
+    @Autowired
+    private com.sk.smart_kitchen.repositories.SubstitutionRepository subRepository;
+
 
 
     public RecipeController(RecipeService recipeService, ScraperService scraperService) {
@@ -177,12 +182,47 @@ public class RecipeController {
             User user = userRepository.findByEmail(principal.getName()).orElseThrow();
             List<com.sk.smart_kitchen.entities.PantryItem> pantry = pantryRepository.findByUserOrderByIdDesc(user);
             
-            // 4. Pass the scaled list into the engine!
-            GapAnalysisEngine.GapResult gapResult = gapEngine.analyze(scaledIngredients, pantry);
+            model.addAttribute("userPantryItems", pantry); // 🌟 NEW: Pass pantry for the Swap Modal!
+            
+           GapAnalysisEngine.GapResult gapResult = gapEngine.analyze(scaledIngredients, pantry, user);
             model.addAttribute("gapResult", gapResult);
+        }
+        return "recipe";
     }
 
-        return "recipe";
+    @PostMapping("/{id}/swap")
+    public String manualSubstitute(@PathVariable Long id, Principal principal, 
+                                   @RequestParam("originalId") Long originalId, 
+                                   @RequestParam(value = "pantryItemId", required = false) Long pantryItemId,
+                                   @RequestParam(value = "customIngredientName", required = false) String customName) {
+        if (principal == null) return "redirect:/login";
+        User user = userRepository.findByEmail(principal.getName()).orElseThrow();
+        Ingredient original = ingredientRepository.findById(originalId).orElseThrow();
+        Ingredient substitute;
+
+        if (pantryItemId != null) {
+            substitute = pantryRepository.findById(pantryItemId).orElseThrow().getIngredient();
+        } else if (customName != null && !customName.trim().isEmpty()) {
+            String cleanName = gapEngine.normalizer.normalize(customName);
+            substitute = ingredientRepository.findByNameIgnoreCase(cleanName)
+                    .orElseGet(() -> {
+                        Ingredient newIng = new Ingredient();
+                        newIng.setName(cleanName);
+                        return ingredientRepository.save(newIng);
+                    });
+        } else {
+            return "redirect:/recipes/" + id;
+        }
+
+        // Save as a PERSONAL USER PREFERENCE!
+        Substitution newSub = subRepository.findByOriginalIngredientAndUser(original, user).orElse(new Substitution());
+        newSub.setOriginalIngredient(original);
+        newSub.setSubstituteIngredient(substitute);
+        newSub.setUser(user); // 🌟 Locks it to this user!
+        newSub.setConversionMultiplier(1.0);
+        subRepository.save(newSub);
+
+        return "redirect:/recipes/" + id; 
     }
 
     @GetMapping("/{id}/cook")
@@ -241,28 +281,22 @@ public class RecipeController {
             if (pantryMap.containsKey(req.getIngredient().getId())) {
                 com.sk.smart_kitchen.entities.PantryItem pItem = pantryMap.get(req.getIngredient().getId());
                 
-                // Scale the recipe amount
                 double scaledReqQty = req.getQuantityNeeded() * ratio;
-                
-                // FIX 1: Use unitConverter directly!
                 double reqBase = unitConverter.convertToBase(scaledReqQty, req.getUnit());
-                
-                // FIX 2: Use unitConverter directly!
                 double deductionAmount = unitConverter.convertFromBase(reqBase, pItem.getUnit());
                 
-                // Deduct and Save!
                 double newQty = pItem.getQuantity() - deductionAmount;
                 if (newQty <= 0) {
-                    pantryRepository.delete(pItem); // Used it all up!
+                    pantryRepository.delete(pItem);
                 } else {
-                    pItem.setQuantity(Math.round(newQty * 100.0) / 100.0); // Keep it clean to 2 decimals
+                    pItem.setQuantity(Math.round(newQty * 100.0) / 100.0);
                     pantryRepository.save(pItem);
                 }
             }
         }
-        
         return "redirect:/recipes/" + id + "?cooked=true";
     }
+
 
     // UPDATED: Now grabs the existing ingredients and sends them to the form!
     @GetMapping("/{id}/edit")
@@ -281,38 +315,9 @@ public class RecipeController {
     @PostMapping("/{id}")
     public String updateRecipe(
             @PathVariable Long id, 
-            @ModelAttribute("recipeForm") RecipeForm recipeForm,
-            @RequestParam(value = "ingredientNames", required = false) java.util.List<String> ingredientNames,
-            @RequestParam(value = "ingredientQuantities", required = false) java.util.List<Double> ingredientQuantities,
-            @RequestParam(value = "ingredientUnits", required = false) java.util.List<String> ingredientUnits,
-            @RequestParam(value = "instructions", required = false) String instructionsText) {
+            @ModelAttribute("recipeForm") RecipeForm recipeForm) {
         try {
-            // 1. Catch the HTML ingredient arrays and pack them into the form
-            java.util.List<com.sk.smart_kitchen.dto.IngredientLineForm> ingForms = new java.util.ArrayList<>();
-            if (ingredientNames != null) {
-                for (int i = 0; i < ingredientNames.size(); i++) {
-                    String name = ingredientNames.get(i);
-                    if (name != null && !name.trim().isEmpty()) {
-                        com.sk.smart_kitchen.dto.IngredientLineForm line = new com.sk.smart_kitchen.dto.IngredientLineForm();
-                        line.setName(name.trim());
-                        line.setQuantity((ingredientQuantities != null && ingredientQuantities.size() > i) ? String.valueOf(ingredientQuantities.get(i)) : "1");
-                        line.setUnit((ingredientUnits != null && ingredientUnits.size() > i) ? ingredientUnits.get(i) : "");
-                        ingForms.add(line);
-                    }
-                }
-            }
-            recipeForm.setIngredients(ingForms);
-
-            // 2. Catch the instructions text box and pack it into the form
-            if (instructionsText != null) {
-                java.util.List<String> steps = java.util.Arrays.stream(instructionsText.split("\\r?\\n"))
-                        .map(String::trim)
-                        .filter(s -> !s.isEmpty())
-                        .collect(java.util.stream.Collectors.toList());
-                recipeForm.setInstructionSteps(steps);
-            }
-
-            // 3. Save the recipe with the newly packed data!
+            // Spring Boot automatically packed the form data for us, so we just pass it to the service!
             Recipe updated = recipeService.updateRecipe(id, recipeForm);
             return "redirect:/recipes/" + updated.getId();
             

@@ -10,8 +10,10 @@ import com.sk.smart_kitchen.entities.User;
 import com.sk.smart_kitchen.repositories.IngredientRepository;
 import com.sk.smart_kitchen.repositories.RecipeIngredientRepository;
 import com.sk.smart_kitchen.repositories.RecipeRepository;
+import com.sk.smart_kitchen.repositories.SubstitutionRepository;
 import com.sk.smart_kitchen.repositories.TagRepository;
 import com.sk.smart_kitchen.repositories.UserRepository;
+import com.sk.smart_kitchen.entities.Substitution;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
@@ -43,16 +45,14 @@ public class RecipeService {
     private final UserRepository userRepository;
     private final ImageStorageService imageStorageService;
     private final IngredientNormalizer normalizer;
+    private final SubstitutionRepository substitutionRepository;
 
     public RecipeService(
-            RecipeRepository recipeRepository,
-            IngredientRepository ingredientRepository,
-            RecipeIngredientRepository recipeIngredientRepository,
-            TagRepository tagRepository,
-            UserRepository userRepository,
-            ImageStorageService imageStorageService,
-            IngredientNormalizer normalizer
-    ) {
+            RecipeRepository recipeRepository, IngredientRepository ingredientRepository,
+            RecipeIngredientRepository recipeIngredientRepository, TagRepository tagRepository,
+            UserRepository userRepository, ImageStorageService imageStorageService,
+            IngredientNormalizer normalizer, SubstitutionRepository substitutionRepository) {
+
         this.recipeRepository = recipeRepository;
         this.ingredientRepository = ingredientRepository;
         this.recipeIngredientRepository = recipeIngredientRepository;
@@ -60,6 +60,7 @@ public class RecipeService {
         this.userRepository = userRepository;
         this.imageStorageService = imageStorageService;
         this.normalizer = normalizer;
+        this.substitutionRepository = substitutionRepository;
     }
 
     public List<Recipe> findAllRecipes() {
@@ -144,6 +145,7 @@ public class RecipeService {
         Recipe savedRecipe = recipeRepository.save(recipe);
 
         recipeIngredientRepository.deleteByRecipe(savedRecipe);
+        substitutionRepository.deleteByRecipe(savedRecipe); // CLEARS OLD SUBSTITUTES ON EDIT
         upsertIngredients(savedRecipe, form);
 
         // 2. CLEANUP: If the URL changed, scrub the old image from the cloud!
@@ -302,34 +304,65 @@ public class RecipeService {
     }
 
     private void upsertIngredients(Recipe recipe, RecipeForm form) {
-        if (form.getIngredients() == null) {
-            return;
-        }
+        if (form.getIngredients() == null) return;
 
         for (IngredientLineForm line : form.getIngredients()) {
             String rawIngredientName = trimToNull(line.getName());
             if (rawIngredientName == null) continue;
 
-            // 🌟 PASS IT THROUGH THE NORMALIZER
-            String cleanIngredientName = normalizer.normalize(rawIngredientName);
-            if (cleanIngredientName == null) continue;
+            // THE AUTO-SLICER: Split "Lemon Juice or Lime Juice"
+            String[] parts = rawIngredientName.toLowerCase().split("\\s+or\\s+|/");
+            
+            // 🌟 NEW: The Trailing Noun Injector ("Chicken" -> "Chicken Broth")
+            if (parts.length > 1) {
+                String p0 = parts[0].trim();
+                String p1 = parts[1].trim();
+                if (!p0.contains(" ") && p1.contains(" ")) {
+                    String[] p1Words = p1.split("\\s+");
+                    parts[0] = p0 + " " + p1Words[p1Words.length - 1]; 
+                }
+            }
+            
+            String primaryCleanName = normalizer.normalize(parts[0]);
+            if (primaryCleanName == null) continue;
 
-            // 1. Get or create the dumb master ingredient using the CLEAN name
-            Ingredient ingredient = ingredientRepository.findByNameIgnoreCase(cleanIngredientName)
+            Ingredient primaryIngredient = ingredientRepository.findByNameIgnoreCase(primaryCleanName)
                     .orElseGet(() -> {
-                        Ingredient newIngredient = new Ingredient();
-                        newIngredient.setName(cleanIngredientName);
-                        return ingredientRepository.save(newIngredient);
+                        Ingredient newIng = new Ingredient();
+                        newIng.setName(primaryCleanName);
+                        return ingredientRepository.save(newIng);
                     });
 
-            // 2. Save all the specifics to the connecting table (RecipeIngredient)
             RecipeIngredient recipeIngredient = new RecipeIngredient();
             recipeIngredient.setRecipe(recipe);
-            recipeIngredient.setIngredient(ingredient);
+            recipeIngredient.setIngredient(primaryIngredient);
             recipeIngredient.setQuantityNeeded(parseQuantity(line.getQuantity()));
             recipeIngredient.setUnit(trimToNull(line.getUnit()));
             recipeIngredient.setPreparationState(trimToNull(line.getPreparation())); 
             recipeIngredientRepository.save(recipeIngredient);
+
+            // AUTO-TEACH THE DATABASE
+            if (parts.length > 1) {
+                String subCleanName = normalizer.normalize(parts[1]);
+                if (subCleanName != null && !subCleanName.equals(primaryCleanName)) {
+                    Ingredient subIngredient = ingredientRepository.findByNameIgnoreCase(subCleanName)
+                            .orElseGet(() -> {
+                                Ingredient newIng = new Ingredient();
+                                newIng.setName(subCleanName);
+                                return ingredientRepository.save(newIng);
+                            });
+
+                    // 🌟 NO MORE orElseGet WRAPPER! JUST CREATE AND SAVE:
+                    Substitution newSub = new Substitution();
+                    newSub.setOriginalIngredient(primaryIngredient);
+                    newSub.setSubstituteIngredient(subIngredient);
+                    newSub.setConversionMultiplier(1.0); 
+                    newSub.setRecipe(recipe); // Locks suggestion to this recipe
+                    newSub.setNotes("Auto-generated author suggestion");
+                    
+                    substitutionRepository.save(newSub);
+                }
+            }
         }
     }
     
