@@ -2,6 +2,7 @@ package com.sk.smart_kitchen.services;
 
 import com.sk.smart_kitchen.dto.IngredientLineForm;
 import com.sk.smart_kitchen.dto.RecipeForm;
+import com.sk.smart_kitchen.dto.SubstitutionForm;
 import com.sk.smart_kitchen.entities.Ingredient;
 import com.sk.smart_kitchen.entities.Recipe;
 import com.sk.smart_kitchen.entities.RecipeIngredient;
@@ -10,8 +11,10 @@ import com.sk.smart_kitchen.entities.User;
 import com.sk.smart_kitchen.repositories.IngredientRepository;
 import com.sk.smart_kitchen.repositories.RecipeIngredientRepository;
 import com.sk.smart_kitchen.repositories.RecipeRepository;
+import com.sk.smart_kitchen.repositories.SubstitutionRepository;
 import com.sk.smart_kitchen.repositories.TagRepository;
 import com.sk.smart_kitchen.repositories.UserRepository;
+import com.sk.smart_kitchen.entities.Substitution;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
@@ -25,8 +28,8 @@ import java.util.List;
 import java.util.Locale;
 import java.util.NoSuchElementException;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.Set;
+import java.util.HashSet;
 import java.util.regex.Pattern;
 
 @Service
@@ -42,21 +45,23 @@ public class RecipeService {
     private final TagRepository tagRepository;
     private final UserRepository userRepository;
     private final ImageStorageService imageStorageService;
+    private final IngredientNormalizer normalizer;
+    private final SubstitutionRepository substitutionRepository;
 
     public RecipeService(
-            RecipeRepository recipeRepository,
-            IngredientRepository ingredientRepository,
-            RecipeIngredientRepository recipeIngredientRepository,
-            TagRepository tagRepository,
-            UserRepository userRepository,
-            ImageStorageService imageStorageService
-    ) {
+            RecipeRepository recipeRepository, IngredientRepository ingredientRepository,
+            RecipeIngredientRepository recipeIngredientRepository, TagRepository tagRepository,
+            UserRepository userRepository, ImageStorageService imageStorageService,
+            IngredientNormalizer normalizer, SubstitutionRepository substitutionRepository) {
+
         this.recipeRepository = recipeRepository;
         this.ingredientRepository = ingredientRepository;
         this.recipeIngredientRepository = recipeIngredientRepository;
         this.tagRepository = tagRepository;
         this.userRepository = userRepository;
         this.imageStorageService = imageStorageService;
+        this.normalizer = normalizer;
+        this.substitutionRepository = substitutionRepository;
     }
 
     public List<Recipe> findAllRecipes() {
@@ -83,6 +88,7 @@ public class RecipeService {
         form.setTitle(recipe.getTitle());
         form.setDescription(recipe.getDescription());
         form.setImageUrl(recipe.getImageUrl());
+        form.setImportSourceUrl(recipe.getImportSourceUrl());
         form.setPrepTimeMins(recipe.getPrepTimeMins());
         form.setDefaultServings(recipe.getDefaultServings());
         form.setMealType(recipe.getMealType());
@@ -99,14 +105,27 @@ public class RecipeService {
 
         List<RecipeIngredient> ingredients = findRecipeIngredients(recipe.getId());
         List<IngredientLineForm> ingredientLines = new ArrayList<>();
+        List<SubstitutionForm> subForms = new ArrayList<>();
+
         for (RecipeIngredient ingredient : ingredients) {
             IngredientLineForm line = new IngredientLineForm();
             line.setName(ingredient.getIngredient().getName());
             line.setQuantity(ingredient.getQuantityNeeded() != null ? stripTrailingZero(ingredient.getQuantityNeeded()) : "0");
             line.setUnit(ingredient.getUnit());
+            line.setPreparation(ingredient.getPreparationState());
             ingredientLines.add(line);
+
+            // Fetch any existing substitutions to load into the edit form!
+            List<Substitution> subs = substitutionRepository.findByOriginalIngredientAndRecipe(ingredient.getIngredient(), recipe);
+            for (Substitution sub : subs) {
+                SubstitutionForm sf = new SubstitutionForm();
+                sf.setOriginal(ingredient.getIngredient().getName());
+                sf.setReplacement(sub.getSubstituteIngredient().getName());
+                subForms.add(sf);
+            }
         }
         form.setIngredients(ingredientLines);
+        form.setExplicitSubs(subForms);
 
         if (recipe.getInstructions() != null && !recipe.getInstructions().isBlank()) {
             form.setInstructionSteps(new ArrayList<>(Arrays.asList(recipe.getInstructions().split("\\r?\\n"))));
@@ -132,16 +151,15 @@ public class RecipeService {
         validateRequiredFields(form);
         Recipe recipe = findRecipeOrThrow(recipeId);
         
-        // 1. Save the OLD URL before we apply the new form values
         String oldImageUrl = recipe.getImageUrl(); 
         
         applyFormValues(recipe, form);
         Recipe savedRecipe = recipeRepository.save(recipe);
 
         recipeIngredientRepository.deleteByRecipe(savedRecipe);
+        substitutionRepository.deleteByRecipe(savedRecipe); // CLEARS OLD SUBSTITUTES ON EDIT
         upsertIngredients(savedRecipe, form);
 
-        // 2. CLEANUP: If the URL changed, scrub the old image from the cloud!
         if (oldImageUrl != null && !oldImageUrl.equals(savedRecipe.getImageUrl())) {
             imageStorageService.deleteImageFromCloudinary(oldImageUrl);
         }
@@ -158,13 +176,11 @@ public class RecipeService {
             throw new SecurityException("You can only delete your own recipes.");
         }
         
-        // 1. Save the URL before the recipe goes poof
         String oldImageUrl = recipe.getImageUrl();
         
         recipeIngredientRepository.deleteByRecipe(recipe);
         recipeRepository.delete(recipe);
         
-        // 2. CLEANUP: Delete the actual file from the cloud!
         if (oldImageUrl != null) {
             imageStorageService.deleteImageFromCloudinary(oldImageUrl);
         }
@@ -188,6 +204,7 @@ public class RecipeService {
         recipe.setTitle(trimToNull(form.getTitle()));
         recipe.setDescription(trimToNull(form.getDescription()));
         recipe.setImageUrl(normalizeImageUrl(form.getImageUrl()));
+        recipe.setImportSourceUrl(normalizeImportSourceUrl(form.getImportSourceUrl()));
         recipe.setPrepTimeMins(form.getPrepTimeMins());
         recipe.setDefaultServings(form.getDefaultServings());
         recipe.setMealType(trimToNull(form.getMealType()));
@@ -196,21 +213,12 @@ public class RecipeService {
     }
 
     private void validateRequiredFields(RecipeForm form) {
-        if (form == null) {
-            throw new IllegalArgumentException("Recipe form is required.");
-        }
-
+        if (form == null) throw new IllegalArgumentException("Recipe form is required.");
         requireNonBlank(form.getTitle(), "Recipe title is required.");
         requireNonBlank(form.getDescription(), "Description is required.");
-        if (normalizeImageUrl(form.getImageUrl()) == null) {
-            throw new IllegalArgumentException("Recipe image URL is required.");
-        }
-        if (form.getPrepTimeMins() == null || form.getPrepTimeMins() < 1) {
-            throw new IllegalArgumentException("Total time must be at least 1 minute.");
-        }
-        if (form.getDefaultServings() == null || form.getDefaultServings() < 1) {
-            throw new IllegalArgumentException("Base yield must be at least 1 serving.");
-        }
+        if (normalizeImageUrl(form.getImageUrl()) == null) throw new IllegalArgumentException("Recipe image URL is required.");
+        if (form.getPrepTimeMins() == null || form.getPrepTimeMins() < 1) throw new IllegalArgumentException("Total time must be at least 1 minute.");
+        if (form.getDefaultServings() == null || form.getDefaultServings() < 1) throw new IllegalArgumentException("Base yield must be at least 1 serving.");
         requireNonBlank(form.getMealType(), "Primary category is required.");
 
         validateIngredients(form.getIngredients());
@@ -218,70 +226,41 @@ public class RecipeService {
     }
 
     private void validateIngredients(List<IngredientLineForm> ingredients) {
-        if (ingredients == null || ingredients.isEmpty()) {
-            throw new IllegalArgumentException("At least one ingredient is required.");
-        }
+        if (ingredients == null || ingredients.isEmpty()) throw new IllegalArgumentException("At least one ingredient is required.");
 
         int completeRows = 0;
         for (int i = 0; i < ingredients.size(); i++) {
             IngredientLineForm line = ingredients.get(i);
             int row = i + 1;
-            if (line == null) {
-                continue;
-            }
+            if (line == null) continue;
 
             String name = trimToNull(line.getName());
             String unit = trimToNull(line.getUnit());
             String quantity = trimToNull(line.getQuantity());
             boolean hasAnyField = name != null || unit != null || quantity != null;
 
-            if (!hasAnyField) {
-                continue;
-            }
-
-            if (name == null || quantity == null) {
-                throw new IllegalArgumentException("Ingredient row " + row + " is incomplete. Add name, unit, and quantity.");
-            }
+            if (!hasAnyField) continue;
+            if (name == null || quantity == null) throw new IllegalArgumentException("Ingredient row " + row + " is incomplete. Add name, unit, and quantity.");
 
             completeRows++;
-
             double parsedQuantity;
-            try {
-                parsedQuantity = Double.parseDouble(quantity);
-            } catch (NumberFormatException ex) {
-                throw new IllegalArgumentException("Ingredient quantity must be a number in row " + row + ".", ex);
-            }
-            if (parsedQuantity <= 0) {
-                throw new IllegalArgumentException("Ingredient quantity must be greater than 0 in row " + row + ".");
-            }
+            try { parsedQuantity = Double.parseDouble(quantity); } catch (NumberFormatException ex) { throw new IllegalArgumentException("Ingredient quantity must be a number in row " + row + ".", ex); }
+            if (parsedQuantity <= 0) throw new IllegalArgumentException("Ingredient quantity must be greater than 0 in row " + row + ".");
         }
-
-        if (completeRows < 1) {
-            throw new IllegalArgumentException("Please add at least one ingredient.");
-        }
+        if (completeRows < 1) throw new IllegalArgumentException("Please add at least one ingredient.");
     }
 
     private void validateInstructionSteps(List<String> steps) {
-        if (steps == null || steps.isEmpty()) {
-            throw new IllegalArgumentException("At least one instruction step is required.");
-        }
-
+        if (steps == null || steps.isEmpty()) throw new IllegalArgumentException("At least one instruction step is required.");
         int nonBlankSteps = 0;
         for (int i = 0; i < steps.size(); i++) {
-            if (trimToNull(steps.get(i)) != null) {
-                nonBlankSteps++;
-            }
+            if (trimToNull(steps.get(i)) != null) nonBlankSteps++;
         }
-
-        if (nonBlankSteps < 1) {
-            throw new IllegalArgumentException("Please add at least one instruction step.");
-        }
+        if (nonBlankSteps < 1) throw new IllegalArgumentException("Please add at least one instruction step.");
     }
 
     private void requireNonBlank(String value, String message) {
-        if (trimToNull(value) == null) {
-            throw new IllegalArgumentException(message);
-        }
+        if (trimToNull(value) == null) throw new IllegalArgumentException(message);
     }
 
     private User resolveCurrentUserOrThrow() {
@@ -289,59 +268,122 @@ public class RecipeService {
         if (authentication == null || !authentication.isAuthenticated() || "anonymousUser".equals(authentication.getPrincipal())) {
             throw new SecurityException("You must be logged in to perform this action.");
         }
-
         String email = authentication.getName();
         return userRepository.findByEmail(email)
                 .orElseThrow(() -> new SecurityException("Authenticated user account was not found."));
     }
 
     private void upsertIngredients(Recipe recipe, RecipeForm form) {
-        if (form.getIngredients() == null) {
-            return;
-        }
+        if (form.getIngredients() == null) return;
+
+        // Tracks duplicate subs so we don't save "Cow Milk -> Oat Milk" twice if they do it implicitly AND explicitly!
+        Set<String> processedSubs = new HashSet<>();
 
         for (IngredientLineForm line : form.getIngredients()) {
-            String ingredientName = trimToNull(line.getName());
-            if (ingredientName == null) {
-                continue;
-            }
+            String rawIngredientName = trimToNull(line.getName());
+            if (rawIngredientName == null) continue;
 
-            Ingredient ingredient = ingredientRepository.findByNameIgnoreCase(ingredientName)
+            String[] parts = rawIngredientName.toLowerCase().split("\\s+or\\s+|/");
+            
+            if (parts.length > 1) {
+                String p0 = parts[0].trim();
+                String p1 = parts[1].trim();
+                if (!p0.contains(" ") && p1.contains(" ")) {
+                    String[] p1Words = p1.split("\\s+");
+                    parts[0] = p0 + " " + p1Words[p1Words.length - 1]; 
+                }
+            }
+            
+            String primaryCleanName = normalizer.normalize(parts[0]);
+            if (primaryCleanName == null) continue;
+
+            Ingredient primaryIngredient = ingredientRepository.findByNameIgnoreCase(primaryCleanName)
                     .orElseGet(() -> {
-                        Ingredient newIngredient = new Ingredient();
-                        newIngredient.setName(ingredientName);
-                        newIngredient.setMeasurementUnit(trimToNull(line.getUnit()));
-                        return ingredientRepository.save(newIngredient);
+                        Ingredient newIng = new Ingredient();
+                        newIng.setName(primaryCleanName);
+                        return ingredientRepository.save(newIng);
                     });
-
-            if (ingredient.getMeasurementUnit() == null && trimToNull(line.getUnit()) != null) {
-                ingredient.setMeasurementUnit(trimToNull(line.getUnit()));
-                ingredientRepository.save(ingredient);
-            }
 
             RecipeIngredient recipeIngredient = new RecipeIngredient();
             recipeIngredient.setRecipe(recipe);
-            recipeIngredient.setIngredient(ingredient);
+            recipeIngredient.setIngredient(primaryIngredient);
             recipeIngredient.setQuantityNeeded(parseQuantity(line.getQuantity()));
             recipeIngredient.setUnit(trimToNull(line.getUnit()));
+            recipeIngredient.setPreparationState(trimToNull(line.getPreparation())); 
             recipeIngredientRepository.save(recipeIngredient);
+
+            // PROCESS IMPLICIT AUTO-SLICER SUGGESTIONS
+            if (parts.length > 1) {
+                String subCleanName = normalizer.normalize(parts[1]);
+                if (subCleanName != null && !subCleanName.equals(primaryCleanName)) {
+                    String subKey = primaryCleanName + "->" + subCleanName;
+                    
+                    if (!processedSubs.contains(subKey)) {
+                        Ingredient subIngredient = ingredientRepository.findByNameIgnoreCase(subCleanName)
+                                .orElseGet(() -> {
+                                    Ingredient newIng = new Ingredient();
+                                    newIng.setName(subCleanName);
+                                    return ingredientRepository.save(newIng);
+                                });
+
+                        Substitution newSub = new Substitution();
+                        newSub.setOriginalIngredient(primaryIngredient);
+                        newSub.setSubstituteIngredient(subIngredient);
+                        newSub.setConversionMultiplier(1.0); 
+                        newSub.setRecipe(recipe); 
+                        newSub.setNotes("Auto-generated author suggestion");
+                        substitutionRepository.save(newSub);
+                        processedSubs.add(subKey);
+                    }
+                }
+            }
+        }
+
+        // PROCESS EXPLICIT DROPDOWN SUGGESTIONS
+        if (form.getExplicitSubs() != null) {
+            for (SubstitutionForm subForm : form.getExplicitSubs()) {
+                String origName = trimToNull(subForm.getOriginal());
+                String repName = trimToNull(subForm.getReplacement());
+                if (origName == null || repName == null) continue;
+
+                String cleanOrig = normalizer.normalize(origName);
+                String cleanRep = normalizer.normalize(repName);
+
+                if (cleanOrig == null || cleanRep == null || cleanOrig.equals(cleanRep)) continue;
+
+                String subKey = cleanOrig + "->" + cleanRep;
+                if (processedSubs.contains(subKey)) continue; // Skip if implicit already saved it!
+
+                Ingredient origIng = ingredientRepository.findByNameIgnoreCase(cleanOrig).orElse(null);
+                if (origIng == null) continue; 
+
+                Ingredient repIng = ingredientRepository.findByNameIgnoreCase(cleanRep)
+                        .orElseGet(() -> {
+                            Ingredient newIng = new Ingredient();
+                            newIng.setName(cleanRep);
+                            return ingredientRepository.save(newIng);
+                        });
+
+                Substitution newSub = new Substitution();
+                newSub.setOriginalIngredient(origIng);
+                newSub.setSubstituteIngredient(repIng);
+                newSub.setConversionMultiplier(1.0);
+                newSub.setRecipe(recipe);
+                newSub.setNotes("Explicit author suggestion");
+                
+                substitutionRepository.save(newSub);
+                processedSubs.add(subKey);
+            }
         }
     }
-
+    
     private Set<Tag> parseTags(String tagInput) {
-        if (tagInput == null || tagInput.isBlank()) {
-            return new LinkedHashSet<>();
-        }
-
+        if (tagInput == null || tagInput.isBlank()) return new LinkedHashSet<>();
         String[] parts = tagInput.split(",");
         Set<Tag> tags = new LinkedHashSet<>();
-
         for (String rawPart : parts) {
             String normalizedTag = normalizeTag(rawPart);
-            if (normalizedTag == null) {
-                continue;
-            }
-
+            if (normalizedTag == null) continue;
             Tag tag = tagRepository.findByNameIgnoreCase(normalizedTag)
                     .orElseGet(() -> {
                         Tag newTag = new Tag();
@@ -350,49 +392,33 @@ public class RecipeService {
                     });
             tags.add(tag);
         }
-
         return tags;
     }
 
     private String joinInstructionSteps(List<String> steps) {
-        if (steps == null || steps.isEmpty()) {
-            return null;
-        }
-
-        List<String> nonBlankSteps = steps.stream()
-                .map(this::trimToNull)
-                .filter(Objects::nonNull)
-                .toList();
-
-        if (nonBlankSteps.isEmpty()) {
-            return null;
-        }
-
+        if (steps == null || steps.isEmpty()) return null;
+        List<String> nonBlankSteps = steps.stream().map(this::trimToNull).filter(Objects::nonNull).toList();
+        if (nonBlankSteps.isEmpty()) return null;
         return String.join("\n", nonBlankSteps);
     }
 
     private void ensureMinimumRows(RecipeForm form) {
-        if (form.getIngredients() == null) {
-            form.setIngredients(new ArrayList<>());
-        }
+        if (form.getIngredients() == null) form.setIngredients(new ArrayList<>());
         while (form.getIngredients().size() < DEFAULT_INGREDIENT_ROWS) {
             IngredientLineForm newLine = new IngredientLineForm();
             newLine.setQuantity("");
             form.getIngredients().add(newLine);
         }
 
-        if (form.getInstructionSteps() == null) {
-            form.setInstructionSteps(new ArrayList<>());
-        }
-        while (form.getInstructionSteps().size() < DEFAULT_INSTRUCTION_ROWS) {
-            form.getInstructionSteps().add("");
-        }
+        if (form.getInstructionSteps() == null) form.setInstructionSteps(new ArrayList<>());
+        while (form.getInstructionSteps().size() < DEFAULT_INSTRUCTION_ROWS) form.getInstructionSteps().add("");
+
+        if (form.getExplicitSubs() == null) form.setExplicitSubs(new ArrayList<>());
+        if (form.getExplicitSubs().isEmpty()) form.getExplicitSubs().add(new SubstitutionForm());
     }
 
     private String trimToNull(String value) {
-        if (value == null) {
-            return null;
-        }
+        if (value == null) return null;
         String trimmed = value.trim();
         return trimmed.isEmpty() ? null : trimmed;
     }
@@ -400,62 +426,40 @@ public class RecipeService {
     private Double parseQuantity(String value) {
         try {
             String cleaned = trimToNull(value);
-            if (cleaned == null) {
-                return 0.0;
-            }
+            if (cleaned == null) return 0.0;
             return Double.parseDouble(cleaned);
-        } catch (NumberFormatException ex) {
-            return 0.0;
-        }
+        } catch (NumberFormatException ex) { return 0.0; }
     }
 
    private String normalizeTag(String rawTag) {
-    String tag = trimToNull(rawTag);
-    if (tag == null) {
-        return null;
+        String tag = trimToNull(rawTag);
+        if (tag == null) return null;
+        tag = tag.replaceAll("\\s+", " ");
+        return tag.toLowerCase(Locale.ROOT).substring(0, 1).toUpperCase(Locale.ROOT) + tag.toLowerCase(Locale.ROOT).substring(1);
     }
 
-    // Scrunches any accidental double/triple spaces inside the text into a single space
-    tag = tag.replaceAll("\\s+", " ");
-
-    // Existing logic
-    return tag.toLowerCase(Locale.ROOT).substring(0, 1).toUpperCase(Locale.ROOT) + 
-           tag.toLowerCase(Locale.ROOT).substring(1);
-}
-
     private String stripTrailingZero(Double value) {
-        if (value == null) {
-            return "";
-        }
-        if (value % 1 == 0) {
-            return String.valueOf(value.longValue());
-        }
+        if (value == null) return "";
+        if (value % 1 == 0) return String.valueOf(value.longValue());
         return String.valueOf(value);
     }
 
     private String normalizeImageUrl(String imageUrl) {
         String cleaned = trimToNull(imageUrl);
-        if (cleaned == null) {
-            return null;
-        }
-
+        if (cleaned == null) return null;
         String normalized = cleaned.replace('\\', '/');
-        if (normalized.startsWith("file:")) {
-            return null;
-        }
-        if (normalized.matches("^[A-Za-z]:/.*")) {
-            return null;
-        }
-        if (ABSOLUTE_HTTP_URL_PATTERN.matcher(normalized).matches()) {
-            return normalized;
-        }
-
-        while (normalized.startsWith("//")) {
-            normalized = normalized.substring(1);
-        }
-        if (!normalized.startsWith("/")) {
-            normalized = "/" + normalized;
-        }
+        if (normalized.startsWith("file:")) return null;
+        if (normalized.matches("^[A-Za-z]:/.*")) return null;
+        if (ABSOLUTE_HTTP_URL_PATTERN.matcher(normalized).matches()) return normalized;
+        while (normalized.startsWith("//")) normalized = normalized.substring(1);
+        if (!normalized.startsWith("/")) normalized = "/" + normalized;
         return normalized;
+    }
+
+    private String normalizeImportSourceUrl(String importSourceUrl) {
+        String cleaned = trimToNull(importSourceUrl);
+        if (cleaned == null) return null;
+        String normalized = cleaned.replace('\\', '/');
+        return ABSOLUTE_HTTP_URL_PATTERN.matcher(normalized).matches() ? normalized : null;
     }
 }

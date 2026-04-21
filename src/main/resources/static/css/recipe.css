@@ -70,6 +70,28 @@
   max-width: 800px;
 }
 
+.recipe-tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 10px;
+  border-radius: 999px;
+  border: 1px solid #e5e7eb;
+  background: var(--brand-green);
+  color: #ffffff;
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+.recipe-import-source {
+  color: #6b7280;
+  font-size: 0.92rem;
+}
+
+.recipe-import-source a {
+  color: #111827;
+  word-break: break-all;
+}
+
 /* =========================================
    META DATA & INGREDIENTS
    ========================================= */
@@ -258,212 +280,35 @@
 }
 
 /* =========================================
-   GOD-TIER ZEN MODE (LYRICS & MINT GREEN)
+   GAP ANALYSIS & PANTRY MATCHING
    ========================================= */
-body.cook-mode-view {
-  overflow: hidden !important;
-  background: #ffffff !important;
+.servings-text {
+  font-size: 0.9rem;
 }
 
-/* 1. BRUTALLY HIDE ALL CLUTTER */
-body.cook-mode-view .global-navbar,
-body.cook-mode-view .recipe-hero,
-body.cook-mode-view .recipe-meta-bar,
-body.cook-mode-view .chefs-notes,
-body.cook-mode-view #instructionsHeader,
-body.cook-mode-view #reviewsSection, 
-body.cook-mode-view .border-top,
-body.cook-mode-view footer,
-body.cook-mode-view .recipe-title-display, /* Hides Title */
-body.cook-mode-view .recipe-description,   /* Hides the Ghost Text! */
-body.cook-mode-view .author-avatar,
-body.cook-mode-view .recipe-author,
-body.cook-mode-view .badge {
-  display: none !important;
+.pantry-match-card {
+  background-color: #f8fbf9;
+  border: 1px solid #dcfce7;
 }
 
-/* 2. FORCE FULL SPLIT-SCREEN LAYOUT */
-body.cook-mode-view .container-md {
-  max-width: 100vw !important;
-  height: 100vh !important;
-  margin: 0 !important;
-  padding: 0 !important;
-}
-body.cook-mode-view .row.g-5 {
-  width: 100vw !important;
-  height: 100vh !important;
-  margin: 0 !important;
-  flex-wrap: nowrap !important;
+.pantry-match-label {
+  font-size: 0.9rem;
 }
 
-/* LEFT SIDE: INGREDIENTS (Mint Green) */
-body.cook-mode-view .col-lg-4 {
-  width: 30% !important;
-  height: 100vh !important;
-  overflow-y: auto !important;
-  background: #f0fdf4 !important;
-  padding: 50px 40px !important;
-  border-right: 2px solid #dcfce7 !important;
-  box-shadow: inset -5px 0 15px rgba(0, 0, 0, 0.02) !important;
+.pantry-match-pct {
+  color: var(--brand-green);
+  font-size: 0.9rem;
+  font-weight: 700;
 }
 
-/* RIGHT SIDE: THE LYRICS CONTAINER (Wider Boxes!) */
-body.cook-mode-view .col-lg-8 {
-  width: 70% !important;
-  height: 100vh !important;
-  overflow-y: auto !important;
-  padding: 10vh 5% 60vh 5% !important; /* Changed 10% to 5% to make the boxes much wider */
-  scroll-behavior: smooth !important;
-  background: #ffffff !important;
+.pantry-match-progress {
+  height: 8px;
 }
 
-/* 3. SPOTIFY LYRICS STYLING */
-body.cook-mode-view .step-card {
-  opacity: 0.2 !important;
-  transform: scale(0.9) !important;
-  transform-origin: left center !important;
-  transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1) !important;
-  border: none !important;
-  background: transparent !important;
-  margin-bottom: 2.5rem !important;
-}
-
-body.cook-mode-view .step-card.active-step {
-  opacity: 1 !important;
-  transform: scale(1.02) !important;
-  background: white !important;
-  padding: 35px !important;
-  border-radius: 20px !important;
-  box-shadow: 0 15px 50px rgba(0, 0, 0, 0.08) !important;
-  border-left: 8px solid var(--brand-green) !important;
-}
-
-body.cook-mode-view .step-text {
-  font-size: 1.2rem !important;
-  transition: all 0.4s ease !important;
-}
-body.cook-mode-view .active-step .step-text {
-  font-size: 2rem !important;
-  font-weight: 800 !important;
-  line-height: 1.4 !important;
-  color: #111827 !important;
-}
-body.cook-mode-view .active-step .step-number {
-  font-size: 1.1rem !important;
-  color: var(--brand-green) !important;
-}
-body.cook-mode-view .step-checkbox {
-  transform: scale(1.5) !important;
-  transition: all 0.4s ease !important;
-}
-body.cook-mode-view .active-step .step-checkbox {
-  transform: scale(2.2) !important;
-  margin-right: 25px !important;
-  margin-top: 10px !important;
-}
-
-/* 4. SMART INGREDIENT SCRATCH-OFF */
-.ingredient-item.checked-out {
-  text-decoration: line-through !important;
-  opacity: 0.3 !important;
-}
-
-/* 5. TOGGLE & TOP-RIGHT REPEAT ICON */
-.custom-switch-container {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-.custom-switch {
-  position: relative;
-  display: inline-block;
-  width: 48px;
-  height: 26px;
-}
-.custom-switch input {
-  opacity: 0;
-  width: 0;
-  height: 0;
-}
-.custom-slider {
-  position: absolute;
-  cursor: pointer;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: #cbd5e1;
-  transition: 0.3s;
-  border-radius: 30px;
-}
-.custom-slider:before {
-  position: absolute;
-  content: "";
-  height: 20px;
-  width: 20px;
-  left: 3px;
-  bottom: 3px;
-  background-color: white;
-  transition: 0.3s;
-  border-radius: 50%;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-}
-.custom-switch input:checked + .custom-slider {
+.pantry-match-progress-bar {
   background-color: var(--brand-green);
 }
-.custom-switch input:checked + .custom-slider:before {
-  transform: translateX(22px);
-}
 
-/* NEW: Pinned perfectly to the top right of the box! */
-.manual-audio-btn {
-  position: absolute;
-  top: 0px;
-  right: 0px;
-  font-size: 1.2rem !important; /* Made it smaller */
-  opacity: 0;
-  transform: scale(0.8);
-  transition: all 0.3s ease;
-  cursor: pointer;
+.icon-owned {
   color: var(--brand-green);
-}
-body.cook-mode-view .active-step .manual-audio-btn {
-  opacity: 1 !important;
-  transform: scale(1) !important;
-}
-.manual-audio-btn:hover {
-  color: #047857;
-  transform: scale(1.2) !important;
-}
-
-/* 6. HIDE USELESS ELEMENTS IN COOK MODE */
-body.cook-mode-view .yield-adjuster,
-body.cook-mode-view .add-to-cart-btn {
-  display: none !important;
-}
-
-/* 7. HIDE REPEAT BUTTON WHEN VOICE IS OFF */
-body.cook-mode-view:not(.voice-mode-on) .manual-audio-btn {
-  display: none !important;
-}
-
-/* 8. MOBILE COOK MODE FIX (Stack instead of squeeze) */
-@media (max-width: 991px) {
-  body.cook-mode-view .row.g-5 {
-    flex-direction: column !important;
-    overflow-y: auto !important;
-  }
-  body.cook-mode-view .col-lg-4 {
-    width: 100% !important;
-    height: auto !important;
-    border-right: none !important;
-    border-bottom: 4px solid #dcfce7 !important;
-    padding: 30px 20px !important;
-    box-shadow: none !important;
-  }
-  body.cook-mode-view .col-lg-8 {
-    width: 100% !important;
-    height: auto !important;
-    padding: 40px 20px 60vh 20px !important;
-  }
 }

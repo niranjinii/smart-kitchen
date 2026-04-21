@@ -1,231 +1,309 @@
 /* =========================================
    COOK MODE LAYOUT
    ========================================= */
-body { 
-    overflow: hidden; 
-    background: #ffffff; 
+body {
+  overflow: hidden;
+  background: #ffffff;
 }
 
-.cook-layout { 
-    height: 100dvh; 
-    display: flex; 
-    flex-direction: row; 
+.cook-layout {
+  height: 100dvh;
+  display: flex;
+  flex-direction: row;
 }
 
-.ingredients-panel { 
-    width: 30%; 
-    background: #f0fdf4; 
-    border-right: 2px solid #dcfce7; 
-    overflow-y: auto; 
-    padding: 3rem 2rem; 
-    box-shadow: inset -5px 0 15px rgba(0,0,0,0.02); 
+.ingredients-panel {
+  width: 30%;
+  background: #f0fdf4;
+  border-right: 2px solid #dcfce7;
+  overflow-y: auto;
+  padding: 3rem 2rem;
+  box-shadow: inset -5px 0 15px rgba(0, 0, 0, 0.02);
 }
 
-.steps-panel { 
-    width: 70%; 
-    overflow-y: auto; 
-    padding: 6rem 5% 40vh 5%; 
-    scroll-behavior: smooth; 
-    position: relative; 
+.steps-panel {
+  width: 70%;
+  overflow-y: auto;
+  padding: 6rem 5% 40vh 5%;
+  scroll-behavior: smooth;
+  position: relative;
 }
 
 /* =========================================
    INGREDIENTS SCRATCH-OFF
    ========================================= */
-.ingredient-item { 
-    font-size: 1.1rem; 
-    padding: 12px 0; 
-    border-bottom: 1px solid #dcfce7; 
-    transition: all 0.3s ease; 
-    color: #111827;
+.ingredient-item {
+  font-size: 1.1rem;
+  padding: 12px 0;
+  border-bottom: 1px solid #dcfce7;
+  transition: all 0.3s ease;
+  color: #111827;
 }
 
-.ingredient-item.checked-out { 
-    text-decoration: line-through; 
-    opacity: 0.3; 
+.ingredient-item.checked-out {
+  text-decoration: line-through;
+  opacity: 0.3;
 }
 
 /* =========================================
    INSTRUCTION STEPS (Spotify Lyrics Style)
    ========================================= */
-.step-card { 
-    opacity: 0.2; 
-    transform: scale(0.95); 
-    transform-origin: left center; 
-    transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1); 
-    margin-bottom: 2.5rem; 
-    display: flex; 
-    gap: 1.5rem; 
+.step-card {
+  opacity: 0.2;
+  transform: scale(0.95);
+  transform-origin: left center;
+  transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+  margin-bottom: 2.5rem;
+  display: flex;
+  gap: 1.5rem;
 }
 
-.step-card.active-step { 
-    opacity: 1; 
-    transform: scale(1); 
-    background: white; 
-    padding: 30px; 
-    border-radius: 20px; 
-    box-shadow: 0 15px 50px rgba(0,0,0,0.08); 
-    border-left: 8px solid var(--brand-green); 
+.step-card.active-step {
+  opacity: 1;
+  transform: scale(1);
+  background: white;
+  padding: 30px;
+  border-radius: 20px;
+  box-shadow: 0 15px 50px rgba(0, 0, 0, 0.08);
+  border-left: 8px solid var(--brand-green);
 }
 
-.step-checkbox { 
-    width: 28px; 
-    height: 28px; 
-    accent-color: var(--brand-green); 
-    cursor: pointer; 
-    transition: transform 0.3s; 
+.step-checkbox {
+  width: 28px;
+  height: 28px;
+  accent-color: var(--brand-green);
+  cursor: pointer;
+  transition: transform 0.3s;
 }
 
-.active-step .step-checkbox { 
-    transform: scale(1.5); 
+.active-step .step-checkbox {
+  transform: scale(1.5);
 }
 
-.step-text { 
-    font-size: 1.2rem; 
-    transition: all 0.4s ease; 
-    color: #6b7280; 
+.step-text {
+  font-size: 1.2rem;
+  transition: all 0.4s ease;
+  color: #6b7280;
 }
 
-.active-step .step-text { 
-    font-size: 2rem; 
-    font-weight: 800; 
-    line-height: 1.3; 
-    color: #111827; 
+.active-step .step-text {
+  font-size: 2rem;
+  font-weight: 800;
+  line-height: 1.3;
+  color: #111827;
 }
 
-.step-number { 
-    font-weight: 800; 
-    font-size: 1.1rem; 
-    text-transform: uppercase; 
-    letter-spacing: 0.05em; 
-    color: #9ca3af; 
-    margin-bottom: 8px; 
+.step-number {
+  font-weight: 800;
+  font-size: 1.1rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #9ca3af;
+  margin-bottom: 8px;
 }
 
-.active-step .step-number { 
-    color: var(--brand-green); 
+.active-step .step-number {
+  color: var(--brand-green);
 }
 
 /* =========================================
    TOP NAV CONTROLS
    ========================================= */
-.top-bar { 
-    position: fixed; 
-    top: 20px; 
-    right: 30px; 
-    z-index: 100; 
-    display: flex; 
-    gap: 15px; 
-    align-items: center; 
-    background: white; 
-    padding: 10px 20px; 
-    border-radius: 50px; 
-    box-shadow: 0 4px 15px rgba(0,0,0,0.05); 
-    border: 1px solid #e5e7eb; 
+.top-bar {
+  position: fixed;
+  top: 20px;
+  right: 30px;
+  z-index: 100;
+  display: flex;
+  gap: 15px;
+  align-items: center;
+  background: white;
+  padding: 10px 20px;
+  border-radius: 50px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+  border: 1px solid #e5e7eb;
 }
 
-.manual-audio-btn { 
-    opacity: 0; 
-    cursor: pointer; 
-    color: var(--brand-green); 
-    font-size: 1.5rem; 
-    transition: all 0.3s; 
+.manual-audio-btn {
+  opacity: 0;
+  cursor: pointer;
+  color: var(--brand-green);
+  font-size: 1.5rem;
+  transition: all 0.3s;
 }
 
-.voice-mode-on .active-step .manual-audio-btn { 
-    opacity: 1; 
+.voice-mode-on .active-step .manual-audio-btn {
+  opacity: 1;
 }
 
-.manual-audio-btn:hover { 
-    transform: scale(1.2); 
+.manual-audio-btn:hover {
+  transform: scale(1.2);
 }
 
 /* Voice Toggle Switch */
-.custom-switch { position: relative; display: inline-block; width: 46px; height: 24px; }
-.custom-switch input { opacity: 0; width: 0; height: 0; }
-.custom-slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #cbd5e1; border-radius: 30px; transition: .3s; }
-.custom-slider:before { position: absolute; content: ""; height: 18px; width: 18px; left: 3px; bottom: 3px; background-color: white; border-radius: 50%; transition: .3s; }
-.custom-switch input:checked + .custom-slider { background-color: var(--brand-green); }
-.custom-switch input:checked + .custom-slider:before { transform: translateX(22px); }
+.custom-switch {
+  position: relative;
+  display: inline-block;
+  width: 46px;
+  height: 24px;
+}
+.custom-switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+.custom-slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #cbd5e1;
+  border-radius: 30px;
+  transition: 0.3s;
+}
+.custom-slider:before {
+  position: absolute;
+  content: "";
+  height: 18px;
+  width: 18px;
+  left: 3px;
+  bottom: 3px;
+  background-color: white;
+  border-radius: 50%;
+  transition: 0.3s;
+}
+.custom-switch input:checked + .custom-slider {
+  background-color: var(--brand-green);
+}
+.custom-switch input:checked + .custom-slider:before {
+  transform: translateX(22px);
+}
 
 /* =========================================
    PREMIUM TIMER WIDGET (The Glow Up)
    ========================================= */
-.timer-widget { 
-    position: fixed; 
-    bottom: 40px; 
-    left: 50%; 
-    transform: translateX(-50%); 
-    z-index: 1000; 
-    background: #ffffff; 
-    color: #111827; 
-    border-radius: 16px; 
-    padding: 16px 28px; 
-    display: flex; 
-    align-items: center; 
-    gap: 24px; 
-    box-shadow: 0 12px 40px rgba(0,0,0,0.12); 
-    border: 1px solid #e5e7eb; 
-    transition: all 0.3s ease; 
+.timer-widget {
+  position: fixed;
+  bottom: 40px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1000;
+  background: #ffffff;
+  color: #111827;
+  border-radius: 16px;
+  padding: 16px 28px;
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.12);
+  border: 1px solid #e5e7eb;
+  transition: all 0.3s ease;
 }
 
-.timer-widget.ringing { 
-    border-color: #ef4444; 
-    box-shadow: 0 12px 40px rgba(239, 68, 68, 0.2); 
-    animation: pulse-ring 1.5s infinite; 
+.timer-widget.ringing {
+  border-color: #ef4444;
+  box-shadow: 0 12px 40px rgba(239, 68, 68, 0.2);
+  animation: pulse-ring 1.5s infinite;
 }
 
-.timer-display { 
-    font-family: inherit; 
-    font-size: 2.25rem; 
-    font-weight: 800; 
-    line-height: 1; 
-    letter-spacing: -0.02em;
-    color: #111827;
+.timer-display {
+  font-family: inherit;
+  font-size: 2.25rem;
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -0.02em;
+  color: #111827;
 }
 
 .timer-btn-start {
-    background-color: #111827;
-    color: white;
-    border-radius: 8px;
-    font-weight: 600;
-    padding: 8px 24px;
-    transition: background-color 0.2s;
-    border: none;
+  background-color: #111827;
+  color: white;
+  border-radius: 8px;
+  font-weight: 600;
+  padding: 8px 24px;
+  transition: background-color 0.2s;
+  border: none;
 }
 
 .timer-btn-start:hover {
-    background-color: var(--brand-green);
-    color: white;
+  background-color: var(--brand-green);
+  color: white;
 }
 
 .timer-close-btn {
-    color: #9ca3af;
-    background: transparent;
-    border: none;
-    transition: color 0.2s;
+  color: #9ca3af;
+  background: transparent;
+  border: none;
+  transition: color 0.2s;
 }
 
 .timer-close-btn:hover {
-    color: #111827;
+  color: #111827;
 }
 
-@keyframes pulse-ring { 
-    0% { transform: translateX(-50%) scale(1); } 
-    50% { transform: translateX(-50%) scale(1.02); } 
-    100% { transform: translateX(-50%) scale(1); } 
+@keyframes pulse-ring {
+  0% {
+    transform: translateX(-50%) scale(1);
+  }
+  50% {
+    transform: translateX(-50%) scale(1.02);
+  }
+  100% {
+    transform: translateX(-50%) scale(1);
+  }
 }
 
 /* =========================================
    MOBILE RESPONSIVENESS
    ========================================= */
 @media (max-width: 991px) {
-    .cook-layout { flex-direction: column; }
-    .ingredients-panel { width: 100%; height: auto; border-right: none; border-bottom: 2px solid #dcfce7; padding: 1.5rem; max-height: 30vh; }
-    .steps-panel { width: 100%; height: 70vh; padding: 2rem 5% 40vh 5%; }
-    .top-bar { top: auto; bottom: 120px; right: 50%; transform: translateX(50%); }
-    .active-step .step-text { font-size: 1.5rem; }
-    
-    .timer-widget { width: 90%; padding: 16px; gap: 16px; bottom: 30px; }
-    .timer-display { font-size: 2rem; }
+  .cook-layout {
+    flex-direction: column;
+  }
+  .ingredients-panel {
+    width: 100%;
+    height: auto;
+    border-right: none;
+    border-bottom: 2px solid #dcfce7;
+    padding: 1.5rem;
+    max-height: 30vh;
+  }
+  .steps-panel {
+    width: 100%;
+    height: 70vh;
+    padding: 2rem 5% 40vh 5%;
+  }
+  .top-bar {
+    top: auto;
+    bottom: 120px;
+    right: 50%;
+    transform: translateX(50%);
+  }
+  .active-step .step-text {
+    font-size: 1.5rem;
+  }
+
+  .timer-widget {
+    width: 90%;
+    padding: 16px;
+    gap: 16px;
+    bottom: 30px;
+  }
+  .timer-display {
+    font-size: 2rem;
+  }
+}
+
+/* =========================================
+   FINISH COOKING MODAL
+   ========================================= */
+.finish-cook-modal-content {
+  border-radius: 16px;
+  border: none;
+}
+
+.finish-cook-icon {
+  font-size: 3rem;
 }

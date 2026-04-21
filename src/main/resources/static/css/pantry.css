@@ -1,0 +1,217 @@
+/* =========================================
+   DESKTOP: SPREADSHEET MODE
+   ========================================= */
+.pantry-table-container {
+    background: #ffffff;
+    border-radius: 12px;
+    border: 1px solid #e5e7eb;
+    overflow: hidden;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+}
+
+.pantry-table {
+    margin: 0;
+}
+
+.pantry-table th {
+    background-color: var(--brand-light);
+    color: #4b5563;
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-weight: 700;
+    padding: 16px 20px;
+    border-bottom: 2px solid #e5e7eb;
+}
+
+.pantry-table td {
+    vertical-align: middle;
+    padding: 12px 20px;
+    border-bottom: 1px solid #f3f4f6;
+    color: #111827;
+}
+
+/* Invisible inputs for rapid tab-to-advance entry */
+.spreadsheet-input {
+    border: 1px solid transparent;
+    background: transparent;
+    border-radius: 6px;
+    padding: 6px 10px;
+    width: 100px;
+    font-weight: 600;
+    transition: all 0.2s ease;
+}
+
+.spreadsheet-input:hover {
+    background: #f9fafb;
+    border-color: #d1d5db;
+}
+
+.spreadsheet-input:focus {
+    background: #ffffff;
+    border-color: var(--brand-green);
+    box-shadow: 0 0 0 3px rgba(43, 76, 59, 0.1);
+    outline: none;
+}
+
+/* Fix the Bootstrap default hover */
+.table-hover > tbody > tr:hover > * {
+    background-color: transparent !important;
+    box-shadow: none !important;
+}
+
+/* =========================================
+   MOBILE: VERTICAL CARDS
+   ========================================= */
+.mobile-pantry-card {
+    background: #ffffff;
+    border-radius: 12px;
+    border: 1px solid #e5e7eb;
+    padding: 16px;
+    margin-bottom: 12px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.mobile-card-info {
+    max-width: 80%;
+}
+
+.stepper-control {
+    width: 120px;
+    display: flex;
+    align-items: center;
+    background: #f9fafb;
+    border-radius: 8px;
+    border: 1px solid #e5e7eb;
+    overflow: hidden;
+}
+
+.stepper-btn {
+    width: 36px;
+    height: 36px;
+    border: none;
+    background: transparent;
+    color: #111827;
+    font-size: 1.2rem;
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.1s ease;
+}
+
+.stepper-btn:active {
+    background: #e5e7eb;
+}
+
+.stepper-btn.add-btn {
+    color: var(--brand-green);
+}
+
+.stepper-value {
+    flex-grow: 1;
+    width: 100%;
+    text-align: center;
+    font-size: 1rem;
+    font-weight: 700;
+    border: none;
+    background: transparent;
+    border-left: 1px solid #e5e7eb;
+    border-right: 1px solid #e5e7eb;
+}
+
+/* =========================================
+   MODALS & UI ELEMENTS
+   ========================================= */
+.custom-pantry-modal {
+    border-radius: 16px;
+    border: none;
+}
+
+.custom-alert-icon {
+    font-size: 3rem;
+}
+
+.text-dark-custom {
+    color: #111827;
+}
+
+.text-muted-custom {
+    color: #374151;
+}
+
+.custom-badge {
+    font-size: 0.75rem;
+    padding: 0.4em 0.8em;
+}
+
+.custom-pantry-input {
+    border-radius: 8px;
+    padding: 12px;
+    border: 1px solid #e5e7eb;
+    transition: all 0.2s ease;
+}
+
+.custom-pantry-input:focus {
+    border-color: var(--brand-green);
+    box-shadow: 0 0 0 3px rgba(43, 76, 59, 0.1);
+    outline: none;
+}
+
+/* Primary buttons */
+.custom-add-btn,
+.custom-pantry-submit {
+    background-color: var(--brand-green);
+    color: white;
+    border-radius: 8px;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    border: none;
+}
+
+.custom-add-btn:hover,
+.custom-pantry-submit:hover {
+    background-color: #1f382a;
+    color: white;
+    box-shadow: 0 4px 12px rgba(43, 76, 59, 0.15);
+}
+
+/* =========================================
+   DIETARY PREFERENCES SECTION
+   ========================================= */
+.dietary-prefs-title {
+    color: var(--brand-green);
+}
+
+.dietary-rule-form {
+    transition: all 0.3s ease;
+}
+
+/* Adds a nice subtle hover effect to the list items */
+.dietary-rule-item {
+    transition: background-color 0.2s ease;
+    border-color: #f3f4f6; /* Soft border between rules */
+}
+
+.dietary-rule-item:hover {
+    background-color: #f9fafb;
+    border-radius: 6px;
+    padding-left: 8px !important;
+    padding-right: 8px !important;
+    margin-left: -8px;
+    margin-right: -8px;
+}
+
+.dietary-rule-delete-btn {
+    font-size: 0.75rem;
+    font-weight: 600;
+    transition: all 0.2s ease;
+}
+
+.dietary-rule-delete-btn:hover {
+    background-color: #dc3545;
+    color: white;
+}

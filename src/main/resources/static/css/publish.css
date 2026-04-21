@@ -11,6 +11,10 @@
   font-size: 1.25rem;
 }
 
+.import-header-btn {
+  white-space: nowrap;
+}
+
 /* =========================================
    FORM INPUTS
    ========================================= */
@@ -290,12 +294,25 @@ select.form-select.custom-input:focus {
   box-shadow: none;
 }
 
+.import-modal-footer {
+  gap: 0.75rem;
+}
+
+.import-confirm-btn {
+  min-width: 130px;
+}
+
 /* =========================================
    MOBILE RESPONSIVENESS
    ========================================= */
 @media (max-width: 767px) {
   .page-title {
     font-size: 1.5rem;
+  }
+
+  .import-header-btn {
+    font-size: 0.82rem;
+    padding: 10px 12px !important;
   }
 
   .image-dropzone {
@@ -323,6 +340,31 @@ select.form-select.custom-input:focus {
     width: 100%;
     padding-top: 14px;
     padding-bottom: 14px;
+  }
+
+  #importModal .modal-dialog {
+    max-width: 98vw;
+    margin: 0.5rem auto;
+  }
+
+  #importModal .modal-content {
+    border-radius: 16px;
+  }
+
+  #importModal .modal-footer {
+    display: flex;
+    flex-direction: column-reverse;
+    align-items: stretch;
+  }
+
+  #importModal .modal-footer .btn {
+    width: 100%;
+  }
+
+  #importModal .import-confirm-btn {
+    min-height: 56px;
+    font-size: 1.05rem;
+    font-weight: 700;
   }
 }
 

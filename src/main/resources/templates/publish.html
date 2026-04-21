@@ -17,6 +17,14 @@
             >
               Create Recipe
             </h2>
+            <button
+              type="button"
+              id="importFromUrlBtn"
+              class="btn import-btn import-header-btn d-inline-flex align-items-center gap-2 px-3 py-2"
+              th:if="${!isEdit}"
+            >
+              <i class="bi bi-link-45deg"></i> Import from URL
+            </button>
           </div>
 
           <div
@@ -74,6 +82,7 @@
                 class="visually-hidden"
               />
               <input id="imageUrlInput" type="hidden" th:field="*{imageUrl}" />
+              <input id="importSourceInput" type="hidden" th:field="*{importSourceUrl}" />
               <div id="error-image" class="error-msg mt-3">
                 Please select an image for your recipe.
               </div>
@@ -233,19 +242,32 @@
                   >
                     <option value="">Unit</option>
                     <option value="g">g</option>
+                    <option value="kg">kg</option>
                     <option value="ml">ml</option>
+                    <option value="l">l</option>
                     <option value="oz">oz</option>
                     <option value="tbsp">tbsp</option>
                     <option value="tsp">tsp</option>
                     <option value="cup">cup</option>
-                    <option value="unit">unit</option>
+                    <option value="count">count</option>
+                    <option value="bunch">bunch</option>
+                    <option value="head">head</option>
                   </select>
                   <input
                     type="text"
                     class="form-control custom-input flex-grow-1 ingredient-name"
-                    placeholder="Ingredient name (e.g., Unsalted butter)"
+                    placeholder="Ingredient (e.g., Garlic)"
                     th:field="*{ingredients[__${stat.index}__].name}"
                   />
+                  
+                  <input
+                    type="text"
+                    class="form-control custom-input ingredient-prep"
+                    style="width: 130px;"
+                    placeholder="Prep (optional)"
+                    th:field="*{ingredients[__${stat.index}__].preparation}"
+                  />
+
                   <button
                     type="button"
                     class="btn btn-sm remove-row-btn ingredient-remove-btn"
@@ -264,40 +286,40 @@
               </button>
             </div>
 
-            <template id="ingredientRowTemplate">
-              <div class="d-flex gap-2 mb-3 align-items-center ingredient-row">
-                <input
-                  type="number"
-                  class="form-control custom-input ingredient-quantity"
-                  style="width: 80px"
-                  placeholder="Qty"
-                  step="0.01"
-                  min="0.01"
-                />
-                <select
-                  class="form-select custom-input ingredient-unit"
-                  style="width: 100px"
-                >
-                  <option value="">Unit</option>
-                  <option value="g">g</option>
-                  <option value="ml">ml</option>
-                  <option value="oz">oz</option>
-                  <option value="tbsp">tbsp</option>
-                  <option value="tsp">tsp</option>
-                  <option value="cup">cup</option>
-                  <option value="unit">unit</option>
+            <hr class="my-5 opacity-10" />
+
+            <div class="mb-4">
+              <label class="form-label section-title mb-2">Author Suggested Swaps <span class="text-muted fw-normal" style="font-size: 0.9rem;">(Optional)</span></label>
+              <p class="text-muted small mb-3">Add explicit ingredient substitutions for your readers.</p>
+              <p class="text-muted small mb-3">Selected originals stay linked to ingredient rows and auto-update if you rename an ingredient.</p>
+              
+              <div id="substitutionRows">
+                <div class="d-flex gap-3 mb-3 align-items-center sub-row" th:each="sub, stat : *{explicitSubs}">
+                  <select class="form-select custom-input sub-original" th:field="*{explicitSubs[__${stat.index}__].original}">
+                    <option value="">Select ingredient...</option>
+                    <option th:if="*{explicitSubs[__${stat.index}__].original != null}" 
+                            th:value="*{explicitSubs[__${stat.index}__].original}" 
+                            th:text="*{explicitSubs[__${stat.index}__].original}" selected></option>
+                  </select>
+                  <i class="bi bi-arrow-right text-muted"></i>
+                  <input type="text" class="form-control custom-input sub-replacement" placeholder="e.g., Oat Milk" th:field="*{explicitSubs[__${stat.index}__].replacement}" />
+                  <button type="button" class="btn btn-sm remove-row-btn sub-remove-btn"><i class="bi bi-x-circle"></i></button>
+                </div>
+              </div>
+
+              <button id="addSubstituteBtn" type="button" class="btn import-btn d-inline-flex align-items-center gap-2 px-3 py-2">
+                <i class="bi bi-plus-circle"></i> Add Substitute
+              </button>
+            </div>
+
+            <template id="substitutionRowTemplate">
+              <div class="d-flex gap-3 mb-3 align-items-center sub-row">
+                <select class="form-select custom-input sub-original">
+                  <option value="">Select ingredient...</option>
                 </select>
-                <input
-                  type="text"
-                  class="form-control custom-input flex-grow-1 ingredient-name"
-                  placeholder="Ingredient name (e.g., Unsalted butter)"
-                />
-                <button
-                  type="button"
-                  class="btn btn-sm remove-row-btn ingredient-remove-btn"
-                >
-                  <i class="bi bi-x-circle"></i>
-                </button>
+                <i class="bi bi-arrow-right text-muted"></i>
+                <input type="text" class="form-control custom-input sub-replacement" placeholder="e.g., Oat Milk" />
+                <button type="button" class="btn btn-sm remove-row-btn sub-remove-btn"><i class="bi bi-x-circle"></i></button>
               </div>
             </template>
 
@@ -341,22 +363,36 @@
               </button>
             </div>
 
+            <template id="ingredientRowTemplate">
+              <div class="d-flex gap-2 mb-3 align-items-center ingredient-row">
+                <input type="number" class="form-control custom-input ingredient-quantity" style="width: 80px" placeholder="Qty" step="0.01" min="0.01"/>
+                <select class="form-select custom-input ingredient-unit" style="width: 100px">
+                  <option value="">Unit</option>
+                  <option value="g">g</option>
+                  <option value="kg">kg</option>
+                  <option value="ml">ml</option>
+                  <option value="l">l</option>
+                  <option value="oz">oz</option>
+                  <option value="tbsp">tbsp</option>
+                  <option value="tsp">tsp</option>
+                  <option value="cup">cup</option>
+                  <option value="count">count</option>
+                  <option value="bunch">bunch</option>
+                  <option value="head">head</option>
+                </select>
+                <input type="text" class="form-control custom-input flex-grow-1 ingredient-name" placeholder="Ingredient (e.g., Garlic)"/>
+                <input type="text" class="form-control custom-input ingredient-prep" style="width: 130px;" placeholder="Prep (optional)"/>
+                <button type="button" class="btn btn-sm remove-row-btn ingredient-remove-btn"><i class="bi bi-x-circle"></i></button>
+              </div>
+            </template>
+
             <template id="instructionRowTemplate">
               <div class="step-row mb-3">
                 <div class="step-number">1</div>
                 <div class="flex-grow-1">
-                  <textarea
-                    class="form-control custom-input instruction-text"
-                    rows="2"
-                    placeholder="Describe this step..."
-                  ></textarea>
+                  <textarea class="form-control custom-input instruction-text" rows="2" placeholder="Describe this step..."></textarea>
                 </div>
-                <button
-                  type="button"
-                  class="btn btn-sm remove-row-btn instruction-remove-btn mt-1"
-                >
-                  <i class="bi bi-x-circle"></i>
-                </button>
+                <button type="button" class="btn btn-sm remove-row-btn instruction-remove-btn mt-1"><i class="bi bi-x-circle"></i></button>
               </div>
             </template>
 
@@ -379,6 +415,32 @@
       </div>
     </div>
 
+    <div class="modal fade" id="importModal" tabindex="-1" aria-hidden="true" th:if="${!isEdit}">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content custom-modal">
+          <div class="modal-header">
+            <h5 class="modal-title">Import Recipe from URL</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <p class="modal-desc mb-3">Paste a public recipe URL and we will prefill this form for you.</p>
+            <label for="importUrlInput" class="form-label">Recipe URL</label>
+            <input
+              type="url"
+              id="importUrlInput"
+              class="form-control custom-input"
+              placeholder="https://example.com/recipe"
+            />
+            <div id="importUrlError" class="error-msg mt-2">Please enter a valid recipe URL.</div>
+          </div>
+          <div class="modal-footer import-modal-footer">
+            <button type="button" class="btn cancel-btn" data-bs-dismiss="modal">Cancel</button>
+            <button type="button" id="confirmImportBtn" class="btn publish-submit-btn import-confirm-btn px-3 py-2">Import</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <div th:replace="~{fragments/layout :: mobile-bottom-nav}"></div>
     <div th:replace="~{fragments/layout :: mobile-offcanvas}"></div>
 
@@ -392,8 +454,18 @@
     const imagePreview = document.getElementById('imagePreview');
     const removeImageBtn = document.getElementById('removeImageBtn');
     const imageUrlInput = document.getElementById('imageUrlInput');
+    const importSourceInput = document.getElementById('importSourceInput');
+    const importFromUrlBtn = document.getElementById('importFromUrlBtn');
+    const importUrlInput = document.getElementById('importUrlInput');
+    const importUrlError = document.getElementById('importUrlError');
+    const confirmImportBtn = document.getElementById('confirmImportBtn');
 
-    // --- 1. IMAGE DRAG & DROP + CLICK ---
+    const importModalElement = document.getElementById('importModal');
+    const importModal = importModalElement && typeof bootstrap !== 'undefined'
+      ? new bootstrap.Modal(importModalElement)
+      : null;
+
+    // --- 1. IMAGE LOGIC ---
     imageDropzone.addEventListener('click', (e) => {
         if (!e.target.closest('#removeImageBtn')) fileInput.click();
     });
@@ -446,7 +518,7 @@
         imageDropzone.classList.add('has-image');
     }
 
-    // --- 2. TAGS LOGIC (Pills) ---
+    // --- 2. TAGS LOGIC ---
     const tagInputField = document.getElementById('tagInputField');
     const tagChipContainer = document.getElementById('tagChipContainer');
     const hiddenTagInput = document.getElementById('hiddenTagInput');
@@ -484,7 +556,7 @@
         renderTags();
     }
 
-    // --- 3. DYNAMIC LISTS (Adding Rows) ---
+    // --- 3. DYNAMIC LISTS (Ingredients, Subs, Instructions) ---
     const MIN_DYNAMIC_ROWS = 2;
     
     function normalizeRows() {
@@ -493,8 +565,17 @@
             if (row.querySelector('.ingredient-quantity')) row.querySelector('.ingredient-quantity').name = `ingredients[${index}].quantity`;
             if (row.querySelector('.ingredient-unit')) row.querySelector('.ingredient-unit').name = `ingredients[${index}].unit`;
             if (row.querySelector('.ingredient-name')) row.querySelector('.ingredient-name').name = `ingredients[${index}].name`;
+            if (row.querySelector('.ingredient-prep')) row.querySelector('.ingredient-prep').name = `ingredients[${index}].preparation`;
+            
             const btn = row.querySelector('.ingredient-remove-btn');
             if(btn) { btn.disabled = ingredientRows.length <= MIN_DYNAMIC_ROWS; btn.classList.toggle('d-none', ingredientRows.length <= MIN_DYNAMIC_ROWS); }
+        });
+
+        // 🌟 NEW: Normalize the Substitution Rows!
+        const subRows = document.querySelectorAll('.sub-row');
+        subRows.forEach((row, index) => {
+            if (row.querySelector('.sub-original')) row.querySelector('.sub-original').name = `explicitSubs[${index}].original`;
+            if (row.querySelector('.sub-replacement')) row.querySelector('.sub-replacement').name = `explicitSubs[${index}].replacement`;
         });
 
         const stepRows = document.querySelectorAll('.step-row');
@@ -506,11 +587,124 @@
         });
     }
 
+    // 🌟 NEW: This function watches what ingredients you type and builds the dropdown options!
+    function updateSubDropdowns() {
+      const ingredientInputs = document.querySelectorAll('.ingredient-name');
+      const ingredientEntries = [];
+      ingredientInputs.forEach((input, index) => {
+        const val = input.value.trim();
+        if (val) ingredientEntries.push({ index, name: val });
+      });
+
+      const selects = document.querySelectorAll('.sub-original');
+      selects.forEach(select => {
+        const previousIndex = select.getAttribute('data-source-index');
+        const currentVal = select.value || select.getAttribute('data-existing-val') || '';
+
+        let selectedIndex = previousIndex;
+        if (selectedIndex === null || selectedIndex === '') {
+          const matched = ingredientEntries.find(entry => entry.name === currentVal);
+          if (matched) selectedIndex = String(matched.index);
+        }
+
+        select.innerHTML = '<option value="">Select ingredient...</option>';
+
+        ingredientEntries.forEach(entry => {
+          const opt = document.createElement('option');
+          opt.value = entry.name;
+          opt.textContent = entry.name;
+          opt.setAttribute('data-source-index', String(entry.index));
+          if (selectedIndex !== null && selectedIndex !== '' && String(entry.index) === String(selectedIndex)) {
+            opt.selected = true;
+          }
+          select.appendChild(opt);
+        });
+
+        const selectedOption = select.options[select.selectedIndex];
+        if (selectedOption && selectedOption.value) {
+          select.setAttribute('data-source-index', selectedOption.getAttribute('data-source-index') || '');
+        } else {
+          select.setAttribute('data-source-index', '');
+        }
+        select.setAttribute('data-existing-val', select.value);
+      });
+    }
+
+    // Calls it whenever you type an ingredient!
+    document.addEventListener('input', (e) => {
+        if (e.target.classList.contains('ingredient-name')) {
+            updateSubDropdowns();
+        }
+    });
+
+    document.addEventListener('change', (e) => {
+      if (e.target.classList.contains('sub-original')) {
+        const selectedOption = e.target.options[e.target.selectedIndex];
+        if (selectedOption && selectedOption.value) {
+          e.target.setAttribute('data-source-index', selectedOption.getAttribute('data-source-index') || '');
+        } else {
+          e.target.setAttribute('data-source-index', '');
+        }
+        e.target.setAttribute('data-existing-val', e.target.value || '');
+      }
+    });
+
+      function populateIngredients(ingredients) {
+        const rowsContainer = document.getElementById('ingredientsRows');
+        rowsContainer.innerHTML = '';
+
+        const safeIngredients = Array.isArray(ingredients) ? ingredients.filter(item => item && item.name) : [];
+        const fallbackCount = Math.max(safeIngredients.length, MIN_DYNAMIC_ROWS);
+
+        for (let i = 0; i < fallbackCount; i++) {
+          rowsContainer.appendChild(document.getElementById('ingredientRowTemplate').content.cloneNode(true));
+        }
+
+        const rows = rowsContainer.querySelectorAll('.ingredient-row');
+        safeIngredients.forEach((line, index) => {
+          if (!rows[index]) return;
+          rows[index].querySelector('.ingredient-quantity').value = line.quantity || '';
+          rows[index].querySelector('.ingredient-unit').value = line.unit || '';
+          rows[index].querySelector('.ingredient-name').value = line.name || '';
+          rows[index].querySelector('.ingredient-prep').value = line.preparation || '';
+        });
+        
+        updateSubDropdowns(); // Update dropdowns after import
+      }
+
+      function populateInstructions(steps) {
+        const rowsContainer = document.getElementById('instructionRows');
+        rowsContainer.innerHTML = '';
+
+        const safeSteps = Array.isArray(steps) ? steps.filter(step => step && step.trim()) : [];
+        const fallbackCount = Math.max(safeSteps.length, MIN_DYNAMIC_ROWS);
+
+        for (let i = 0; i < fallbackCount; i++) {
+          rowsContainer.appendChild(document.getElementById('instructionRowTemplate').content.cloneNode(true));
+        }
+
+        const rows = rowsContainer.querySelectorAll('.step-row');
+        safeSteps.forEach((step, index) => {
+          if (!rows[index]) return;
+          rows[index].querySelector('.instruction-text').value = step;
+        });
+      }
+
     const addIngBtn = document.getElementById('addIngredientBtn');
     if(addIngBtn) {
         addIngBtn.addEventListener('click', () => {
             document.getElementById('ingredientsRows').appendChild(document.getElementById('ingredientRowTemplate').content.cloneNode(true));
             normalizeRows();
+        });
+    }
+
+    // 🌟 NEW: Button click logic to add new substitution rows
+    const addSubBtn = document.getElementById('addSubstituteBtn');
+    if(addSubBtn) {
+        addSubBtn.addEventListener('click', () => {
+            document.getElementById('substitutionRows').appendChild(document.getElementById('substitutionRowTemplate').content.cloneNode(true));
+            normalizeRows();
+            updateSubDropdowns();
         });
     }
 
@@ -524,14 +718,101 @@
 
     document.addEventListener('click', (e) => {
         if (e.target.closest('.ingredient-remove-btn') && document.querySelectorAll('.ingredient-row').length > MIN_DYNAMIC_ROWS) {
-            e.target.closest('.ingredient-row').remove(); normalizeRows();
+            e.target.closest('.ingredient-row').remove(); 
+            normalizeRows();
+            updateSubDropdowns();
+        }
+        if (e.target.closest('.sub-remove-btn')) {
+            e.target.closest('.sub-row').remove(); 
+            normalizeRows();
         }
         if (e.target.closest('.instruction-remove-btn') && document.querySelectorAll('.step-row').length > MIN_DYNAMIC_ROWS) {
-            e.target.closest('.step-row').remove(); normalizeRows();
+            e.target.closest('.step-row').remove(); 
+            normalizeRows();
         }
     });
     
     normalizeRows();
+    updateSubDropdowns(); // First load mapping
+
+    if (importFromUrlBtn && importModal) {
+      importFromUrlBtn.addEventListener('click', () => {
+        importUrlError.style.display = 'none';
+        importUrlInput.value = '';
+        importModal.show();
+      });
+    }
+
+    if (confirmImportBtn) {
+      confirmImportBtn.addEventListener('click', async () => {
+        if (!importUrlInput) return;
+
+        const rawUrl = importUrlInput.value.trim();
+        if (!rawUrl || !/^https?:\/\//i.test(rawUrl)) {
+          importUrlError.textContent = 'Please enter a valid http/https recipe URL.';
+          importUrlError.style.display = 'block';
+          return;
+        }
+
+        const originalText = confirmImportBtn.innerHTML;
+        confirmImportBtn.disabled = true;
+        confirmImportBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2" aria-hidden="true"></span>Importing...';
+
+        try {
+          const body = new URLSearchParams();
+          body.append('url', rawUrl);
+
+          const response = await fetch('/recipes/import-url', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' },
+            body: body.toString()
+          });
+
+          if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(errorText || 'Import failed');
+          }
+
+          const data = await response.json();
+
+          document.getElementById('titleInput').value = data.title || '';
+          document.getElementById('descInput').value = data.description || '';
+          document.getElementById('timeInput').value = data.prepTimeMins || '';
+          document.getElementById('yieldInput').value = data.defaultServings || '';
+
+          if (data.mealType) {
+            const categoryInput = document.querySelector(`input[name="mealType"][value="${data.mealType}"]`);
+            if (categoryInput) categoryInput.checked = true;
+          }
+
+          if (data.imageUrl) {
+            imageUrlInput.value = data.imageUrl;
+            imagePreview.src = data.imageUrl;
+            dropzoneUI.style.display = 'none';
+            previewUI.style.display = 'block';
+            imageDropzone.classList.add('has-image');
+            fileInput.value = '';
+          }
+
+          if (importSourceInput) {
+            importSourceInput.value = data.sourceUrl || rawUrl;
+          }
+
+          populateIngredients(data.ingredients);
+          populateInstructions(data.instructionSteps);
+          normalizeRows();
+
+          if (importModal) importModal.hide();
+          importUrlError.style.display = 'none';
+        } catch (err) {
+          importUrlError.textContent = 'Import failed. Please try another recipe URL.';
+          importUrlError.style.display = 'block';
+        } finally {
+          confirmImportBtn.disabled = false;
+          confirmImportBtn.innerHTML = originalText;
+        }
+      });
+    }
 
     // --- 4. VALIDATION & TWO-STEP SUBMIT ---
     formElement.addEventListener('submit', async function (event) {

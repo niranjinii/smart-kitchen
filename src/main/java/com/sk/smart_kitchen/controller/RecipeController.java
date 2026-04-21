@@ -5,8 +5,11 @@ import com.sk.smart_kitchen.entities.Ingredient;
 import com.sk.smart_kitchen.entities.Recipe;
 import com.sk.smart_kitchen.entities.RecipeIngredient;
 import com.sk.smart_kitchen.entities.SavedRecipe;
+import com.sk.smart_kitchen.entities.Substitution;
 import com.sk.smart_kitchen.entities.User;
+import com.sk.smart_kitchen.services.GapAnalysisEngine;
 import com.sk.smart_kitchen.services.RecipeService;
+import com.sk.smart_kitchen.services.ScraperService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -29,11 +32,14 @@ import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Optional;
 
+
+
 @Controller
 @RequestMapping("/recipes")
 public class RecipeController {
 
     private final RecipeService recipeService;
+    private final ScraperService scraperService;
 
     @Autowired
     private com.sk.smart_kitchen.repositories.ReviewRepository reviewRepository;
@@ -57,8 +63,23 @@ public class RecipeController {
     @Autowired
     private com.sk.smart_kitchen.repositories.RecipeIngredientRepository recipeIngredientRepository;
 
-    public RecipeController(RecipeService recipeService) {
+    @Autowired
+    private GapAnalysisEngine gapEngine;
+
+    @Autowired
+    private com.sk.smart_kitchen.services.UnitConversionService unitConverter;
+
+    @Autowired
+    private com.sk.smart_kitchen.repositories.PantryItemRepository pantryRepository;
+
+    @Autowired
+    private com.sk.smart_kitchen.repositories.SubstitutionRepository subRepository;
+
+
+
+    public RecipeController(RecipeService recipeService, ScraperService scraperService) {
         this.recipeService = recipeService;
+        this.scraperService = scraperService;
     }
 
     // 1. Handles http://localhost:8080/recipes/new
@@ -84,12 +105,33 @@ public class RecipeController {
     }
 
     @GetMapping("/{id}")
-    public String showRecipeView(@PathVariable Long id, Principal principal, Model model) {
+    public String showRecipeView(@PathVariable Long id, Principal principal, Model model, 
+                                 @RequestParam(value = "servings", required = false) Integer customServings) {
+
         Recipe recipe = getRecipeOr404(id);
         model.addAttribute("recipe", recipe);
         model.addAttribute("recipeId", id);
+
+        // 2. Calculate the scaling ratio
+        int baseServings = recipe.getDefaultServings() != null ? recipe.getDefaultServings() : 2;
+        int targetServings = (customServings != null && customServings > 0) ? customServings : baseServings;
+        double ratio = (double) targetServings / baseServings;
+        model.addAttribute("targetServings", targetServings); // Pass to HTML
+
+        // 3. Create a temporary list of scaled ingredients for the math
+        List<RecipeIngredient> scaledIngredients = new ArrayList<>();
+        for (RecipeIngredient ri : recipeService.findRecipeIngredients(id)) {
+            RecipeIngredient temp = new RecipeIngredient();
+            temp.setIngredient(ri.getIngredient()); // ID is preserved!
+            temp.setUnit(ri.getUnit());
+            temp.setPreparationState(ri.getPreparationState());
+            temp.setQuantityNeeded(ri.getQuantityNeeded() * ratio);
+            temp.setRecipe(recipe);
+            scaledIngredients.add(temp);
+        }
         
-        model.addAttribute("ingredients", recipeService.findRecipeIngredients(id));
+        // Pass the scaled ingredients to the UI instead of the base ones
+        model.addAttribute("ingredients", scaledIngredients);
         model.addAttribute("instructionSteps", recipeService.toInstructionSteps(recipe));
 
         // --- NEW REVIEW MATH LOGIC ---
@@ -137,23 +179,166 @@ public class RecipeController {
         }
         model.addAttribute("myNote", myNote);
 
+        if (principal != null) {
+            User user = userRepository.findByEmail(principal.getName()).orElseThrow();
+            List<com.sk.smart_kitchen.entities.PantryItem> pantry = pantryRepository.findByUserOrderByIdDesc(user);
+            
+            model.addAttribute("userPantryItems", pantry); // 🌟 NEW: Pass pantry for the Swap Modal!
+            
+           GapAnalysisEngine.GapResult gapResult = gapEngine.analyze(scaledIngredients, pantry, user);
+            model.addAttribute("gapResult", gapResult);
+        }
         return "recipe";
     }
 
-    @GetMapping("/{id}/cook")
-    public String showCookMode(@PathVariable Long id, Model model, java.security.Principal principal) {
-        // Must be logged in to use Cook Mode!
-        if (principal == null) {
-            return "redirect:/login?continue=/recipes/" + id + "/cook";
+    @PostMapping("/{id}/swap")
+    public String manualSubstitute(@PathVariable Long id, Principal principal, 
+                                   @RequestParam("originalId") Long originalId, 
+                                   @RequestParam(value = "pantryItemId", required = false) Long pantryItemId,
+                                   @RequestParam(value = "customIngredientName", required = false) String customName,
+                                   @RequestParam(value = "recipeScope", defaultValue = "false") boolean recipeScope) {
+        if (principal == null) return "redirect:/login";
+        User user = userRepository.findByEmail(principal.getName()).orElseThrow();
+        Ingredient original = ingredientRepository.findById(originalId).orElseThrow();
+        Ingredient substitute;
+
+        if (pantryItemId != null) substitute = pantryRepository.findById(pantryItemId).orElseThrow().getIngredient();
+        else if (customName != null && !customName.trim().isEmpty()) {
+            String cleanName = gapEngine.normalizer.normalize(customName);
+            substitute = ingredientRepository.findByNameIgnoreCase(cleanName)
+                    .orElseGet(() -> {
+                        Ingredient newIng = new Ingredient();
+                        newIng.setName(cleanName);
+                        return ingredientRepository.save(newIng);
+                    });
+        } else return "redirect:/recipes/" + id;
+
+        // Find existing preference matching the scope
+        Substitution newSub = subRepository.findByOriginalIngredientAndUser(original, user)
+                .stream().filter(s -> recipeScope ? (s.getRecipe() != null && s.getRecipe().getId().equals(id)) : s.getRecipe() == null)
+                .findFirst().orElse(new Substitution());
+
+        newSub.setOriginalIngredient(original);
+        newSub.setSubstituteIngredient(substitute);
+        newSub.setUser(user);
+        
+        if (recipeScope) {
+            newSub.setRecipe(recipeService.findRecipeOrThrow(id));
+            newSub.setNotes("Author suggestion explicitly accepted for this recipe");
+        } else {
+            newSub.setNotes("Manual permanent user preference");
         }
         
+        newSub.setConversionMultiplier(1.0);
+        subRepository.save(newSub);
+        return "redirect:/recipes/" + id; 
+    }
+
+    // 🌟 NEW: The Undo Swap Endpoint
+    @PostMapping("/{id}/swap/remove")
+    public String removeSubstitute(@PathVariable Long id, Principal principal, 
+                                   @RequestParam("originalId") Long originalId,
+                                   @RequestParam("recipeScope") boolean recipeScope) {
+        if (principal == null) return "redirect:/login";
+        
+        User user = userRepository.findByEmail(principal.getName()).orElseThrow();
+        Ingredient original = ingredientRepository.findById(originalId).orElseThrow();
+
+        // Find the specific preference and delete it!
+        subRepository.findByOriginalIngredientAndUser(original, user)
+                .stream()
+                .filter(s -> recipeScope ? (s.getRecipe() != null && s.getRecipe().getId().equals(id)) : s.getRecipe() == null)
+                .findFirst()
+                .ifPresent(sub -> subRepository.delete(sub));
+
+        return "redirect:/recipes/" + id; 
+    }
+
+    @GetMapping("/{id}/cook")
+    public String showCookMode(@PathVariable Long id, Model model, java.security.Principal principal,
+                               @RequestParam(value = "servings", required = false) Integer customServings) {
+        if (principal == null) return "redirect:/login?continue=/recipes/" + id + "/cook";
         Recipe recipe = getRecipeOr404(id);
         model.addAttribute("recipe", recipe);
-        model.addAttribute("ingredients", recipeService.findRecipeIngredients(id));
-        model.addAttribute("instructionSteps", recipeService.toInstructionSteps(recipe));
+        model.addAttribute("recipeId", id);
+
+        int baseServings = recipe.getDefaultServings() != null ? recipe.getDefaultServings() : 2;
+        int targetServings = (customServings != null && customServings > 0) ? customServings : baseServings;
+        double ratio = (double) targetServings / baseServings;
+        model.addAttribute("targetServings", targetServings); 
+
+        List<RecipeIngredient> scaledIngredients = new ArrayList<>();
+        for (RecipeIngredient ri : recipeService.findRecipeIngredients(id)) {
+            RecipeIngredient temp = new RecipeIngredient();
+            temp.setIngredient(ri.getIngredient()); 
+            temp.setUnit(ri.getUnit());
+            temp.setPreparationState(ri.getPreparationState());
+            temp.setQuantityNeeded(ri.getQuantityNeeded() * ratio);
+            temp.setRecipe(recipe);
+            scaledIngredients.add(temp);
+        }
         
-        return "cook-mode"; // Points to our brand new HTML file!
+        User user = userRepository.findByEmail(principal.getName()).orElseThrow();
+        List<com.sk.smart_kitchen.entities.PantryItem> pantry = pantryRepository.findByUserOrderByIdDesc(user);
+        
+        // Pass the ENGINE result to Cook Mode so it knows what was swapped!
+        GapAnalysisEngine.GapResult gapResult = gapEngine.analyze(scaledIngredients, pantry, user);
+        model.addAttribute("gapResult", gapResult);
+        
+        model.addAttribute("instructionSteps", recipeService.toInstructionSteps(recipe));
+        return "cook-mode"; 
     }
+
+    @PostMapping("/{id}/cook/finish")
+    public String finishCooking(@PathVariable Long id, Principal principal, @RequestParam("servings") Integer servings) {
+        if (principal == null) return "redirect:/login";
+        User user = userRepository.findByEmail(principal.getName()).orElseThrow();
+        Recipe recipe = getRecipeOr404(id);
+
+        int baseServings = recipe.getDefaultServings() != null ? recipe.getDefaultServings() : 2;
+        double ratio = (double) servings / baseServings;
+
+        List<RecipeIngredient> scaledIngredients = new ArrayList<>();
+        for (RecipeIngredient ri : recipeService.findRecipeIngredients(id)) {
+            RecipeIngredient temp = new RecipeIngredient();
+            temp.setIngredient(ri.getIngredient()); 
+            temp.setUnit(ri.getUnit());
+            temp.setQuantityNeeded(ri.getQuantityNeeded() * ratio);
+            temp.setRecipe(recipe);
+            scaledIngredients.add(temp);
+        }
+
+        List<com.sk.smart_kitchen.entities.PantryItem> pantry = pantryRepository.findByUserOrderByIdDesc(user);
+        java.util.Map<Long, com.sk.smart_kitchen.entities.PantryItem> pantryMap = pantry.stream()
+                .collect(java.util.stream.Collectors.toMap(item -> item.getIngredient().getId(), item -> item, (e, r) -> e));
+
+        // Use the engine so we know exactly what to deduct!
+        GapAnalysisEngine.GapResult gapResult = gapEngine.analyze(scaledIngredients, pantry, user);
+
+        for (GapAnalysisEngine.GapItem item : gapResult.owned) {
+            if (pantryMap.containsKey(item.actualIngredientId)) {
+                com.sk.smart_kitchen.entities.PantryItem pItem = pantryMap.get(item.actualIngredientId);
+                
+                double deductionBase = 0;
+                if (item.isSubstituted) {
+                    deductionBase = gapEngine.converter.convertToBase(item.substituteQtyUsed, item.substituteUnit);
+                } else {
+                    deductionBase = gapEngine.converter.convertToBase(item.requirement.getQuantityNeeded(), item.requirement.getUnit());
+                }
+                
+                double deductionAmount = gapEngine.converter.convertFromBase(deductionBase, pItem.getUnit());
+                double newQty = pItem.getQuantity() - deductionAmount;
+                
+                if (newQty <= 0) pantryRepository.delete(pItem);
+                else {
+                    pItem.setQuantity(Math.round(newQty * 100.0) / 100.0); 
+                    pantryRepository.save(pItem);
+                }
+            }
+        }
+        return "redirect:/recipes/" + id + "?cooked=true";
+    }
+
 
     // UPDATED: Now grabs the existing ingredients and sends them to the form!
     @GetMapping("/{id}/edit")
@@ -172,38 +357,9 @@ public class RecipeController {
     @PostMapping("/{id}")
     public String updateRecipe(
             @PathVariable Long id, 
-            @ModelAttribute("recipeForm") RecipeForm recipeForm,
-            @RequestParam(value = "ingredientNames", required = false) java.util.List<String> ingredientNames,
-            @RequestParam(value = "ingredientQuantities", required = false) java.util.List<Double> ingredientQuantities,
-            @RequestParam(value = "ingredientUnits", required = false) java.util.List<String> ingredientUnits,
-            @RequestParam(value = "instructions", required = false) String instructionsText) {
+            @ModelAttribute("recipeForm") RecipeForm recipeForm) {
         try {
-            // 1. Catch the HTML ingredient arrays and pack them into the form
-            java.util.List<com.sk.smart_kitchen.dto.IngredientLineForm> ingForms = new java.util.ArrayList<>();
-            if (ingredientNames != null) {
-                for (int i = 0; i < ingredientNames.size(); i++) {
-                    String name = ingredientNames.get(i);
-                    if (name != null && !name.trim().isEmpty()) {
-                        com.sk.smart_kitchen.dto.IngredientLineForm line = new com.sk.smart_kitchen.dto.IngredientLineForm();
-                        line.setName(name.trim());
-                        line.setQuantity((ingredientQuantities != null && ingredientQuantities.size() > i) ? String.valueOf(ingredientQuantities.get(i)) : "1");
-                        line.setUnit((ingredientUnits != null && ingredientUnits.size() > i) ? ingredientUnits.get(i) : "");
-                        ingForms.add(line);
-                    }
-                }
-            }
-            recipeForm.setIngredients(ingForms);
-
-            // 2. Catch the instructions text box and pack it into the form
-            if (instructionsText != null) {
-                java.util.List<String> steps = java.util.Arrays.stream(instructionsText.split("\\r?\\n"))
-                        .map(String::trim)
-                        .filter(s -> !s.isEmpty())
-                        .collect(java.util.stream.Collectors.toList());
-                recipeForm.setInstructionSteps(steps);
-            }
-
-            // 3. Save the recipe with the newly packed data!
+            // Spring Boot automatically packed the form data for us, so we just pass it to the service!
             Recipe updated = recipeService.updateRecipe(id, recipeForm);
             return "redirect:/recipes/" + updated.getId();
             
@@ -224,6 +380,28 @@ public class RecipeController {
         try {
             String imageUrl = recipeService.storeRecipeImage(imageFile);
             return Map.of("imageUrl", imageUrl);
+        } catch (IllegalArgumentException ex) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, ex.getMessage(), ex);
+        }
+    }
+
+    @PostMapping("/import-url")
+    @ResponseBody
+    public Map<String, Object> importRecipeFromUrl(@RequestParam("url") String url) {
+        try {
+            com.sk.smart_kitchen.dto.ScrapedRecipeData scraped = scraperService.scrapeRecipeFromUrl(url);
+            String sourceUrl = url != null ? url.trim() : "";
+            return Map.of(
+                    "title", scraped.getTitle() != null ? scraped.getTitle() : "",
+                    "description", scraped.getDescription() != null ? scraped.getDescription() : "",
+                    "imageUrl", scraped.getImageUrl() != null ? scraped.getImageUrl() : "",
+                    "sourceUrl", sourceUrl,
+                    "prepTimeMins", scraped.getPrepTimeMins() != null ? scraped.getPrepTimeMins() : 30,
+                    "defaultServings", scraped.getDefaultServings() != null ? scraped.getDefaultServings() : 2,
+                    "mealType", scraped.getMealType() != null ? scraped.getMealType() : "Dinner",
+                    "ingredients", scraped.getIngredients(),
+                    "instructionSteps", scraped.getInstructionSteps()
+            );
         } catch (IllegalArgumentException ex) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, ex.getMessage(), ex);
         }

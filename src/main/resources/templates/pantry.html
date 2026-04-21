@@ -1,0 +1,332 @@
+<!doctype html>
+<html xmlns:th="http://www.thymeleaf.org">
+  <head>
+    <th:block th:replace="~{fragments/layout :: head}"></th:block>
+    <link rel="stylesheet" th:href="@{/css/pantry.css}" />
+  </head>
+  <body>
+    <div th:replace="~{fragments/layout :: navbar}"></div>
+
+    <div class="container-md px-3 mt-4 mb-5 pb-5">
+      
+      <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
+        <div>
+          <h2 class="fw-bold m-0 text-dark-custom">Virtual Pantry</h2>
+          <p class="text-muted m-0 mt-1">Keep track of your ingredients for accurate recipe matching.</p>
+        </div>
+
+        <div class="d-flex gap-2">
+          <button class="btn btn-light border fw-bold px-3 d-flex align-items-center gap-2 text-muted-custom" type="button" data-bs-toggle="collapse" data-bs-target="#dietaryPrefsCollapse">
+            <i class="bi bi-sliders"></i> Preferences
+          </button>
+          <button class="btn px-4 py-2 custom-add-btn" data-bs-toggle="modal" data-bs-target="#addPantryModal">
+            <i class="bi bi-plus-lg"></i> Add Item
+          </button>
+        </div>
+      </div>
+
+      <div class="collapse mb-4" id="dietaryPrefsCollapse" th:classappend="${not #lists.isEmpty(dietaryRules)} ? 'show' : ''">
+        <div class="card shadow-sm border-0 rounded-4 dietary-prefs-card">
+            <div class="card-header bg-white border-bottom-0 pt-4 pb-0 px-4">
+                <h5 class="fw-bold m-0 dietary-prefs-title">
+                    <i class="bi bi-arrow-left-right me-2"></i> Dietary Preferences
+                </h5>
+                <p class="text-muted small mt-1 mb-0">Set permanent swaps. We'll automatically replace these ingredients in every recipe you view.</p>
+            </div>
+            <div class="card-body p-4">
+                <form th:action="@{/pantry/rules/add}" method="post" class="bg-light p-3 rounded-3 mb-4 border dietary-rule-form">
+                    <div class="row g-2 align-items-end">
+                        <div class="col-md-5">
+                            <label class="form-label small fw-bold text-muted mb-1">When a recipe requires...</label>
+                            <input type="text" name="originalName" class="form-control custom-pantry-input" placeholder="e.g. Cow Milk" required>
+                        </div>
+                        <div class="col-md-5">
+                            <label class="form-label small fw-bold text-muted mb-1">Always swap it with...</label>
+                            <input type="text" name="substituteName" class="form-control custom-pantry-input" placeholder="e.g. Oat Milk" required>
+                        </div>
+                        <div class="col-md-2">
+                            <button type="submit" class="btn btn-dark w-100 fw-bold py-2">Save Rule</button>
+                        </div>
+                    </div>
+                </form>
+
+                <div th:if="${not #lists.isEmpty(dietaryRules)}">
+                    <h6 class="fw-bold mb-3 small text-uppercase text-muted">Active Rules</h6>
+                    <ul class="list-group list-group-flush">
+                        <li th:each="rule : ${dietaryRules}" class="list-group-item d-flex justify-content-between align-items-center px-0 py-2 dietary-rule-item">
+                            <div>
+                                <span class="fw-bold text-decoration-line-through text-danger" th:text="${rule.originalIngredient.name}">Cow Milk</span>
+                                <i class="bi bi-arrow-right mx-2 text-muted"></i>
+                                <span class="fw-bold text-success" th:text="${rule.substituteIngredient.name}">Oat Milk</span>
+                            </div>
+                            <form th:action="@{/pantry/rules/remove}" method="post" class="m-0">
+                                <input type="hidden" name="ruleId" th:value="${rule.id}">
+                                <button type="submit" class="btn btn-sm btn-outline-danger py-0 px-2 dietary-rule-delete-btn">Delete</button>
+                            </form>
+                        </li>
+                    </ul>
+                </div>
+                
+                <div th:if="${#lists.isEmpty(dietaryRules)}" class="text-center text-muted py-3 small">
+                    <i class="bi bi-info-circle"></i> You have no permanent dietary rules set.
+                </div>
+            </div>
+        </div>
+      </div>
+
+      <div th:if="${pantryItems == null or pantryItems.isEmpty()}" class="text-center py-5">
+        <i class="bi bi-archive text-muted" style="font-size: 3rem"></i>
+        <h5 class="mt-3 fw-bold">Your pantry is empty</h5>
+        <p class="text-muted">Add ingredients to see what you can cook.</p>
+      </div>
+
+      <div class="pantry-table-container d-none d-md-block" th:if="${not #lists.isEmpty(pantryItems)}">
+        <table class="table pantry-table table-hover">
+          <thead>
+            <tr>
+              <th>Ingredient</th>
+              <th>Category</th>
+              <th>Quantity</th>
+              <th>Expiration</th>
+              <th class="text-end">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr th:each="item : ${pantryItems}">
+              <td class="fw-bold">
+                <span th:text="${item.ingredient.name}">Ingredient Name</span>
+                <span th:if="${item.expirationDate != null and item.expirationDate.isBefore(today)}" class="badge bg-danger ms-2 shadow-sm" style="font-size: 0.75rem">
+                    <i class="bi bi-exclamation-octagon-fill"></i> EXPIRED
+                </span>
+              </td>
+              <td>
+                <span class="badge bg-light text-dark border custom-badge" th:text="${item.category != null ? item.category : 'General'}">Category</span>
+              </td>
+              <td>
+                <div class="d-flex align-items-center gap-2">
+                  <input type="number" class="spreadsheet-input qty-input" th:data-id="${item.id}" th:value="${item.quantity}" step="0.5"/>
+                  <span class="text-muted fw-bold" th:text="${item.unit}">kg</span>
+                </div>
+              </td>
+              <td class="text-muted" th:text="${item.expirationDate != null ? item.expirationDate : '-'}">-</td>
+              <td class="text-end">
+                <button class="btn btn-sm text-danger delete-trigger-desktop">
+                  <i class="bi bi-trash"></i>
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="d-md-none" th:if="${not #lists.isEmpty(pantryItems)}">
+        <div class="mobile-pantry-card" th:each="item : ${pantryItems}">
+          <div class="d-flex justify-content-between align-items-start mb-2">
+            <div class="mobile-card-info">
+              <h6 class="fw-bold m-0 text-dark-custom" th:text="${item.ingredient.name}">Ingredient Name</h6>
+              <span th:if="${item.expirationDate != null and item.expirationDate.isBefore(today)}" class="badge bg-danger ms-2 shadow-sm" style="font-size: 0.75rem">
+                <i class="bi bi-exclamation-octagon-fill"></i> EXPIRED
+              </span>
+              <div class="d-flex flex-wrap gap-2 mt-2">
+                <span class="badge bg-light text-dark border rounded-pill custom-badge" th:text="${item.category != null ? item.category : 'General'}">Category</span>
+                <span class="badge border rounded-pill custom-badge" th:classappend="${item.expirationDate != null} ? 'bg-danger bg-opacity-10 text-danger border-danger' : 'bg-light text-muted'">
+                  Exp: <span th:text="${item.expirationDate != null ? item.expirationDate : 'None'}">None</span>
+                </span>
+              </div>
+            </div>
+            <button class="btn btn-sm text-danger p-0 delete-trigger-mobile" th:data-id="${item.id}" data-bs-toggle="modal" data-bs-target="#deleteConfirmModal">
+              <i class="bi bi-trash fs-5"></i>
+            </button>
+          </div>
+
+          <div class="d-flex align-items-center justify-content-between mt-3 pt-3 border-top">
+            <span class="text-muted small fw-bold text-uppercase" th:text="${item.unit}">UNIT</span>
+            <div class="stepper-control flex-shrink-0">
+              <button class="stepper-btn minus-btn" th:data-id="${item.id}">-</button>
+              <input type="number" class="stepper-value qty-input" th:data-id="${item.id}" th:value="${item.quantity}" readonly/>
+              <button class="stepper-btn add-btn" th:data-id="${item.id}">+</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal fade" id="addPantryModal" tabindex="-1">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content custom-pantry-modal">
+          <div class="modal-header border-bottom pb-3">
+            <h5 class="modal-title fw-bold text-dark-custom">Add to Pantry</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+          </div>
+          <form action="/pantry/add" method="post">
+            <div class="modal-body py-4">
+              <div class="mb-3">
+                <label class="form-label fw-bold text-muted-custom">Ingredient Name</label>
+                <input type="text" name="name" class="form-control custom-pantry-input" placeholder="e.g., Basmati Rice" required/>
+              </div>
+              <div class="row g-3 mb-3">
+                <div class="col-6">
+                  <label class="form-label fw-bold text-muted-custom">Quantity</label>
+                  <input type="number" name="quantity" class="form-control custom-pantry-input" placeholder="e.g., 500" step="0.1" min="0.1" required/>
+                </div>
+                <div class="col-6">
+                  <label class="form-label fw-bold text-muted-custom">Unit</label>
+                  <select name="unit" class="form-select custom-pantry-input" required>
+                    <option value="g">Grams (g)</option>
+                    <option value="kg">Kilograms (kg)</option>
+                    <option value="ml">Milliliters (ml)</option>
+                    <option value="l">Liters (l)</option>
+                    <option value="count">Count (whole items)</option>
+                    <option value="bunch">Bunch</option>
+                    <option value="head">Head</option>
+                  </select>
+                </div>
+              </div>
+              <div class="row g-3">
+                <div class="col-6">
+                  <label class="form-label fw-bold text-muted-custom">Category</label>
+                  <select name="category" class="form-select custom-pantry-input" required>
+                    <option value="Produce">Produce (Fruits/Veggies)</option>
+                    <option value="Meat & Seafood">Meat & Seafood</option>
+                    <option value="Dairy & Eggs">Dairy & Eggs</option>
+                    <option value="Staples">Staples</option>
+                    <option value="Spices & Herbs">Spices & Herbs</option>
+                    <option value="Condiments & Sauces">Condiments & Sauces</option>
+                    <option value="Frozen">Frozen</option>
+                  </select>
+                </div>
+                <div class="col-6">
+                  <label class="form-label fw-bold text-muted-custom">Expires On</label>
+                  <input type="date" name="expirationDate" class="form-control custom-pantry-input"/>
+                </div>
+              </div>
+            </div>
+            <div class="modal-footer border-top pt-3">
+              <button type="submit" class="btn w-100 py-2 custom-pantry-submit">Save to Pantry</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal fade" id="deleteConfirmModal" tabindex="-1">
+      <div class="modal-dialog modal-dialog-centered modal-sm">
+        <div class="modal-content custom-pantry-modal">
+          <div class="modal-body text-center py-4">
+            <i class="bi bi-exclamation-circle text-danger mb-3 custom-alert-icon"></i>
+            <h5 class="fw-bold mb-3">Remove Item?</h5>
+            <p class="text-muted mb-4">Are you sure you want to remove this item from your pantry?</p>
+            <div class="d-flex gap-2 justify-content-center">
+              <button type="button" class="btn btn-light w-50 fw-bold" data-bs-dismiss="modal">Cancel</button>
+              <button type="button" class="btn btn-danger w-50 fw-bold" id="confirmDeleteBtn">Remove</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div th:replace="~{fragments/layout :: mobile-bottom-nav}"></div>
+    <div th:replace="~{fragments/layout :: mobile-offcanvas}"></div>
+
+    <script>
+      document.addEventListener("DOMContentLoaded", () => {
+        // Sync Database Function
+        const syncDatabase = async (id, newQty) => {
+          try {
+            await fetch(`/pantry/update/${id}`, {
+              method: "POST",
+              headers: { "Content-Type": "application/x-www-form-urlencoded" },
+              body: `newQuantity=${newQty}`,
+            });
+          } catch (e) {
+            console.error("Sync failed", e);
+          }
+        };
+
+        // Spreadsheet Mode Listeners (Desktop)
+        document.querySelectorAll(".spreadsheet-input").forEach((input) => {
+          input.addEventListener("change", function () {
+            syncDatabase(this.getAttribute("data-id"), this.value);
+          });
+        });
+
+        // Stepper Card Listeners (Mobile)
+        document.querySelectorAll(".mobile-pantry-card").forEach((card) => {
+          const minusBtn = card.querySelector(".minus-btn");
+          const addBtn = card.querySelector(".add-btn");
+          const input = card.querySelector(".stepper-value");
+          const id = input.getAttribute("data-id");
+
+          minusBtn.addEventListener("click", () => {
+            let val = parseFloat(input.value) || 0;
+            if (val > 0) {
+              val = Math.max(0, val - 1);
+              input.value = val;
+              syncDatabase(id, val);
+            }
+          });
+
+          addBtn.addEventListener("click", () => {
+            let val = parseFloat(input.value) || 0;
+            val += 1;
+            input.value = val;
+            syncDatabase(id, val);
+          });
+        });
+
+        // UI Delete Modal Logic
+        let itemToDeleteId = null;
+        let rowToDelete = null;
+
+        // Catch clicks on both Desktop and Mobile delete buttons
+        document
+          .querySelectorAll(".delete-trigger-desktop, .delete-trigger-mobile")
+          .forEach((btn) => {
+            btn.addEventListener("click", function () {
+              if (this.classList.contains("delete-trigger-mobile")) {
+                itemToDeleteId = this.getAttribute("data-id");
+                rowToDelete = this.closest(".mobile-pantry-card");
+              } else {
+                itemToDeleteId = this.closest("tr")
+                  .querySelector(".qty-input")
+                  .getAttribute("data-id");
+                rowToDelete = this.closest("tr");
+                // Desktop needs to manually trigger the modal
+                const modal = new bootstrap.Modal(
+                  document.getElementById("deleteConfirmModal"),
+                );
+                modal.show();
+              }
+            });
+          });
+
+        // Confirm Delete Button execution
+        document
+          .getElementById("confirmDeleteBtn")
+          .addEventListener("click", async function () {
+            if (itemToDeleteId) {
+              await syncDatabase(itemToDeleteId, 0); // Send to backend
+
+              document
+                .querySelectorAll(`[data-id="${itemToDeleteId}"]`)
+                .forEach((el) => {
+                  const desktopRow = el.closest("tr");
+                  if (desktopRow) desktopRow.remove();
+
+                  const mobileCard = el.closest(".mobile-pantry-card");
+                  if (mobileCard) mobileCard.remove();
+                });
+
+              const modalInstance = bootstrap.Modal.getInstance(
+                document.getElementById("deleteConfirmModal"),
+              );
+              modalInstance.hide();
+
+              itemToDeleteId = null;
+              rowToDelete = null;
+            }
+          });
+      });
+    </script>
+  </body>
+</html>

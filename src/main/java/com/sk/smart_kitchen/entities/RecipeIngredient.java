@@ -23,6 +23,8 @@ public class RecipeIngredient {
 
     private String unit;
 
+    private String preparationState;
+
     public Long getId() {
         return id;
     }
@@ -62,5 +64,14 @@ public class RecipeIngredient {
     public void setUnit(String unit) {
         this.unit = unit;
     }
+
+    public String getPreparationState() {
+        return preparationState;
+    }
+
+    public void setPreparationState(String preparationState) {
+        this.preparationState = preparationState;
+    }
+
 
 }
