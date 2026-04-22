@@ -100,7 +100,16 @@
                 </span>
               </td>
               <td>
-                <span class="badge bg-light text-dark border custom-badge" th:text="${item.category != null ? item.category : 'General'}">Category</span>
+                <select class="form-select form-select-sm spreadsheet-category" style="max-width: 190px;" th:data-id="${item.id}">
+                  <option value="Produce" th:selected="${item.category == 'Produce'}">Produce</option>
+                  <option value="Meat & Seafood" th:selected="${item.category == 'Meat & Seafood'}">Meat & Seafood</option>
+                  <option value="Dairy & Eggs" th:selected="${item.category == 'Dairy & Eggs'}">Dairy & Eggs</option>
+                  <option value="Staples" th:selected="${item.category == 'Staples'}">Staples</option>
+                  <option value="Spices & Herbs" th:selected="${item.category == 'Spices & Herbs'}">Spices & Herbs</option>
+                  <option value="Condiments & Sauces" th:selected="${item.category == 'Condiments & Sauces'}">Condiments & Sauces</option>
+                  <option value="Frozen" th:selected="${item.category == 'Frozen'}">Frozen</option>
+                  <option value="General" th:selected="${item.category == null or item.category == 'General'}">General</option>
+                </select>
               </td>
               <td>
                 <div class="d-flex align-items-center gap-2">
@@ -108,7 +117,12 @@
                   <span class="text-muted fw-bold" th:text="${item.unit}">kg</span>
                 </div>
               </td>
-              <td class="text-muted" th:text="${item.expirationDate != null ? item.expirationDate : '-'}">-</td>
+              <td>
+                <input type="date" class="form-control form-control-sm spreadsheet-date text-muted"
+                       style="max-width: 140px;"
+                       th:data-id="${item.id}"
+                       th:value="${item.expirationDate}"/>
+              </td>
               <td class="text-end">
                 <button class="btn btn-sm text-danger delete-trigger-desktop">
                   <i class="bi bi-trash"></i>
@@ -128,7 +142,16 @@
                 <i class="bi bi-exclamation-octagon-fill"></i> EXPIRED
               </span>
               <div class="d-flex flex-wrap gap-2 mt-2">
-                <span class="badge bg-light text-dark border rounded-pill custom-badge" th:text="${item.category != null ? item.category : 'General'}">Category</span>
+                <select class="form-select form-select-sm spreadsheet-category" style="max-width: 200px;" th:data-id="${item.id}">
+                  <option value="Produce" th:selected="${item.category == 'Produce'}">Produce</option>
+                  <option value="Meat & Seafood" th:selected="${item.category == 'Meat & Seafood'}">Meat & Seafood</option>
+                  <option value="Dairy & Eggs" th:selected="${item.category == 'Dairy & Eggs'}">Dairy & Eggs</option>
+                  <option value="Staples" th:selected="${item.category == 'Staples'}">Staples</option>
+                  <option value="Spices & Herbs" th:selected="${item.category == 'Spices & Herbs'}">Spices & Herbs</option>
+                  <option value="Condiments & Sauces" th:selected="${item.category == 'Condiments & Sauces'}">Condiments & Sauces</option>
+                  <option value="Frozen" th:selected="${item.category == 'Frozen'}">Frozen</option>
+                  <option value="General" th:selected="${item.category == null or item.category == 'General'}">General</option>
+                </select>
                 <span class="badge border rounded-pill custom-badge" th:classappend="${item.expirationDate != null} ? 'bg-danger bg-opacity-10 text-danger border-danger' : 'bg-light text-muted'">
                   Exp: <span th:text="${item.expirationDate != null ? item.expirationDate : 'None'}">None</span>
                 </span>
@@ -247,6 +270,36 @@
         document.querySelectorAll(".spreadsheet-input").forEach((input) => {
           input.addEventListener("change", function () {
             syncDatabase(this.getAttribute("data-id"), this.value);
+          });
+        });
+
+        // Spreadsheet Date Listeners
+        document.querySelectorAll(".spreadsheet-date").forEach((input) => {
+          input.addEventListener("change", async function () {
+            try {
+              await fetch(`/pantry/update-date/${this.getAttribute("data-id")}`, {
+                method: "POST",
+                headers: { "Content-Type": "application/x-www-form-urlencoded" },
+                body: `newDate=${this.value}`,
+              });
+            } catch (e) {
+              console.error("Date sync failed", e);
+            }
+          });
+        });
+
+        // Category Listeners (Desktop + Mobile)
+        document.querySelectorAll(".spreadsheet-category").forEach((select) => {
+          select.addEventListener("change", async function () {
+            try {
+              await fetch(`/pantry/update-category/${this.getAttribute("data-id")}`, {
+                method: "POST",
+                headers: { "Content-Type": "application/x-www-form-urlencoded" },
+                body: `newCategory=${encodeURIComponent(this.value)}`,
+              });
+            } catch (e) {
+              console.error("Category sync failed", e);
+            }
           });
         });
 

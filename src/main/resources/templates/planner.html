@@ -12,10 +12,6 @@
             <h2 class="fw-bold m-0">Weekly Planner</h2>
             
             <div class="d-flex gap-2">
-                <button class="btn btn-outline-success rounded-pill px-4 shadow-sm" type="button" data-bs-toggle="offcanvas" data-bs-target="#recDrawer">
-                    <i class="bi bi-magic"></i> What can I make?
-                </button>
-
                 <div class="btn-group">
                     <a th:href="@{/planner(offsetWeeks=${offsetWeeks - 1})}" 
                     class="btn btn-outline-dark" 
@@ -27,19 +23,6 @@
                     th:classappend="${offsetWeeks == 4} ? 'disabled' : ''">
                     Next <i class="bi bi-chevron-right"></i>
                     </a>
-                </div>
-            </div>
-        </div>
-
-        <div class="offcanvas offcanvas-end" tabindex="-1" id="recDrawer">
-            <div class="offcanvas-header border-bottom">
-                <h5 class="fw-bold m-0">Pantry Matches</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="offcanvas"></button>
-            </div>
-            <div class="offcanvas-body" id="recContainer">
-                <div class="text-center py-5">
-                    <div class="spinner-border text-success" role="status"></div>
-                    <p class="mt-2 text-muted">Checking your pantry...</p>
                 </div>
             </div>
         </div>
@@ -82,6 +65,20 @@
                 </div>
             </div>
         </div>
+
+        <section class="planner-recommendations mt-4">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h4 class="fw-bold m-0">Recommendations</h4>
+                <small class="text-muted">Drag cards into any day column</small>
+            </div>
+
+            <div id="plannerRecoContainer" class="planner-reco-grid">
+                <div class="planner-reco-loading text-center py-4 w-100">
+                    <div class="spinner-border text-success" role="status"></div>
+                    <p class="mt-2 text-muted">Checking your pantry...</p>
+                </div>
+            </div>
+        </section>
     </div>
 
     <div th:replace="~{fragments/layout :: mobile-bottom-nav}"></div>
@@ -93,6 +90,14 @@
 
     <script th:inline="javascript">
     document.addEventListener('DOMContentLoaded', function() {
+        function normalizeRecoImageUrl(imageUrl) {
+            const fallback = 'https://images.unsplash.com/photo-1621996346565-e3dbc646d9a9?auto=format&fit=crop&w=600&q=80';
+            if (typeof imageUrl !== 'string' || !imageUrl.trim()) return fallback;
+            const trimmed = imageUrl.trim();
+            return (trimmed.startsWith('http://') || trimmed.startsWith('https://') || trimmed.startsWith('/'))
+                ? trimmed
+                : '/' + trimmed;
+        }
         
         function attachDragStart(card) {
             card.addEventListener('dragstart', function(event) {
@@ -137,31 +142,37 @@
             });
         });
 
-        const recDrawer = document.getElementById('recDrawer');
-        recDrawer.addEventListener('show.bs.offcanvas', fetchRecommendations);
+        window.refreshPlannerRecommendations = fetchRecommendations;
+        fetchRecommendations();
 
         async function fetchRecommendations() {
-            const container = document.getElementById('recContainer');
+            const container = document.getElementById('plannerRecoContainer');
+            container.innerHTML = `
+                <div class="planner-reco-loading text-center py-4 w-100">
+                    <div class="spinner-border text-success" role="status"></div>
+                    <p class="mt-2 text-muted">Checking your pantry...</p>
+                </div>`;
+
             try {
                 const response = await fetch('/api/recommendations');
                 const recipes = await response.json();
                 
                 if (recipes.length === 0) {
-                    container.innerHTML = '<p class="text-center text-muted">No full matches found. Try adding more to your pantry!</p>';
+                    container.innerHTML = '<p class="text-center text-muted w-100">No recommendation matches found. Try adding more to your pantry!</p>';
                     return;
                 }
 
                 container.innerHTML = recipes.map(r => `
-                    <div class="card mb-3 shadow-sm hover-card" 
+                    <div class="card shadow-sm hover-card planner-reco-card" 
                          draggable="true" 
-                         data-recipe-id="${r.id}" 
+                         data-recipe-id="${r.recipeId || r.id}" 
                          style="cursor: grab;">
                         <div class="card-body p-2 d-flex align-items-center gap-3">
-                            <img src="${r.imageUrl || '/images/default-recipe.jpg'}" 
+                            <img src="${normalizeRecoImageUrl(r.imageUrl)}" 
                                  style="width: 50px; height: 50px; object-fit: cover; border-radius: 8px;">
                             <div class="flex-grow-1">
                                 <h6 class="mb-0 fw-bold" style="font-size: 0.9rem;">${r.title}</h6>
-                                <span class="badge bg-success" style="font-size: 0.7rem;">Match</span>
+                                <span class="badge bg-success" style="font-size: 0.7rem;">${r.matchPercentage || 0}% Match</span>
                             </div>
                             <i class="bi bi-grip-vertical text-muted"></i>
                         </div>
@@ -171,7 +182,7 @@
                 container.querySelectorAll('.hover-card').forEach(attachDragStart);
 
             } catch (err) {
-                container.innerHTML = '<p class="text-danger">Error loading recommendations.</p>';
+                container.innerHTML = '<p class="text-danger w-100">Error loading recommendations.</p>';
             }
         }
     });

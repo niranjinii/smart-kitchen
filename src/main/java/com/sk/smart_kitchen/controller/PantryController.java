@@ -79,6 +79,26 @@ public class PantryController {
         }
     }
 
+    @PostMapping("/update-date/{id}")
+    @ResponseBody
+    public String updateExpirationDate(
+            @PathVariable Long id,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate newDate) {
+        PantryItem item = pantryRepository.findById(id).orElseThrow();
+        item.setExpirationDate(newDate);
+        pantryRepository.save(item);
+        return "updated";
+    }
+
+    @PostMapping("/update-category/{id}")
+    @ResponseBody
+    public String updateCategory(@PathVariable Long id, @RequestParam String newCategory) {
+        PantryItem item = pantryRepository.findById(id).orElseThrow();
+        item.setCategory(newCategory);
+        pantryRepository.save(item);
+        return "updated";
+    }
+
     @PostMapping("/add")
     public String addToPantry(
             @RequestParam String name, 

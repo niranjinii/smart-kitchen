@@ -25,6 +25,33 @@
     margin-bottom: 15px;
 }
 
+.planner-recommendations {
+    background: #ffffff;
+    border: 1px solid #e5e7eb;
+    border-radius: 14px;
+    padding: 1rem;
+}
+
+.planner-reco-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 0.75rem;
+}
+
+.planner-reco-card {
+    border: 0;
+    border-left: 4px solid var(--brand-green) !important;
+    transition: transform 0.2s ease;
+}
+
+.planner-reco-card:hover {
+    transform: translateY(-2px);
+}
+
+.planner-reco-loading {
+    grid-column: 1 / -1;
+}
+
 /* TABLET: 3-Day Sliding Window */
 @media (max-width: 992px) and (min-width: 768px) {
     .planner-grid {
@@ -37,10 +64,14 @@
         flex: 0 0 calc(33.333% - 10px);
         scroll-snap-align: start;
     }
+    .planner-reco-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
 }
 
 /* MOBILE: Vertical Agenda */
 @media (max-width: 767px) {
     .planner-grid { display: flex; flex-direction: column; gap: 20px; }
     .day-column { min-height: auto; }
+    .planner-reco-grid { grid-template-columns: 1fr; }
 }

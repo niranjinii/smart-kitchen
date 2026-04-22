@@ -10,10 +10,15 @@
     <div class="container-md px-3 mt-4 mb-5 pb-5">
         <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
             <h2 class="fw-bold m-0">Shopping List</h2>
-            
-            <button id="shareListBtn" class="btn btn-dark d-flex align-items-center gap-2 px-4 shadow-sm rounded-pill">
-                <i class="bi bi-share-fill"></i> Share List
-            </button>
+
+            <div class="d-flex gap-2">
+                <button class="btn btn-outline-dark fw-bold rounded-3" data-bs-toggle="modal" data-bs-target="#addCustomModal">
+                    <i class="bi bi-plus-lg"></i> Add Item
+                </button>
+                <button id="shareListBtn" class="btn btn-dark d-flex align-items-center gap-2 px-4 shadow-sm rounded-3">
+                    <i class="bi bi-share-fill"></i> Share List
+                </button>
+            </div>
         </div>
 
         <div class="list-container list-columns py-2 shadow-sm">
@@ -33,11 +38,78 @@
                     <button type="submit" class="swipe-delete-btn"><i class="bi bi-trash"></i></button>
                 </form>
             </label>
+
+            <div class="mt-4 text-center" th:if="${items != null and !items.isEmpty()}">
+                <button class="btn text-white fw-bold px-5 py-2 rounded-3 shadow-sm" style="background-color: var(--brand-green);" data-bs-toggle="modal" data-bs-target="#transferModal">
+                    <i class="bi bi-check2-square"></i> Clear Checked Items
+                </button>
+            </div>
         </div>
     </div>
 
     <div th:replace="~{fragments/layout :: mobile-bottom-nav}"></div>
     <div th:replace="~{fragments/layout :: mobile-offcanvas}"></div>
+
+        <div class="modal fade" id="addCustomModal" tabindex="-1">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content border-0 rounded-4 shadow">
+                    <div class="modal-header border-bottom pb-3">
+                        <h5 class="modal-title fw-bold">Add Custom Item</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                      <form th:action="@{/shopping-list/add-custom}" method="post">
+                        <div class="modal-body py-4">
+                            <div class="mb-3">
+                                <label class="form-label fw-bold text-muted">Ingredient Name</label>
+                                <input type="text" name="name" class="form-control custom-input" placeholder="e.g., Basmati Rice" required/>
+                            </div>
+                            <div class="row g-3">
+                                <div class="col-6">
+                                    <label class="form-label fw-bold text-muted">Quantity</label>
+                                    <input type="number" name="quantity" class="form-control custom-input" placeholder="e.g., 500" step="0.1" min="0.1" required/>
+                                </div>
+                                <div class="col-6">
+                                    <label class="form-label fw-bold text-muted">Unit</label>
+                                    <select name="unit" class="form-select custom-input" required>
+                                        <option value="g">Grams (g)</option>
+                                        <option value="kg">Kilograms (kg)</option>
+                                        <option value="ml">Milliliters (ml)</option>
+                                        <option value="l">Liters (l)</option>
+                                        <option value="count">Count (whole items)</option>
+                                        <option value="bunch">Bunch</option>
+                                        <option value="head">Head</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="modal-footer border-top pt-3">
+                            <button type="submit" class="btn btn-dark w-100 fw-bold py-2 rounded-3">Add to List</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="modal fade" id="transferModal" tabindex="-1">
+            <div class="modal-dialog modal-dialog-centered modal-sm">
+                <div class="modal-content border-0 rounded-4 shadow">
+                    <div class="modal-body text-center p-4">
+                        <i class="bi bi-check2-square text-success mb-3 d-block" style="font-size: 3rem;"></i>
+                        <h5 class="fw-bold mb-3">Clear Checked Items?</h5>
+                        <p class="text-muted mb-3">Choose what to do with checked items:</p>
+                        <div class="d-grid gap-2">
+                            <form th:action="@{/shopping-list/transfer-to-pantry}" method="post">
+                                <button type="submit" class="btn text-white w-100 fw-bold rounded-3" style="background-color: var(--brand-green);">Move to Pantry and Clear</button>
+                            </form>
+                            <form th:action="@{/shopping-list/clear-checked}" method="post">
+                                <button type="submit" class="btn btn-outline-dark w-100 fw-bold rounded-3">Clear Only</button>
+                            </form>
+                            <button type="button" class="btn btn-light w-100 fw-bold rounded-3 border" data-bs-dismiss="modal">Cancel</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
 
     <script>
         // 1. AJAX Checkbox Toggling
