@@ -46,6 +46,64 @@ button.filter-btn:hover i {
   color: #ffffff;
 }
 
+.prep-range-slider {
+  position: relative;
+  height: 6px;
+  border-radius: 999px;
+  background: #d1d5db;
+  margin: 18px 2px 14px;
+}
+
+.prep-range-input {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 6px;
+  margin: 0;
+  padding: 0;
+  background: none;
+  pointer-events: none;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.prep-range-input::-webkit-slider-runnable-track {
+  height: 6px;
+  background: transparent;
+}
+
+.prep-range-input::-moz-range-track {
+  height: 6px;
+  background: transparent;
+}
+
+.prep-range-input::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 22px;
+  height: 22px;
+  margin-top: -8px;
+  border-radius: 50%;
+  border: 3px solid #2b4c3b;
+  background: #ffffff;
+  box-shadow: 0 2px 8px rgba(43, 76, 59, 0.25);
+  pointer-events: auto;
+  cursor: pointer;
+}
+
+.prep-range-input::-moz-range-thumb {
+  width: 22px;
+  height: 22px;
+  margin-top: 0;
+  border-radius: 50%;
+  border: 3px solid #2b4c3b;
+  background: #ffffff;
+  box-shadow: 0 2px 8px rgba(43, 76, 59, 0.25);
+  pointer-events: auto;
+  cursor: pointer;
+}
+
 /* =========================================
    CATEGORY PILLS
    ========================================= */
