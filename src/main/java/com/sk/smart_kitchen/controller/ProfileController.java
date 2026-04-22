@@ -1,5 +1,6 @@
 package com.sk.smart_kitchen.controller;
 
+import com.sk.smart_kitchen.config.CustomUserDetails;
 import com.sk.smart_kitchen.entities.Recipe;
 import com.sk.smart_kitchen.entities.SavedRecipe;
 import com.sk.smart_kitchen.entities.User;
@@ -13,10 +14,11 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.authentication.logout.SecurityContextLogoutHandler;
 import org.springframework.stereotype.Controller;
-import org.springframework.http.HttpStatus;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -171,6 +173,16 @@ public class ProfileController {
         if (emailChanged || passwordChanged) {
             new SecurityContextLogoutHandler().logout(request, response, authentication);
             return "redirect:/login?profileUpdated=true";
+        }
+
+        if (authentication != null && authentication.isAuthenticated()) {
+            CustomUserDetails updatedPrincipal = new CustomUserDetails(user);
+            UsernamePasswordAuthenticationToken refreshedAuthentication = new UsernamePasswordAuthenticationToken(
+                    updatedPrincipal,
+                    authentication.getCredentials(),
+                    authentication.getAuthorities());
+            refreshedAuthentication.setDetails(authentication.getDetails());
+            SecurityContextHolder.getContext().setAuthentication(refreshedAuthentication);
         }
 
         return "redirect:/profile?updated=true";
