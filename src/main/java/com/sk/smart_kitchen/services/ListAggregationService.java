@@ -23,6 +23,10 @@ public class ListAggregationService {
 
     @Transactional
     public void addOrUpdateIngredient(User user, Ingredient ingredient, double quantity, String unit) {
+        String safeUnit = (unit == null || unit.trim().isEmpty()) ? "unit" : unit;
+        String normalizedIncomingUnit = unitService.canonicalizeUnit(safeUnit);
+        double incomingInBase = unitService.convertToBase(quantity, safeUnit);
+        double normalizedIncomingQty = unitService.convertFromBase(incomingInBase, normalizedIncomingUnit);
         
         Optional<ShoppingListItem> existingItem = repository
                 .findByUserAndIngredientAndIsCheckedFalse(user, ingredient);
@@ -31,14 +35,15 @@ public class ListAggregationService {
             ShoppingListItem item = existingItem.get();
             
             // If existing unit is empty, use the new unit
-            String targetUnit = (item.getUnit() == null || item.getUnit().isEmpty()) ? unit : item.getUnit();
+            String existingUnit = (item.getUnit() == null || item.getUnit().isEmpty()) ? "unit" : item.getUnit();
+            String targetUnit = unitService.canonicalizeUnit(existingUnit);
             
             // Logic for unit conversion and aggregation
             // 1. Convert existing quantity in DB to base metric
-            double existingInBase = unitService.convertToBase(item.getQuantityNeeded(), item.getUnit());
+            double existingInBase = unitService.convertToBase(item.getQuantityNeeded(), existingUnit);
             
             // 2. Convert incoming quantity to base metric
-            double newInBase = unitService.convertToBase(quantity, unit);
+            double newInBase = unitService.convertToBase(normalizedIncomingQty, normalizedIncomingUnit);
             
             // 3. Sum them up in the base metric
             double totalInBase = existingInBase + newInBase;
@@ -54,8 +59,8 @@ public class ListAggregationService {
             ShoppingListItem newItem = new ShoppingListItem();
             newItem.setUser(user);
             newItem.setIngredient(ingredient); 
-            newItem.setQuantityNeeded(quantity);
-            newItem.setUnit(unit != null ? unit : "");
+            newItem.setQuantityNeeded(normalizedIncomingQty);
+            newItem.setUnit(normalizedIncomingUnit);
             newItem.setIsChecked(false);
             repository.save(newItem);
         }

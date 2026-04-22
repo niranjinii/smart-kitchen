@@ -24,7 +24,10 @@ public class ShoppingListFacade {
     public void processAndAddIngredients(User user, List<Long> ingredientIds, List<Double> quantities, List<String> units) {
         for (int i = 0; i < ingredientIds.size(); i++) {
             Double qty = (quantities != null && quantities.size() > i) ? quantities.get(i) : 1.0;
-            String unit = (units != null && units.size() > i) ? units.get(i) : "";
+            String unit = (units != null && units.size() > i) ? units.get(i) : "unit";
+            if (unit == null || unit.trim().isEmpty()) {
+                unit = "unit";
+            }
             
             Ingredient ingredient = ingredientRepository.findById(ingredientIds.get(i)).orElse(null);
 

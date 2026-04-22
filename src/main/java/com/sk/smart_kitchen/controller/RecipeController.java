@@ -234,7 +234,7 @@ public class RecipeController {
         return "redirect:/recipes/" + id; 
     }
 
-    // 🌟 NEW: The Undo Swap Endpoint
+    // The Undo Swap Endpoint
     @PostMapping("/{id}/swap/remove")
     public String removeSubstitute(@PathVariable Long id, Principal principal, 
                                    @RequestParam("originalId") Long originalId,
@@ -243,6 +243,10 @@ public class RecipeController {
         
         User user = userRepository.findByEmail(principal.getName()).orElseThrow();
         Ingredient original = ingredientRepository.findById(originalId).orElseThrow();
+
+        if (!recipeScope) {
+            return "redirect:/recipes/" + id; 
+        }
 
         // Find the specific preference and delete it!
         subRepository.findByOriginalIngredientAndUser(original, user)

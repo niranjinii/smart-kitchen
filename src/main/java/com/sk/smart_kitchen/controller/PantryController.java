@@ -6,6 +6,7 @@ import com.sk.smart_kitchen.entities.Ingredient;
 import com.sk.smart_kitchen.repositories.IngredientRepository;
 import com.sk.smart_kitchen.repositories.PantryItemRepository;
 import com.sk.smart_kitchen.repositories.UserRepository;
+import com.sk.smart_kitchen.services.UnitConversionService;
 
 
 import org.springframework.stereotype.Controller;
@@ -30,14 +31,17 @@ public class PantryController {
     private final PantryItemRepository pantryRepository;
     private final UserRepository userRepository;
     private final IngredientRepository ingredientRepository; // Add this!
+    private final UnitConversionService unitConversionService;
     
 
     // Update the constructor to inject the IngredientRepository
     public PantryController(PantryItemRepository pantryRepository, UserRepository userRepository,
-            IngredientRepository ingredientRepository) {
+            IngredientRepository ingredientRepository,
+            UnitConversionService unitConversionService) {
         this.pantryRepository = pantryRepository;
         this.userRepository = userRepository;
         this.ingredientRepository = ingredientRepository;
+        this.unitConversionService = unitConversionService;
     }
 
     @GetMapping
@@ -105,9 +109,25 @@ public class PantryController {
                     return newItem;
                 });
 
-        // 3. Update all the user-specific data!
-        pantryItem.setQuantity(pantryItem.getQuantity() + quantity);
-        pantryItem.setUnit(unit);
+        // 3. Aggregate by converting to base, then persist using canonical unit set.
+        String incomingUnit = (unit == null || unit.isBlank()) ? "unit" : unit;
+        String canonicalIncomingUnit = unitConversionService.canonicalizeUnit(incomingUnit);
+        double incomingBase = unitConversionService.convertToBase(quantity, incomingUnit);
+
+        String existingUnit = pantryItem.getUnit();
+        String canonicalExistingUnit = (existingUnit == null || existingUnit.isBlank())
+            ? canonicalIncomingUnit
+            : unitConversionService.canonicalizeUnit(existingUnit);
+
+        double existingBase = unitConversionService.convertToBase(
+            pantryItem.getQuantity() != null ? pantryItem.getQuantity() : 0.0,
+            canonicalExistingUnit);
+
+        double finalBase = existingBase + incomingBase;
+        double finalQuantity = unitConversionService.convertFromBase(finalBase, canonicalExistingUnit);
+
+        pantryItem.setQuantity(finalQuantity);
+        pantryItem.setUnit(canonicalExistingUnit);
         pantryItem.setCategory(category); // 🌟 SAVED TO THE USER'S PANTRY NOW
         
         if (expirationDate != null) {

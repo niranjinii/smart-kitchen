@@ -147,6 +147,10 @@
                   </span>
                   <span th:classappend="${item.isSubstituted} ? 'text-decoration-line-through text-muted' : ''" th:text="${item.requirement.ingredient.name}"></span>
                   <span th:if="${item.requirement.preparationState != null}" class="text-muted small ms-1" th:text="${'(' + item.requirement.preparationState + ')'}"></span>
+                <button th:if="${!item.isSubstituted}" type="button" class="btn btn-sm btn-outline-secondary py-0 px-2 ms-auto" style="font-size: 0.75rem;" 
+                    th:onclick="openSwapModal([[${item.requirement.ingredient.id}]], [[${item.requirement.ingredient.name}]])">
+                  Swap
+                </button>
               </div>
               
               <div th:if="${item.isSubstituted}" class="ms-4 mt-1 d-flex align-items-center flex-wrap gap-2">
@@ -166,7 +170,7 @@
                       Used <span th:text="${item.substituteQtyUsed}"></span><span th:text="${item.substituteUnit}"></span> <span th:text="${item.substituteName}"></span> (Dietary Rule)
                   </span>
 
-                  <form th:action="@{/recipes/{id}/swap/remove(id=${recipe.id})}" method="post" class="m-0">
+                    <form th:if="${item.isRecipeScopedSwap}" th:action="@{/recipes/{id}/swap/remove(id=${recipe.id})}" method="post" class="m-0">
                       <input type="hidden" name="originalId" th:value="${item.requirement.ingredient.id}">
                       <input type="hidden" name="recipeScope" th:value="${item.isRecipeScopedSwap}">
                       <button type="submit" class="btn btn-link p-0 text-danger text-decoration-none" style="font-size: 0.75rem;"><i class="bi bi-arrow-counterclockwise"></i> Undo</button>
@@ -205,7 +209,7 @@
                       <i class="bi bi-check2-circle me-1"></i> Dietary Rule applied for [[${item.originalName}]]
                   </span>
 
-                  <form th:action="@{/recipes/{id}/swap/remove(id=${recipe.id})}" method="post" class="m-0">
+                    <form th:if="${item.isRecipeScopedSwap}" th:action="@{/recipes/{id}/swap/remove(id=${recipe.id})}" method="post" class="m-0">
                       <input type="hidden" name="originalId" th:value="${item.requirement.ingredient.id}">
                       <input type="hidden" name="recipeScope" th:value="${item.isRecipeScopedSwap}">
                       <button type="submit" class="btn btn-link p-0 text-danger text-decoration-none" style="font-size: 0.8rem;"><i class="bi bi-arrow-counterclockwise"></i> Undo</button>
@@ -574,7 +578,7 @@
                                   th:value="${item.isSubstituted ? item.substituteQtyUsed : item.missingQty}">
                             
                             <input type="hidden" name="units" 
-                                  th:value="${item.isSubstituted ? item.substituteUnit : (item.requirement.unit != null ? item.requirement.unit : '')}">
+                                  th:value="${item.isSubstituted ? (item.substituteUnit != null ? item.substituteUnit : 'unit') : (item.requirement.unit != null ? item.requirement.unit : 'unit')}">
                             
                             <div class="flex-grow-1">
                                 <span class="fw-bold">
