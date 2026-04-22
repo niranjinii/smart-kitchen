@@ -147,6 +147,10 @@
                   </span>
                   <span th:classappend="${item.isSubstituted} ? 'text-decoration-line-through text-muted' : ''" th:text="${item.requirement.ingredient.name}"></span>
                   <span th:if="${item.requirement.preparationState != null}" class="text-muted small ms-1" th:text="${'(' + item.requirement.preparationState + ')'}"></span>
+                <button th:if="${!item.isSubstituted}" type="button" class="btn btn-sm btn-outline-secondary py-0 px-2 ms-auto" style="font-size: 0.75rem;" 
+                    th:onclick="openSwapModal([[${item.requirement.ingredient.id}]], [[${item.requirement.ingredient.name}]])">
+                  Swap
+                </button>
               </div>
               
               <div th:if="${item.isSubstituted}" class="ms-4 mt-1 d-flex align-items-center flex-wrap gap-2">
@@ -166,7 +170,7 @@
                       Used <span th:text="${item.substituteQtyUsed}"></span><span th:text="${item.substituteUnit}"></span> <span th:text="${item.substituteName}"></span> (Dietary Rule)
                   </span>
 
-                  <form th:action="@{/recipes/{id}/swap/remove(id=${recipe.id})}" method="post" class="m-0">
+                    <form th:if="${item.isRecipeScopedSwap}" th:action="@{/recipes/{id}/swap/remove(id=${recipe.id})}" method="post" class="m-0">
                       <input type="hidden" name="originalId" th:value="${item.requirement.ingredient.id}">
                       <input type="hidden" name="recipeScope" th:value="${item.isRecipeScopedSwap}">
                       <button type="submit" class="btn btn-link p-0 text-danger text-decoration-none" style="font-size: 0.75rem;"><i class="bi bi-arrow-counterclockwise"></i> Undo</button>
@@ -205,7 +209,7 @@
                       <i class="bi bi-check2-circle me-1"></i> Dietary Rule applied for [[${item.originalName}]]
                   </span>
 
-                  <form th:action="@{/recipes/{id}/swap/remove(id=${recipe.id})}" method="post" class="m-0">
+                    <form th:if="${item.isRecipeScopedSwap}" th:action="@{/recipes/{id}/swap/remove(id=${recipe.id})}" method="post" class="m-0">
                       <input type="hidden" name="originalId" th:value="${item.requirement.ingredient.id}">
                       <input type="hidden" name="recipeScope" th:value="${item.isRecipeScopedSwap}">
                       <button type="submit" class="btn btn-link p-0 text-danger text-decoration-none" style="font-size: 0.8rem;"><i class="bi bi-arrow-counterclockwise"></i> Undo</button>
@@ -565,32 +569,30 @@
                 <div class="shopping-modal-list">
                     <th:block sec:authorize="isAuthenticated()" th:if="${gapResult != null and not #lists.isEmpty(gapResult.missing)}">
                         <label th:each="item : ${gapResult.missing}" class="d-flex align-items-start gap-3 mb-3 cursor-pointer p-2 rounded hover-bg border" style="background: #f9fafb;">
-                            <input type="checkbox" name="ingredientIds" th:value="${item.requirement.ingredient.id}" class="ingredient-checkbox mt-1" onchange="this.nextElementSibling.disabled = !this.checked;" checked>
-                            <input type="hidden" name="quantities" th:value="${item.missingQty}">
-                            <div>
-                                <span class="fw-bold"><span th:text="${item.missingQty}"></span><span th:text="${item.requirement.unit != null ? item.requirement.unit : ''}"></span></span> 
-                                <span th:text="${item.requirement.ingredient.name}"></span>
-                                <span th:if="${item.percentOwned > 0}" class="badge bg-warning text-dark ms-2" style="font-size: 0.65rem;">Top Up</span>
+                            
+                            <input type="checkbox" name="ingredientIds" 
+                                  th:value="${item.isSubstituted ? item.substituteIngredientId : item.requirement.ingredient.id}" 
+                                  class="ingredient-checkbox mt-1" checked>
+                            
+                            <input type="hidden" name="quantities" 
+                                  th:value="${item.isSubstituted ? item.substituteQtyUsed : item.missingQty}">
+                            
+                            <input type="hidden" name="units" 
+                                  th:value="${item.isSubstituted ? (item.substituteUnit != null ? item.substituteUnit : 'unit') : (item.requirement.unit != null ? item.requirement.unit : 'unit')}">
+                            
+                            <div class="flex-grow-1">
+                                <span class="fw-bold">
+                                    <span th:text="${item.isSubstituted ? #numbers.formatDecimal(item.substituteQtyUsed, 1, 2) : #numbers.formatDecimal(item.missingQty, 1, 2)}"></span>
+                                    <span th:text="${item.isSubstituted ? item.substituteUnit : (item.requirement.unit != null ? item.requirement.unit : '')}"></span>
+                                </span> 
+                                
+                                <span th:text="${item.isSubstituted ? item.substituteName : item.requirement.ingredient.name}"></span>
+                                
+                                <span th:if="${item.isSubstituted}" class="badge bg-info text-dark ms-2" style="font-size: 0.65rem;">Swapped</span>
                             </div>
                         </label>
                     </th:block>
-
-                    <th:block sec:authorize="isAnonymous()" th:if="${not #lists.isEmpty(ingredients)}">
-                        <label th:each="ingredient : ${ingredients}" class="d-flex align-items-start gap-3 mb-3 cursor-pointer p-2 rounded hover-bg border" style="background: #f9fafb;">
-                            <input type="checkbox" name="ingredientIds" th:value="${ingredient.ingredient.id}" class="ingredient-checkbox mt-1" onchange="this.nextElementSibling.disabled = !this.checked;" checked>
-                            <input type="hidden" name="quantities" th:value="${ingredient.quantityNeeded}">
-                            <div>
-                                <span class="fw-bold"><span th:text="${ingredient.quantityNeeded}"></span><span th:text="${ingredient.unit != null ? ingredient.unit : ''}"></span></span> 
-                                <span th:text="${ingredient.ingredient.name}"></span>
-                            </div>
-                        </label>
-                    </th:block>
-
-                    <div sec:authorize="isAuthenticated()" th:if="${gapResult != null and #lists.isEmpty(gapResult.missing)}" class="text-center text-success py-3">
-                        <i class="bi bi-check-circle fs-1"></i>
-                        <p class="mt-2 mb-0 fw-bold">You have everything you need!</p>
                     </div>
-                </div>
               </div>
               <div class="modal-footer border-top pt-3">
                   <button type="button" class="btn btn-light fw-bold" data-bs-dismiss="modal">Cancel</button>
@@ -613,7 +615,19 @@
               <div class="modal-body py-4">
                   <div class="mb-3">
                       <label class="form-label fw-bold">Select Date</label>
-                      <input type="date" name="plannedDate" class="form-control custom-input" required>
+                      <input type="date" name="plannedDate" id="plannerDateInput" class="form-control custom-input" required>
+                        <script>
+                        const dateInput = document.getElementById('plannerDateInput');
+                        if(dateInput) {
+                            const today = new Date().toISOString().split('T')[0];
+                            const nextMonth = new Date();
+                            nextMonth.setDate(nextMonth.getDate() + 30);
+                            const maxDate = nextMonth.toISOString().split('T')[0];
+                            
+                            dateInput.setAttribute('min', today);
+                            dateInput.setAttribute('max', maxDate);
+                        }
+                    </script>
                   </div>
                   <div class="mb-3">
                       <label class="form-label fw-bold">Meal Type</label>
