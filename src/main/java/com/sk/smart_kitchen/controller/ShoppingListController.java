@@ -2,12 +2,9 @@ package com.sk.smart_kitchen.controller;
 
 import com.sk.smart_kitchen.entities.ShoppingListItem;
 import com.sk.smart_kitchen.entities.User;
-import com.sk.smart_kitchen.entities.Ingredient;
 import com.sk.smart_kitchen.repositories.ShoppingListItemRepository;
 import com.sk.smart_kitchen.repositories.UserRepository;
-import com.sk.smart_kitchen.repositories.IngredientRepository;
-import com.sk.smart_kitchen.services.ListAggregationService;
-import org.springframework.beans.factory.annotation.Autowired;
+import com.sk.smart_kitchen.services.ShoppingListFacade;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
@@ -20,16 +17,15 @@ import java.util.List;
 public class ShoppingListController {
 
     private final ShoppingListItemRepository repository;
-    private final ListAggregationService aggregationService;
     private final UserRepository userRepository;
+    private final ShoppingListFacade shoppingListFacade; // Injected Facade
 
-    @Autowired
-    private IngredientRepository ingredientRepository;
-
-    public ShoppingListController(ShoppingListItemRepository repository, ListAggregationService aggregationService, UserRepository userRepository) {
+    public ShoppingListController(ShoppingListItemRepository repository, 
+                                  UserRepository userRepository, 
+                                  ShoppingListFacade shoppingListFacade) {
         this.repository = repository;
-        this.aggregationService = aggregationService;
         this.userRepository = userRepository;
+        this.shoppingListFacade = shoppingListFacade;
     }
 
     @GetMapping
@@ -60,6 +56,7 @@ public class ShoppingListController {
     public String addToList(
             @RequestParam(value = "ingredientIds", required = false) List<Long> ingredientIds,
             @RequestParam(value = "quantities", required = false) List<Double> quantities,
+            @RequestParam(value = "units", required = false) List<String> units,
             Principal principal,
             @RequestParam("recipeId") Long recipeId) {
 
@@ -71,15 +68,8 @@ public class ShoppingListController {
 
         User user = userRepository.findByEmail(principal.getName()).orElseThrow();
 
-        for (int i = 0; i < ingredientIds.size(); i++) {
-            Double qty = (quantities != null && quantities.size() > i) ? quantities.get(i) : 1.0;
-            Ingredient ingredient = ingredientRepository.findById(ingredientIds.get(i)).orElse(null);
-
-            if (ingredient != null) {
-                // FIXED: We now pass the entire Ingredient object to the service!
-                aggregationService.addOrUpdateIngredient(user, ingredient, qty, "");
-            }
-        }
+        // FACADE IN ACTION: One single, clean call replaces the messy loop
+        shoppingListFacade.processAndAddIngredients(user, ingredientIds, quantities, units);
 
         return "redirect:/recipes/" + recipeId + "?listAdded=true";
     }

@@ -8,11 +8,45 @@
     <div th:replace="~{fragments/layout :: navbar}"></div>
 
     <div class="container-fluid px-4 mt-4 mb-5 pb-5">
-        <h2 class="fw-bold mb-4">Weekly Planner</h2>
+        <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
+            <h2 class="fw-bold m-0">Weekly Planner</h2>
+            
+            <div class="d-flex gap-2">
+                <button class="btn btn-outline-success rounded-pill px-4 shadow-sm" type="button" data-bs-toggle="offcanvas" data-bs-target="#recDrawer">
+                    <i class="bi bi-magic"></i> What can I make?
+                </button>
+
+                <div class="btn-group">
+                    <a th:href="@{/planner(offsetWeeks=${offsetWeeks - 1})}" 
+                    class="btn btn-outline-dark" 
+                    th:classappend="${offsetWeeks == 0} ? 'disabled' : ''">
+                    <i class="bi bi-chevron-left"></i> Previous
+                    </a>
+                    <a th:href="@{/planner(offsetWeeks=${offsetWeeks + 1})}" 
+                    class="btn btn-outline-dark" 
+                    th:classappend="${offsetWeeks == 4} ? 'disabled' : ''">
+                    Next <i class="bi bi-chevron-right"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="offcanvas offcanvas-end" tabindex="-1" id="recDrawer">
+            <div class="offcanvas-header border-bottom">
+                <h5 class="fw-bold m-0">Pantry Matches</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="offcanvas"></button>
+            </div>
+            <div class="offcanvas-body" id="recContainer">
+                <div class="text-center py-5">
+                    <div class="spinner-border text-success" role="status"></div>
+                    <p class="mt-2 text-muted">Checking your pantry...</p>
+                </div>
+            </div>
+        </div>
 
         <div class="planner-grid">
-            
             <div class="day-column" th:each="date : ${weekDays}" 
+                 th:data-date="${date}"
                  th:style="${date.equals(today)} ? 'border-color: var(--brand-green); background: #f8fbf9;' : ''">
                 
                 <div class="day-header" th:classappend="${date.equals(today)} ? 'text-dark' : ''">
@@ -26,9 +60,7 @@
                 </div>
 
                 <div th:if="${plansByDate.get(date) != null}">
-                    
                     <div th:each="plan : ${plansByDate.get(date)}" class="position-relative">
-                        
                         <form th:action="@{/planner/{id}/delete(id=${plan.id})}" method="post" class="position-absolute top-0 end-0 m-1" style="z-index: 10;">
                             <button type="submit" class="btn btn-sm text-danger p-0" title="Remove from planner" style="background:none; border:none; box-shadow:none;">
                                 <i class="bi bi-x-circle-fill fs-6 bg-white rounded-circle"></i>
@@ -36,7 +68,7 @@
                         </form>
                         
                         <a th:href="@{/recipes/{id}(id=${plan.recipe.id})}" style="text-decoration: none;">
-                            <div class="card border-0 shadow-sm mb-2 hover-card" style="border-left: 4px solid var(--brand-green) !important; transition: transform 0.2s;">
+                            <div class="card border-0 shadow-sm mb-2 hover-card" draggable="true" th:data-plan-id="${plan.id}" style="border-left: 4px solid var(--brand-green) !important; transition: transform 0.2s;">
                                 <div class="card-body p-2 d-flex align-items-center gap-2">
                                     <img th:if="${plan.recipe.imageUrl != null}" th:src="${((plan.recipe.imageUrl.startsWith('http://') || plan.recipe.imageUrl.startsWith('https://') || plan.recipe.imageUrl.startsWith('/')) ? plan.recipe.imageUrl : '/' + plan.recipe.imageUrl)}" style="width: 40px; height: 40px; object-fit: cover; border-radius: 6px;">
                                     <div>
@@ -47,7 +79,6 @@
                             </div>
                         </a>
                     </div>
-
                 </div>
             </div>
         </div>
@@ -59,5 +90,91 @@
     <style>
         .hover-card:hover { transform: translateY(-2px); }
     </style>
+
+    <script th:inline="javascript">
+    document.addEventListener('DOMContentLoaded', function() {
+        
+        function attachDragStart(card) {
+            card.addEventListener('dragstart', function(event) {
+                const planId = this.getAttribute('data-plan-id');
+                const recipeId = this.getAttribute('data-recipe-id'); 
+                
+                if (planId) {
+                    event.dataTransfer.setData('planId', planId);
+                } else if (recipeId) {
+                    event.dataTransfer.setData('recipeId', recipeId);
+                    event.dataTransfer.effectAllowed = 'copy'; 
+                }
+            });
+        }
+
+        document.querySelectorAll('.hover-card[draggable="true"]').forEach(attachDragStart);
+        
+        document.querySelectorAll('.day-column[data-date]').forEach(column => {
+            column.addEventListener('dragover', e => e.preventDefault());
+            
+            column.addEventListener('drop', async function(event) {
+                event.preventDefault();
+                this.style.opacity = '1';
+                
+                const planId = event.dataTransfer.getData('planId');
+                const recipeId = event.dataTransfer.getData('recipeId');
+                const newDate = this.getAttribute('data-date');
+
+                if (planId) {
+                    const formData = new FormData();
+                    formData.append('newDate', newDate);
+                    const response = await fetch(`/planner/${planId}/move`, { method: 'POST', body: formData });
+                    if (response.ok) window.location.reload();
+                } else if (recipeId) {
+                    const formData = new FormData();
+                    formData.append('recipeId', recipeId);
+                    formData.append('plannedDate', newDate);
+                    formData.append('mealType', 'Dinner'); 
+                    const response = await fetch('/planner/add', { method: 'POST', body: formData });
+                    if (response.ok) window.location.reload();
+                }
+            });
+        });
+
+        const recDrawer = document.getElementById('recDrawer');
+        recDrawer.addEventListener('show.bs.offcanvas', fetchRecommendations);
+
+        async function fetchRecommendations() {
+            const container = document.getElementById('recContainer');
+            try {
+                const response = await fetch('/api/recommendations');
+                const recipes = await response.json();
+                
+                if (recipes.length === 0) {
+                    container.innerHTML = '<p class="text-center text-muted">No full matches found. Try adding more to your pantry!</p>';
+                    return;
+                }
+
+                container.innerHTML = recipes.map(r => `
+                    <div class="card mb-3 shadow-sm hover-card" 
+                         draggable="true" 
+                         data-recipe-id="${r.id}" 
+                         style="cursor: grab;">
+                        <div class="card-body p-2 d-flex align-items-center gap-3">
+                            <img src="${r.imageUrl || '/images/default-recipe.jpg'}" 
+                                 style="width: 50px; height: 50px; object-fit: cover; border-radius: 8px;">
+                            <div class="flex-grow-1">
+                                <h6 class="mb-0 fw-bold" style="font-size: 0.9rem;">${r.title}</h6>
+                                <span class="badge bg-success" style="font-size: 0.7rem;">Match</span>
+                            </div>
+                            <i class="bi bi-grip-vertical text-muted"></i>
+                        </div>
+                    </div>
+                `).join('');
+
+                container.querySelectorAll('.hover-card').forEach(attachDragStart);
+
+            } catch (err) {
+                container.innerHTML = '<p class="text-danger">Error loading recommendations.</p>';
+            }
+        }
+    });
+</script>
 </body>
 </html>

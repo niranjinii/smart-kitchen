@@ -25,8 +25,9 @@
             <label th:each="item : ${items}" class="shopping-item-row d-flex align-items-center gap-3 w-100 cursor-pointer" th:classappend="${item.isChecked} ? 'item-checked' : ''">
                 <input type="checkbox" class="huge-checkbox store-toggle" th:checked="${item.isChecked}" th:data-id="${item.id}" />
                 <div class="flex-grow-1">
-                    <span class="fw-bold item-qty text-dark" th:text="${item.quantityNeeded + item.unit}">250g</span>
-                    <span class="item-name text-dark ms-1" th:text="${item.ingredient.name}">Pasta</span>
+                    <span class="fw-bold item-qty text-dark" th:text="${item.quantityNeeded}"></span>
+                    <span class="fw-bold item-qty text-dark" th:text="${item.unit}"></span>
+                    <span class="item-name text-dark ms-1" th:text="${item.ingredient.name}"></span>
                 </div>
                 <form th:action="@{/shopping-list/{id}/delete(id=${item.id})}" method="post" class="m-0" onsubmit="event.stopPropagation();">
                     <button type="submit" class="swipe-delete-btn"><i class="bi bi-trash"></i></button>

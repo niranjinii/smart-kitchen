@@ -35,29 +35,35 @@ public class PlannerController {
     }
 
     @GetMapping
-    public String viewPlanner(Model model, Principal principal) {
-        if (principal == null) return "redirect:/login";
+    public String viewPlanner(Model model, Principal principal, 
+                          @RequestParam(defaultValue = "0") int offsetWeeks) {
+    if (principal == null) return "redirect:/login";
 
-        User user = userRepository.findByEmail(principal.getName()).orElseThrow();
+    // 1. Month Limit Guard (Point #2)
+    if (offsetWeeks < 0) return "redirect:/planner?offsetWeeks=0";
+    if (offsetWeeks > 4) return "redirect:/planner?offsetWeeks=4";
 
-        LocalDate today = LocalDate.now();
-        LocalDate monday = today.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
+    User user = userRepository.findByEmail(principal.getName()).orElseThrow();
 
-        List<LocalDate> currentWeek = new ArrayList<>();
-        for (int i = 0; i < 7; i++) {
-            currentWeek.add(monday.plusDays(i));
-        }
+    // 2. Rolling Logic: Start from "Today" + offset instead of "Previous Monday"
+    LocalDate startDate = LocalDate.now().plusWeeks(offsetWeeks);
 
-        List<MealPlan> allPlans = mealPlanRepository.findByUserOrderByPlannedDateAsc(user);
-        Map<LocalDate, List<MealPlan>> plansByDate = allPlans.stream()
-                .collect(Collectors.groupingBy(MealPlan::getPlannedDate));
-
-        model.addAttribute("weekDays", currentWeek);
-        model.addAttribute("plansByDate", plansByDate);
-        model.addAttribute("today", today);
-
-        return "planner";
+    List<LocalDate> currentWeek = new ArrayList<>();
+    for (int i = 0; i < 7; i++) {
+        currentWeek.add(startDate.plusDays(i));
     }
+
+    List<MealPlan> allPlans = mealPlanRepository.findByUserOrderByPlannedDateAsc(user);
+    Map<LocalDate, List<MealPlan>> plansByDate = allPlans.stream()
+            .collect(Collectors.groupingBy(MealPlan::getPlannedDate));
+
+    model.addAttribute("weekDays", currentWeek);
+    model.addAttribute("plansByDate", plansByDate);
+    model.addAttribute("today", LocalDate.now());
+    model.addAttribute("offsetWeeks", offsetWeeks); // For the UI buttons
+
+    return "planner";
+}
 
     @PostMapping("/add")
     public String addToPlanner(@RequestParam Long recipeId, 
@@ -87,5 +93,16 @@ public class PlannerController {
             mealPlanRepository.deleteById(id);
         }
         return "redirect:/planner";
+    }
+
+    // NEW: Move Meal to Different Date (Drag & Drop)
+    @PostMapping("/{id}/move")
+    @ResponseBody
+    public String moveMeal(@PathVariable Long id, 
+                          @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate newDate) {
+        MealPlan plan = mealPlanRepository.findById(id).orElseThrow();
+        plan.setPlannedDate(newDate);
+        mealPlanRepository.save(plan);
+        return "ok";
     }
 }
