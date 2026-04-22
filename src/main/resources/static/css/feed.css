@@ -116,9 +116,15 @@ button.filter-btn:hover i {
 }
 
 .img-placeholder {
+  position: relative;
   width: 100%;
-  background-size: cover;
-  background-position: center;
+}
+
+.recipe-card-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
 }
 
 /* Pinterest varying heights */
