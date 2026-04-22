@@ -1,0 +1,292 @@
+<!doctype html>
+<html xmlns:th="http://www.thymeleaf.org">
+  <head>
+    <th:block th:replace="~{fragments/layout :: head}"></th:block>
+    <link rel="stylesheet" th:href="@{/css/profile.css}" />
+  </head>
+  <body>
+    <div th:replace="~{fragments/layout :: navbar}"></div>
+
+    <main class="container-md px-3 mt-4 mb-5 pb-5 profile-page">
+      
+      <div class="d-flex flex-column flex-md-row align-items-center justify-content-between mb-5 gap-4">
+        <div class="d-flex align-items-center gap-4">
+          <div class="position-relative">
+            <img th:src="${userProfile.profileImageUrl}" alt="Profile Avatar" class="rounded-circle object-fit-cover shadow" style="width: 110px; height: 110px; border: 4px solid white;" />
+          </div>
+          <div>
+            <h1 class="fw-bold m-0" style="color: var(--brand-green); letter-spacing: -0.02em;" th:text="${userProfile.username}">Display Name</h1>
+            <p class="text-muted m-0 fs-5" th:text="${userProfile.email}">email@example.com</p>
+          </div>
+        </div>
+        <button class="btn btn-outline-dark fw-bold px-4 py-2 rounded-pill shadow-sm" type="button" data-bs-toggle="collapse" data-bs-target="#profileEditPanel" aria-expanded="false" aria-controls="profileEditPanel">
+          <i class="bi bi-pencil-square me-2"></i>Edit Profile
+        </button>
+      </div>
+
+      <div class="alert alert-success border-0 shadow-sm rounded-4" th:if="${deleted}">
+        <i class="bi bi-check-circle-fill me-2"></i> Recipe deleted successfully.
+      </div>
+      <div class="alert alert-danger border-0 shadow-sm rounded-4" th:if="${profileError}">
+        <i class="bi bi-exclamation-triangle-fill me-2"></i> <span th:text="${profileError}"></span>
+      </div>
+
+      <div class="collapse mb-5" id="profileEditPanel">
+        <div class="card shadow-sm border-0 rounded-4 bg-light">
+          <div class="card-body p-4 p-md-5">
+            <h5 class="fw-bold mb-4 text-dark"><i class="bi bi-gear me-2"></i>Account Settings</h5>
+
+            <form method="post" th:action="@{/profile/update}" enctype="multipart/form-data" class="row g-4" id="profileForm">
+              <div class="col-12">
+                <label class="form-label fw-bold text-muted">Profile Photo</label>
+                <div id="avatarDropzone" class="avatar-dropzone bg-white shadow-sm">
+                  <div id="dropzoneCopy" class="dropzone-copy text-center py-4">
+                    <i class="bi bi-cloud-arrow-up fs-2 mb-2 d-block text-muted"></i>
+                    <span class="fw-bold text-dark">Click to upload or drag and drop</span>
+                  </div>
+
+                  <div id="dropzonePreview" class="dropzone-preview d-none text-center py-3">
+                    <div class="position-relative d-inline-block">
+                      <img id="dropzonePreviewImage" src="" alt="New profile preview" class="dropzone-preview-image rounded-circle object-fit-cover shadow-sm" style="width: 100px; height: 100px;" />
+                      <button id="removeSelectedAvatarBtn" type="button" class="btn btn-danger btn-sm rounded-circle position-absolute top-0 start-100 translate-middle shadow" aria-label="Remove selected image">
+                        <i class="bi bi-x-lg"></i>
+                      </button>
+                    </div>
+                  </div>
+                  <input id="avatarFileInput" name="profileImageFile" type="file" accept="image/*" class="visually-hidden" />
+                </div>
+              </div>
+
+              <div class="col-md-6">
+                <label for="displayNameInput" class="form-label fw-bold text-muted">Display Name</label>
+                <input id="displayNameInput" name="displayName" type="text" class="form-control custom-input py-2" th:value="${userProfile.username}" required />
+              </div>
+
+              <div class="col-md-6">
+                <label for="emailInput" class="form-label fw-bold text-muted">Email</label>
+                <input id="emailInput" name="email" type="email" class="form-control custom-input py-2" th:value="${userProfile.email}" required />
+              </div>
+
+              <div class="col-md-6">
+                <label for="newPasswordInput" class="form-label fw-bold text-muted">New Password <span class="fw-normal">(Optional)</span></label>
+                <input id="newPasswordInput" name="newPassword" type="password" class="form-control custom-input py-2" minlength="8" />
+              </div>
+
+              <div class="col-md-6">
+                <label for="confirmPasswordInput" class="form-label fw-bold text-muted">Confirm New Password</label>
+                <input id="confirmPasswordInput" name="confirmPassword" type="password" class="form-control custom-input py-2" minlength="8" />
+              </div>
+
+              <div class="col-12 d-flex justify-content-end gap-3 mt-4 pt-3 border-top">
+                <button type="button" id="cancelProfileEditBtn" class="btn btn-light fw-bold px-4 rounded-pill border">Cancel</button>
+                <button type="submit" class="btn text-white fw-bold px-4 rounded-pill shadow-sm" style="background-color: var(--brand-green);">Save Changes</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+
+      <div class="d-flex gap-2 mb-4 border-bottom pb-3 overflow-auto" id="profileTabButtons">
+        <button class="profile-filter-pill" th:classappend="${activeTab == 'bookmarks'} ? ' active'" data-profile-tab="bookmarks">
+            <i class="bi bi-bookmark-fill me-1"></i> Bookmarks
+        </button>
+        <button class="profile-filter-pill" th:classappend="${activeTab == 'recipes'} ? ' active'" data-profile-tab="recipes">
+            <i class="bi bi-journal-richtext me-1"></i> Uploaded Recipes
+        </button>
+      </div>
+
+      <div class="profile-tab-panel" data-tab-panel="bookmarks" th:classappend="${activeTab == 'bookmarks'} ? ' active'">
+        
+        <div th:if="${#lists.isEmpty(bookmarkedRecipes)}" class="text-center py-5">
+          <i class="bi bi-bookmark-star text-muted" style="font-size: 3.5rem;"></i>
+          <h4 class="fw-bold mt-3 text-dark">No bookmarks yet</h4>
+          <p class="text-muted">Save recipes from the feed and they will show up here.</p>
+          <a href="/" class="btn btn-outline-dark fw-bold rounded-pill px-4 mt-2">Browse Recipes</a>
+        </div>
+
+        <div class="row g-4" th:if="${!#lists.isEmpty(bookmarkedRecipes)}">
+          <div class="col-sm-6 col-lg-4" th:each="recipe : ${bookmarkedRecipes}">
+            <div class="card border-0 shadow-sm rounded-4 overflow-hidden h-100 recipe-card-hover">
+              <a th:href="@{/recipes/{id}(id=${recipe.id})}" class="text-decoration-none position-relative d-block">
+                <img th:src="${recipe.imageUrl}" class="w-100 object-fit-cover" style="height: 220px;" th:alt="${recipe.title}">
+                <div class="position-absolute top-0 end-0 m-3 badge bg-dark bg-opacity-75 rounded-pill px-3 py-2 backdrop-blur">
+                    <i class="bi bi-clock me-1"></i> <span th:text="${recipe.prepTimeMins != null ? recipe.prepTimeMins + 'm' : '-'}"></span>
+                </div>
+              </a>
+              <div class="card-body p-4 d-flex flex-column">
+                <span class="badge bg-light text-dark border mb-2 align-self-start fw-bold" th:text="${recipe.mealType != null ? recipe.mealType : 'General'}">Category</span>
+                <h5 class="fw-bold text-dark mb-4 text-truncate" th:text="${recipe.title}">Recipe Title</h5>
+                
+                <div class="mt-auto d-flex gap-2">
+                  <a th:href="@{/recipes/{id}(id=${recipe.id})}" class="btn btn-dark fw-bold w-100" style="border-radius: 8px;">View Recipe</a>
+                  <form method="post" th:action="@{/profile/bookmarks/{id}/remove(id=${recipe.id})}" class="m-0">
+                    <button type="submit" class="btn btn-light border text-danger fw-bold" style="border-radius: 8px;" title="Remove Bookmark">
+                        <i class="bi bi-trash3"></i>
+                    </button>
+                  </form>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="profile-tab-panel" data-tab-panel="recipes" th:classappend="${activeTab == 'recipes'} ? ' active'">
+        
+        <div th:if="${#lists.isEmpty(uploadedRecipes)}" class="text-center py-5">
+          <i class="bi bi-journal-plus text-muted" style="font-size: 3.5rem;"></i>
+          <h4 class="fw-bold mt-3 text-dark">No uploads yet</h4>
+          <p class="text-muted">Your created recipes will appear here.</p>
+          <a href="/recipes/new" class="btn fw-bold rounded-pill px-4 mt-2 text-white" style="background-color: var(--brand-green);">Create Recipe</a>
+        </div>
+
+        <div class="row g-4" th:if="${!#lists.isEmpty(uploadedRecipes)}">
+          <div class="col-sm-6 col-lg-4" th:each="recipe : ${uploadedRecipes}">
+            <div class="card border-0 shadow-sm rounded-4 overflow-hidden h-100 recipe-card-hover">
+              <a th:href="@{/recipes/{id}(id=${recipe.id})}" class="text-decoration-none position-relative d-block">
+                <img th:src="${recipe.imageUrl}" class="w-100 object-fit-cover" style="height: 220px;" th:alt="${recipe.title}">
+                <div class="position-absolute top-0 end-0 m-3 badge bg-dark bg-opacity-75 rounded-pill px-3 py-2 backdrop-blur">
+                    <i class="bi bi-clock me-1"></i> <span th:text="${recipe.prepTimeMins != null ? recipe.prepTimeMins + 'm' : '-'}"></span>
+                </div>
+              </a>
+              <div class="card-body p-4 d-flex flex-column">
+                <span class="badge bg-light text-dark border mb-2 align-self-start fw-bold" th:text="${recipe.mealType != null ? recipe.mealType : 'General'}">Category</span>
+                <h5 class="fw-bold text-dark mb-4 text-truncate" th:text="${recipe.title}">Recipe Title</h5>
+                
+                <div class="mt-auto d-flex gap-2 pt-3 border-top">
+                  <a th:href="@{/recipes/{id}/edit(id=${recipe.id})}" class="btn btn-outline-dark fw-bold flex-grow-1" style="border-radius: 8px;">Edit</a>
+                  <form method="post" th:action="@{/profile/recipes/{id}/delete(id=${recipe.id})}" class="m-0 flex-grow-1" onsubmit="return confirm('Delete this recipe? This cannot be undone.');">
+                    <button type="submit" class="btn btn-outline-danger fw-bold w-100" style="border-radius: 8px;">Delete</button>
+                  </form>
+                </div>
+
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </main>
+
+    <div th:replace="~{fragments/layout :: mobile-bottom-nav}"></div>
+    <div th:replace="~{fragments/layout :: mobile-offcanvas}"></div>
+
+    <div class="modal fade" id="profileUpdatedModal" tabindex="-1" aria-hidden="true" th:if="${updated}">
+      <div class="modal-dialog modal-dialog-centered modal-sm">
+        <div class="modal-content border-0 rounded-4 shadow">
+          <div class="modal-body text-center p-4">
+            <i class="bi bi-check-circle-fill text-success" style="font-size: 3rem;"></i>
+            <h4 class="fw-bold mt-3">Profile Updated</h4>
+            <p class="text-muted mb-4">Your profile changes were saved successfully.</p>
+            <button type="button" class="btn btn-dark w-100 fw-bold rounded-pill" data-bs-dismiss="modal">Done</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      (function () {
+        const errorAlert = document.querySelector('.alert.alert-danger');
+        const editPanel = document.getElementById('profileEditPanel');
+        if (errorAlert && editPanel) {
+          const collapse = new bootstrap.Collapse(editPanel, { toggle: false });
+          collapse.show();
+        }
+
+        const tabButtons = Array.from(document.querySelectorAll('[data-profile-tab]'));
+        const panels = Array.from(document.querySelectorAll('[data-tab-panel]'));
+
+        function setActiveTab(tabName, updateUrl) {
+          tabButtons.forEach(btn => btn.classList.toggle('active', btn.dataset.profileTab === tabName));
+          panels.forEach(panel => panel.classList.toggle('active', panel.dataset.tabPanel === tabName));
+          if (updateUrl) {
+            const url = new URL(window.location.href);
+            url.searchParams.set('tab', tabName);
+            history.replaceState({}, '', url);
+          }
+        }
+
+        tabButtons.forEach(button => {
+          button.addEventListener('click', function () {
+            setActiveTab(this.dataset.profileTab, true);
+          });
+        });
+
+        const updatedModalElement = document.getElementById('profileUpdatedModal');
+        if (updatedModalElement) {
+          const updatedModal = new bootstrap.Modal(updatedModalElement);
+          updatedModal.show();
+        }
+
+        const dropzone = document.getElementById('avatarDropzone');
+        const fileInput = document.getElementById('avatarFileInput');
+        const previewWrap = document.getElementById('dropzonePreview');
+        const previewImage = document.getElementById('dropzonePreviewImage');
+        const dropzoneCopy = document.getElementById('dropzoneCopy');
+        const removeSelectedAvatarBtn = document.getElementById('removeSelectedAvatarBtn');
+        const profileForm = document.getElementById('profileForm');
+        const cancelProfileEditBtn = document.getElementById('cancelProfileEditBtn');
+
+        if (dropzone && fileInput && previewWrap && previewImage && dropzoneCopy) {
+          const showFilePreview = (file) => {
+            if (!file) return;
+            const objectUrl = URL.createObjectURL(file);
+            previewImage.src = objectUrl;
+            previewWrap.classList.remove('d-none');
+            dropzoneCopy.classList.add('d-none');
+          };
+
+          const clearSelectedFile = () => {
+            fileInput.value = '';
+            previewImage.src = '';
+            previewWrap.classList.add('d-none');
+            dropzoneCopy.classList.remove('d-none');
+          };
+
+          if (removeSelectedAvatarBtn) {
+            removeSelectedAvatarBtn.addEventListener('click', function (event) {
+              event.stopPropagation();
+              clearSelectedFile();
+            });
+          }
+
+          dropzone.addEventListener('click', () => fileInput.click());
+          fileInput.addEventListener('change', (event) => {
+            const file = event.target.files && event.target.files[0];
+            showFilePreview(file);
+          });
+
+          dropzone.addEventListener('dragover', (event) => {
+            event.preventDefault();
+            dropzone.classList.add('is-dragging');
+          });
+
+          dropzone.addEventListener('dragleave', () => {
+            dropzone.classList.remove('is-dragging');
+          });
+
+          dropzone.addEventListener('drop', (event) => {
+            event.preventDefault();
+            dropzone.classList.remove('is-dragging');
+            const file = event.dataTransfer && event.dataTransfer.files && event.dataTransfer.files[0];
+            if (file) {
+              const transfer = new DataTransfer();
+              transfer.items.add(file);
+              fileInput.files = transfer.files;
+              showFilePreview(file);
+            }
+          });
+
+          if (cancelProfileEditBtn && editPanel && profileForm) {
+            cancelProfileEditBtn.addEventListener('click', function () {
+              profileForm.reset();
+              clearSelectedFile();
+              const collapse = bootstrap.Collapse.getOrCreateInstance(editPanel, { toggle: false });
+              collapse.hide();
+            });
+          }
+        }
+      })();
+    </script>
+  </body>
+</html>

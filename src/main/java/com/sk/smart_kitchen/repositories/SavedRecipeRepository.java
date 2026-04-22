@@ -12,4 +12,5 @@ import java.util.List;
 public interface SavedRecipeRepository extends JpaRepository<SavedRecipe, Long> {
     Optional<SavedRecipe> findByUserAndRecipe(User user, Recipe recipe);
     List<SavedRecipe> findByUser(User user); // NEW: To fetch all your saved recipes!
+    List<SavedRecipe> findByUserOrderBySavedAtDesc(User user);
 }

@@ -15,7 +15,6 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.time.Duration;
 import java.util.ArrayList;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
@@ -28,9 +27,8 @@ public class ScraperService {
     private static final Pattern SERVINGS_PATTERN = Pattern.compile("(\\d+)");
     private static final Pattern ISO_MINUTES_PATTERN = Pattern.compile("PT(?:(\\d+)H)?(?:(\\d+)M)?", Pattern.CASE_INSENSITIVE);
     private static final Pattern FRACTION_PATTERN = Pattern.compile("^(\\d+)\\/(\\d+)$");
-    private static final Set<String> COMMON_UNITS = Set.of(
-            "g", "kg", "mg", "ml", "l", "oz", "lb", "tbsp", "tsp", "cup", "cups", "teaspoon", "teaspoons",
-            "tablespoon", "tablespoons", "pinch", "clove", "cloves", "slice", "slices", "count", "bunch", "head"
+        private static final Set<String> SUPPORTED_FORM_UNITS = Set.of(
+            "g", "kg", "ml", "l", "oz", "tbsp", "tsp", "cup", "count", "bunch", "head"
     );
 
     private final ObjectMapper objectMapper = new ObjectMapper();
@@ -235,7 +233,8 @@ public class ScraperService {
                 IngredientLineForm cleaned = new IngredientLineForm();
                 cleaned.setName(line.getName().trim());
                 cleaned.setQuantity(isBlank(line.getQuantity()) ? "1" : line.getQuantity().trim());
-                cleaned.setUnit(trimToNull(line.getUnit()));
+                String normalizedUnit = normalizeUnitToken(line.getUnit());
+                cleaned.setUnit(normalizedUnit != null ? normalizedUnit : "");
                 cleaned.setPreparation(trimToNull(line.getPreparation()));
                 normalizedIngredients.add(cleaned);
             }
@@ -337,8 +336,9 @@ public class ScraperService {
 
             if (qty > 0) {
                 form.setQuantity(stripTrailingZero(qty));
-                if (tokens.length > consumed && isLikelyUnit(tokens[consumed])) {
-                    form.setUnit(tokens[consumed].toLowerCase(Locale.ROOT));
+                String normalizedUnit = tokens.length > consumed ? normalizeUnitToken(tokens[consumed]) : null;
+                if (normalizedUnit != null) {
+                    form.setUnit(normalizedUnit);
                     consumed += 1;
                 } else {
                     form.setUnit("");
@@ -473,11 +473,36 @@ public class ScraperService {
     }
 
     private boolean isLikelyUnit(String token) {
+        return normalizeUnitToken(token) != null;
+    }
+
+    private String normalizeUnitToken(String token) {
         if (token == null) {
-            return false;
+            return null;
         }
-        String cleaned = token.toLowerCase(Locale.ROOT).replaceAll("[^a-z]", "");
-        return COMMON_UNITS.contains(cleaned);
+
+        String cleaned = token.toLowerCase(Locale.ROOT)
+                .replaceAll("[^a-z]", "");
+        if (cleaned.isEmpty()) {
+            return null;
+        }
+
+        String canonical = switch (cleaned) {
+            case "g", "gram", "grams" -> "g";
+            case "kg", "kilogram", "kilograms" -> "kg";
+            case "ml", "milliliter", "milliliters", "millilitre", "millilitres" -> "ml";
+            case "l", "liter", "liters", "litre", "litres" -> "l";
+            case "oz", "ounce", "ounces" -> "oz";
+            case "tbsp", "tablespoon", "tablespoons", "tbs" -> "tbsp";
+            case "tsp", "teaspoon", "teaspoons" -> "tsp";
+            case "cup", "cups" -> "cup";
+            case "count", "piece", "pieces", "pc", "pcs" -> "count";
+            case "bunch", "bunches" -> "bunch";
+            case "head", "heads" -> "head";
+            default -> null;
+        };
+
+        return (canonical != null && SUPPORTED_FORM_UNITS.contains(canonical)) ? canonical : null;
     }
 
     private boolean isNumericOrFraction(String token) {

@@ -1,0 +1,73 @@
+/* =========================================
+   SMART KITCHEN PROFILE STYLES
+   ========================================= */
+
+/* REDESIGNED FEED-STYLE PILL TABS */
+.profile-filter-pill {
+    padding: 8px 20px;
+    border-radius: 50px;
+    border: 1px solid #e5e7eb;
+    background: #ffffff;
+    color: #4b5563;
+    font-weight: 600;
+    font-size: 0.9rem;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+    cursor: pointer;
+}
+
+.profile-filter-pill:hover {
+    background: #f3f4f6;
+    border-color: #d1d5db;
+    color: #111827;
+}
+
+.profile-filter-pill.active {
+    background-color: var(--brand-green);
+    color: white;
+    border-color: var(--brand-green);
+    box-shadow: 0 4px 6px -1px rgba(43, 76, 59, 0.2);
+}
+
+.profile-tab-panel {
+    display: none;
+}
+
+.profile-tab-panel.active {
+    display: block;
+    animation: fadeIn 0.3s ease-in-out;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(5px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* Avatar Dropzone interactive states */
+.avatar-dropzone {
+    border: 2px dashed #cbd5e1;
+    border-radius: 16px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.avatar-dropzone:hover, .avatar-dropzone.is-dragging {
+    border-color: var(--brand-green);
+    background-color: #f0fdf4 !important;
+}
+
+/* Beautiful hover effects for the recipe cards */
+.recipe-card-hover {
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.recipe-card-hover:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1) !important;
+}
+
+/* Glassmorphism effect for the time badge over images */
+.backdrop-blur {
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+}

@@ -8,42 +8,120 @@
     <div th:replace="~{fragments/layout :: navbar}"></div>
 
     <div class="container-md px-3 mt-5 mb-5">
+      <form method="get" th:action="@{/}">
       <div class="row mb-4 justify-content-center">
         <div class="col-md-10 col-lg-8 d-flex gap-2 align-items-center">
+          <input type="hidden" id="mealTypeInput" name="mealType" th:value="${currentMealType}" />
           <div class="input-group search-container">
             <span class="input-group-text ps-4 search-icon">
               <i class="bi bi-search"></i>
             </span>
             <input
               type="text"
+              name="q"
               class="form-control py-2 search-input"
               placeholder="Search recipes, ingredients, or tags..."
+              th:value="${currentSearch}"
             />
           </div>
 
           <button
+            type="button"
             class="btn px-3 py-2 d-flex align-items-center gap-2 filter-btn"
+            data-bs-toggle="collapse"
+            data-bs-target="#searchFilterPanel"
+            aria-expanded="false"
+            aria-controls="searchFilterPanel"
           >
             <i class="bi bi-funnel"></i> Filter
           </button>
 
           <button sec:authorize="isAuthenticated()" 
                   class="btn px-3 py-2 d-flex align-items-center gap-2 shadow-sm text-white" 
-                  style="background-color: var(--brand-green); border-radius: 15px; font-weight: 600; white-space: nowrap;"
-                  data-bs-toggle="offcanvas" 
-                  data-bs-target="#recommendationPanel" 
+                  style="background-color: var(--brand-green); border-radius: 10px; font-weight: 600; white-space: nowrap;"
+              data-bs-toggle="modal"
+              data-bs-target="#recommendationModal"
                   onclick="fetchRecommendations()">
-            <i class="bi bi-magic text-warning"></i> What can I make?
+            <i class="bi bi-magic text-white"></i> What can I make?
           </button>
+
+          <button type="submit" class="visually-hidden" aria-hidden="true">Search</button>
+        </div>
+
+        <div class="col-md-10 col-lg-8 mt-3">
+          <div id="searchFilterPanel" class="collapse">
+            <div class="card border-0 shadow-sm" style="border-radius: 14px;">
+              <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                  <h6 class="m-0 fw-bold">Filter by Secondary Tags</h6>
+                  <a th:href="@{/}" class="small text-decoration-none">Clear all</a>
+                </div>
+
+                <div class="d-flex flex-wrap gap-3 mb-3">
+                  <label class="form-check m-0" th:each="tagName : ${availableTags}">
+                    <input
+                      class="form-check-input me-2"
+                      type="checkbox"
+                      name="tags"
+                      th:value="${tagName}"
+                      th:checked="${selectedTagFilters != null and #lists.contains(selectedTagFilters, tagName)}"
+                    />
+                    <span class="form-check-label" th:text="${tagName}">Vegan</span>
+                  </label>
+                </div>
+
+                <div class="mt-3">
+                  <h6 class="m-0 fw-bold mb-2">Prep Time Range (mins)</h6>
+                  <div class="d-flex justify-content-between small text-muted mb-2">
+                    <span>Min: <span id="minPrepValue" th:text="${currentMinPrep}">0</span></span>
+                    <span>Max: <span id="maxPrepValue" th:text="${currentMaxPrep}">120</span></span>
+                  </div>
+                  <div class="prep-range-slider" id="prepRangeSlider">
+                    <input
+                      type="range"
+                      id="minPrepInput"
+                      name="minPrep"
+                      min="0"
+                      step="1"
+                      th:max="${prepSliderMax}"
+                      th:value="${currentMinPrep}"
+                      class="prep-range-input prep-range-min"
+                    />
+                    <input
+                      type="range"
+                      id="maxPrepInput"
+                      name="maxPrep"
+                      min="0"
+                      step="1"
+                      th:max="${prepSliderMax}"
+                      th:value="${currentMaxPrep}"
+                      class="prep-range-input prep-range-max"
+                    />
+                  </div>
+                </div>
+
+                <button type="submit" class="btn btn-dark btn-sm px-3">Apply Filters</button>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
+      </form>
 
       <div class="category-filters mb-5">
-        <a href="#" class="filter-pill active">All</a>
         <a
           href="#"
-          class="filter-pill"
+          class="filter-pill category-pill"
+          th:classappend="${currentMealType == null or #strings.isEmpty(currentMealType)} ? ' active' : ''"
+          data-category=""
+        >All</a>
+        <a
+          href="#"
+          class="filter-pill category-pill"
+          data-category=""
           th:each="category : ${categories}"
+          th:attr="data-category=${category}"
+          th:classappend="${currentMealType != null and #strings.equalsIgnoreCase(currentMealType, category)} ? ' active' : ''"
           th:text="${category}"
           >Category</a
         >
@@ -55,8 +133,13 @@
       <div
         class="img-placeholder"
         th:classappend="${stat.index % 3 == 0 ? 'height-tall' : (stat.index % 3 == 1 ? 'height-medium' : 'height-short')}"
-        th:style="'background-image: url(' + (${recipe.imageUrl != null ? ((recipe.imageUrl.startsWith('http://') || recipe.imageUrl.startsWith('https://') || recipe.imageUrl.startsWith('/')) ? recipe.imageUrl : '/' + recipe.imageUrl) : 'https://images.unsplash.com/photo-1621996346565-e3dbc646d9a9?auto=format&fit=crop&w=1200&q=80'}) + ');'"
-      ></div>
+      >
+        <img
+          class="recipe-card-image"
+          th:src="${recipe.imageUrl != null ? ((recipe.imageUrl.startsWith('http://') || recipe.imageUrl.startsWith('https://') || recipe.imageUrl.startsWith('/')) ? recipe.imageUrl : '/' + recipe.imageUrl) : 'https://images.unsplash.com/photo-1621996346565-e3dbc646d9a9?auto=format&fit=crop&w=1200&q=80'}"
+          th:alt="${recipe.title}"
+        />
+      </div>
       <div class="floating-time-badge">
         <i class="bi bi-clock"></i>
         <span th:text="${recipe.prepTimeMins != null ? recipe.prepTimeMins + ' mins' : '15 mins'}">15 mins</span>
@@ -86,49 +169,82 @@
     <div th:replace="~{fragments/layout :: mobile-bottom-nav}"></div>
     <div th:replace="~{fragments/layout :: mobile-offcanvas}"></div>
 
-    <div class="offcanvas offcanvas-end offcanvas-bottom-custom d-md-block" 
-         tabindex="-1" id="recommendationPanel" 
-         style="width: 400px; max-width: 100vw;">
-      <div class="offcanvas-header border-bottom py-3 px-4">
-        <h5 class="offcanvas-title fw-bold" style="color: var(--brand-green);">
-            <i class="bi bi-magic text-warning me-2"></i> What Can I Make?
-        </h5>
-        <button type="button" class="btn-close" data-bs-dismiss="offcanvas"></button>
-      </div>
-      
-      <div class="offcanvas-body p-4" style="background-color: #f9fafb;">
-          <p class="text-muted small mb-4">We scanned your pantry and ran the math. Here are the top 5 recipes you are closest to cooking right now!</p>
-          
-          <div id="recoLoading" class="text-center py-5">
-              <div class="spinner-border text-success mb-3" role="status"></div>
-              <h6 class="fw-bold text-muted">Running Pantry Analysis...</h6>
+    <div class="modal fade recommendation-modal" id="recommendationModal" tabindex="-1" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered modal-xl">
+        <div class="modal-content border-0 shadow-lg">
+          <div class="modal-header border-bottom py-3 px-4">
+            <h5 class="modal-title fw-bold" style="color: var(--brand-green);">
+                <i class="bi bi-magic text-warning me-2"></i> What Can I Make?
+            </h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
           </div>
-
-          <div id="recoContainer" class="d-flex flex-column gap-3">
+          <div class="modal-body p-4" style="background-color: #f9fafb; max-height: 70vh; overflow-y: auto;">
+              <p class="text-muted small mb-4">We scanned your pantry and ran the math. Here are the top 5 recipes you are closest to cooking right now!</p>
+              
+              <div id="recoLoading" class="text-center py-5">
+                  <div class="spinner-border text-success mb-3" role="status"></div>
+                  <h6 class="fw-bold text-muted">Running Pantry Analysis...</h6>
               </div>
+
+              <div id="recoContainer" class="d-flex flex-column gap-3"></div>
+          </div>
+        </div>
       </div>
     </div>
 
     <script>
       document.addEventListener('DOMContentLoaded', () => {
-        const recommendationPanel = document.getElementById('recommendationPanel');
+        const feedSearchForm = document.querySelector('form[method="get"][action="/"]');
+        const mealTypeInput = document.getElementById('mealTypeInput');
+        const categoryPills = document.querySelectorAll('.category-pill');
+        const minPrepInput = document.getElementById('minPrepInput');
+        const maxPrepInput = document.getElementById('maxPrepInput');
+        const minPrepValue = document.getElementById('minPrepValue');
+        const maxPrepValue = document.getElementById('maxPrepValue');
 
-        function syncRecommendationPanelPlacement() {
-          if (!recommendationPanel) return;
-          const isMobile = window.innerWidth < 768;
+        if (minPrepInput && maxPrepInput && minPrepValue && maxPrepValue) {
+          const prepRangeSlider = document.getElementById('prepRangeSlider');
 
-          recommendationPanel.classList.toggle('offcanvas-bottom', isMobile);
-          recommendationPanel.classList.toggle('offcanvas-end', !isMobile);
+          const paintPrepTrack = (minVal, maxVal) => {
+            if (!prepRangeSlider) return;
+            const maxLimit = parseInt(minPrepInput.max || '120', 10);
+            const startPct = Math.max(0, Math.min(100, (minVal / maxLimit) * 100));
+            const endPct = Math.max(0, Math.min(100, (maxVal / maxLimit) * 100));
+            prepRangeSlider.style.background = `linear-gradient(to right, #d1d5db ${startPct}%, var(--brand-green) ${startPct}%, var(--brand-green) ${endPct}%, #d1d5db ${endPct}%)`;
+          };
 
-          if (isMobile) {
-            recommendationPanel.style.width = '100%';
-            recommendationPanel.style.maxWidth = '100vw';
-            recommendationPanel.style.height = '70vh';
-          } else {
-            recommendationPanel.style.width = '400px';
-            recommendationPanel.style.maxWidth = '100vw';
-            recommendationPanel.style.height = 'auto';
-          }
+          const syncPrepRange = () => {
+            let minVal = parseInt(minPrepInput.value || '0', 10);
+            let maxVal = parseInt(maxPrepInput.value || '0', 10);
+
+            if (minVal > maxVal) {
+              if (document.activeElement === minPrepInput) {
+                maxVal = minVal;
+                maxPrepInput.value = String(maxVal);
+              } else {
+                minVal = maxVal;
+                minPrepInput.value = String(minVal);
+              }
+            }
+
+            minPrepValue.textContent = String(minVal);
+            maxPrepValue.textContent = String(maxVal);
+            paintPrepTrack(minVal, maxVal);
+          };
+
+          minPrepInput.addEventListener('input', syncPrepRange);
+          maxPrepInput.addEventListener('input', syncPrepRange);
+          syncPrepRange();
+        }
+
+        if (categoryPills.length > 0 && feedSearchForm && mealTypeInput) {
+          categoryPills.forEach(pill => {
+            pill.addEventListener('click', (e) => {
+              e.preventDefault();
+              mealTypeInput.value = pill.getAttribute('data-category') || '';
+              feedSearchForm.submit();
+            });
+          });
         }
 
         function normalizeRecoImageUrl(imageUrl) {
@@ -139,9 +255,6 @@
             ? trimmed
             : '/' + trimmed;
         }
-
-        syncRecommendationPanelPlacement();
-        window.addEventListener('resize', syncRecommendationPanelPlacement);
 
         // Select all the bookmark icons on the feed
         const feedBookmarks = document.querySelectorAll('.feed-bookmark-btn');
@@ -181,34 +294,34 @@
               }
           });
         });
-        // 🌟 NEW: The Magic Recommendation Fetcher
-        window.fetchRecommendations = async function() {
-            const container = document.getElementById('recoContainer');
-            const loader = document.getElementById('recoLoading');
-          const controller = new AbortController();
-          const timeoutId = setTimeout(() => controller.abort(), 15000);
-            
-            container.innerHTML = '';
-            loader.style.display = 'block';
 
-            try {
-            const response = await fetch('/api/recommendations', { signal: controller.signal });
-                if (!response.ok) throw new Error("Failed to fetch");
-                
+            // The recommendation fetcher
+            window.fetchRecommendations = async function() {
+              const container = document.getElementById('recoContainer');
+              const loader = document.getElementById('recoLoading');
+              const controller = new AbortController();
+              const timeoutId = setTimeout(() => controller.abort(), 15000);
+
+              container.innerHTML = '';
+              loader.style.display = 'block';
+
+              try {
+                const response = await fetch('/api/recommendations', { signal: controller.signal });
+                if (!response.ok) throw new Error('Failed to fetch');
+
                 const recipes = await response.json();
                 loader.style.display = 'none';
 
                 if (recipes.length === 0) {
-                    container.innerHTML = `
-                        <div class="text-center py-4">
-                            <i class="bi bi-basket text-muted" style="font-size: 3rem;"></i>
-                            <h6 class="fw-bold mt-3">No matches found</h6>
-                            <p class="text-muted small">Try adding more ingredients to your Virtual Pantry first!</p>
-                        </div>`;
-                    return;
+                  container.innerHTML = `
+                    <div class="text-center py-4">
+                      <i class="bi bi-basket text-muted" style="font-size: 3rem;"></i>
+                      <h6 class="fw-bold mt-3">No matches found</h6>
+                      <p class="text-muted small">Try adding more ingredients to your Virtual Pantry first!</p>
+                    </div>`;
+                  return;
                 }
 
-                // Detect if mobile to change the progress UI
                 const isMobile = window.innerWidth < 768;
 
                 recipes.forEach(recipe => {
@@ -217,56 +330,54 @@
                   const mealType = recipe.mealType || 'Recipe';
                   const prepTime = Number.isFinite(recipe.prepTime) ? recipe.prepTime : '--';
 
-                    let progressUI = '';
-                    
-                    if (isMobile) {
-                        // MOBILE: Circular Progress Ring
-                        progressUI = `
-                            <div class="reco-ring-wrapper ms-auto" style="background: conic-gradient(var(--brand-green) ${recipe.matchPercentage}%, #e5e7eb 0);">
-                                <span class="reco-ring-text">${recipe.matchPercentage}%</span>
-                            </div>`;
-                    } else {
-                        // DESKTOP: Horizontal Progress Bar
-                        progressUI = `
-                            <div class="mt-2">
-                                <div class="d-flex justify-content-between align-items-end mb-1">
-                                    <span class="fw-bold" style="font-size: 0.8rem; color: var(--brand-green)">${recipe.matchPercentage}% Match</span>
-                                    <span class="text-muted" style="font-size: 0.75rem">Missing ${recipe.missingCount}</span>
-                                </div>
-                                <div class="reco-progress-container">
-                                    <div class="reco-progress-bar" style="width: ${recipe.matchPercentage}%;"></div>
-                                </div>
-                            </div>`;
-                    }
+                  let progressUI = '';
 
-                    container.innerHTML += `
-                        <a href="/recipes/${recipe.recipeId}" class="reco-card">
-                        <img src="${img}" class="reco-img" alt="${recipeTitle}">
-                            <div class="p-3 w-100 d-flex flex-column justify-content-center">
-                                <div class="d-flex align-items-start justify-content-between">
-                                    <div>
-                              <h6 class="fw-bold m-0 text-dark" style="line-height: 1.2;">${recipeTitle}</h6>
-                              <span class="text-muted" style="font-size: 0.75rem;">${mealType} • ${prepTime}m</span>
-                                    </div>
-                                    ${isMobile ? progressUI : ''}
-                                </div>
-                                ${!isMobile ? progressUI : ''}
-                            </div>
-                        </a>
-                    `;
+                  if (isMobile) {
+                    progressUI = `
+                      <div class="reco-ring-wrapper ms-auto" style="background: conic-gradient(var(--brand-green) ${recipe.matchPercentage}%, #e5e7eb 0);">
+                        <span class="reco-ring-text">${recipe.matchPercentage}%</span>
+                      </div>`;
+                  } else {
+                    progressUI = `
+                      <div class="mt-2">
+                        <div class="d-flex justify-content-between align-items-end mb-1">
+                          <span class="fw-bold" style="font-size: 0.8rem; color: var(--brand-green)">${recipe.matchPercentage}% Match</span>
+                          <span class="text-muted" style="font-size: 0.75rem">Missing ${recipe.missingCount}</span>
+                        </div>
+                        <div class="reco-progress-container">
+                          <div class="reco-progress-bar" style="width: ${recipe.matchPercentage}%;"></div>
+                        </div>
+                      </div>`;
+                  }
+
+                  container.innerHTML += `
+                    <a href="/recipes/${recipe.recipeId}" class="reco-card">
+                    <img src="${img}" class="reco-img" alt="${recipeTitle}">
+                      <div class="p-3 w-100 d-flex flex-column justify-content-center">
+                        <div class="d-flex align-items-start justify-content-between">
+                          <div>
+                        <h6 class="fw-bold m-0 text-dark" style="line-height: 1.2;">${recipeTitle}</h6>
+                        <span class="text-muted" style="font-size: 0.75rem;">${mealType} • ${prepTime}m</span>
+                          </div>
+                          ${isMobile ? progressUI : ''}
+                        </div>
+                        ${!isMobile ? progressUI : ''}
+                      </div>
+                    </a>
+                  `;
                 });
-            } catch (err) {
+              } catch (err) {
                 loader.style.display = 'none';
-              if (err && err.name === 'AbortError') {
-                container.innerHTML = `<div class="alert alert-warning">Pantry analysis is taking too long right now. Please try again.</div>`;
-              } else {
-                container.innerHTML = `<div class="alert alert-danger">Error analyzing pantry. Please try again.</div>`;
+                if (err && err.name === 'AbortError') {
+                  container.innerHTML = '<div class="alert alert-warning">Pantry analysis is taking too long right now. Please try again.</div>';
+                } else {
+                  container.innerHTML = '<div class="alert alert-danger">Error analyzing pantry. Please try again.</div>';
+                }
+              } finally {
+                clearTimeout(timeoutId);
               }
-            } finally {
-              clearTimeout(timeoutId);
-            }
-        };
-          });
+            };
+      });
     </script>
   </body>
 </html>

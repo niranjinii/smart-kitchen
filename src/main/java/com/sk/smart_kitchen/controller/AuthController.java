@@ -2,6 +2,7 @@ package com.sk.smart_kitchen.controller;
 
 import com.sk.smart_kitchen.entities.User;
 import com.sk.smart_kitchen.repositories.UserRepository;
+import com.sk.smart_kitchen.services.AvatarService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Controller;
@@ -17,6 +18,9 @@ public class AuthController {
 
     @Autowired
     private PasswordEncoder passwordEncoder;
+
+    @Autowired
+    private AvatarService avatarService;
 
     // --- LOGIN ---
     @GetMapping("/login")
@@ -63,7 +67,7 @@ public class AuthController {
 
         // 3. Give them a default avatar if they didn't provide one
         if (user.getProfileImageUrl() == null || user.getProfileImageUrl().isEmpty()) {
-            user.setProfileImageUrl("https://ui-avatars.com/api/?name=" + user.getUsername() + "&background=random");
+            user.setProfileImageUrl(avatarService.buildDefaultAvatarUrl(user.getUsername()));
         }
 
         // 4. Save to DB
