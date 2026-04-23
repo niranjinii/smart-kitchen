@@ -54,7 +54,7 @@ public class RecommendationEngine {
     @Autowired
     private SubstitutionRepository substitutionRepository;
 
-    // 🌟 TRUE OCP: Spring automatically injects any class implementing RecommendationStep!
+    // Spring automatically injects any class implementing RecommendationStep
     @Autowired
     private List<RecommendationStep> pipeline;
 
@@ -224,7 +224,7 @@ public class RecommendationEngine {
                     .collect(Collectors.groupingBy(sub -> sub.getOriginalIngredient().getId()));
         }
 
-        // 🌟 Execute the dynamically injected Chain!
+        // Execute the dynamically injected Chain
         for (RecommendationStep step : pipeline) {
             step.process(context);
         }
