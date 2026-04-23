@@ -8,6 +8,7 @@ Smart Kitchen is a community-driven culinary platform designed to bring food lov
 * **Deep Personalization:** Set global dietary preferences (e.g., automatically swap cow's milk for oat milk) that instantly apply to recipe calculations across the entire platform so every meal fits your lifestyle.
 * **Intelligent Recommendation Engine:** Scans your personal pantry stock against the community's recipe book to calculate and suggest the best meals you can cook right now.
 * **Interactive Cook Mode:** A distraction-free, step-by-step cooking interface featuring voice-activated controls, auto-generated smart timers, and dynamic ingredient tracking.
+* **Meal Planner:** Drag and drop your favorite community discoveries and personal recipes into a weekly schedule to effortlessly organize your cooking queue.
 * **Recipe Management & Scaling:** Create and categorize custom recipes with a dynamic yield adjuster that instantly scales ingredient math based on your desired serving size.
 * **Smart Shopping List:** Automatically calculates missing ingredients from your planned recipes, converts units, and aggregates them into a clean, consolidated grocery list.
 * **Virtual Pantry:** Track your physical kitchen inventory, including custom measurements, categories, and expiration dates.
