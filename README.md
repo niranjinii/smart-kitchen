@@ -68,4 +68,3 @@ mvnw.cmd spring-boot:run
 ```
 
 Once the application has successfully started, open your web browser and navigate to `http://localhost:8080`.
-```
